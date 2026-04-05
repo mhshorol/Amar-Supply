@@ -38,6 +38,7 @@ import { A5Invoice, POSInvoice } from './InvoiceTemplates';
 import { toast } from 'sonner';
 import { SteadfastService } from '../services/steadfastService';
 import { logActivity } from '../services/activityService';
+import { checkDuplicateOrder } from '../services/orderService';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 import { useSettings } from '../contexts/SettingsContext';
@@ -270,6 +271,35 @@ export default function Orders() {
     if (zone === 'Sub Dhaka') charge = 100;
     setOrderForm({ ...orderForm, customerZone: zone, deliveryCharge: charge });
   };
+  const handlePhoneChange = async (phone: string) => {
+    setOrderForm(prev => ({ ...prev, customerPhone: phone }));
+    
+    // Only search if phone number is at least 11 digits (standard for BD)
+    if (phone.length >= 11) {
+      try {
+        const q = query(collection(db, 'customers'), where('phone', '==', phone));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const customerData = querySnapshot.docs[0].data();
+          setOrderForm(prev => ({
+            ...prev,
+            customerName: customerData.name || prev.customerName,
+            customerAddress: customerData.address || prev.customerAddress,
+            district: customerData.district || prev.district,
+            area: customerData.area || prev.area,
+            landmark: customerData.landmark || prev.landmark,
+            customerCity: customerData.city || prev.customerCity,
+            customerZone: customerData.zone || prev.customerZone
+          }));
+          toast.success(`Found existing customer: ${customerData.name}`);
+        }
+      } catch (error) {
+        console.error("Error fetching customer data:", error);
+      }
+    }
+  };
+
   const handleOpenAddModal = () => {
     setEditingOrder(null);
     setOrderForm({
@@ -345,6 +375,23 @@ export default function Orders() {
     try {
       const { subtotal, totalAmount, dueAmount } = calculateTotals(orderForm.items, orderForm.deliveryCharge, orderForm.discount, orderForm.paidAmount);
       
+      // Duplicate Detection Check (Only for new orders)
+      if (!editingOrder) {
+        const duplicate = await checkDuplicateOrder({
+          customerPhone: orderForm.customerPhone,
+          customerName: orderForm.customerName,
+          items: orderForm.items,
+          totalAmount: totalAmount
+        });
+
+        if (duplicate) {
+          const confirmDuplicate = window.confirm(
+            `Duplicate Order Detected!\n\nAn order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours.\n\nAre you sure you want to create this duplicate order?`
+          );
+          if (!confirmDuplicate) return;
+        }
+      }
+
       const logEntry = {
         user: auth.currentUser.email,
         action: editingOrder ? 'Updated Order' : 'Created Order',
@@ -1110,7 +1157,7 @@ export default function Orders() {
                       required
                       className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
                       value={orderForm.customerPhone}
-                      onChange={e => setOrderForm({...orderForm, customerPhone: e.target.value})}
+                      onChange={e => handlePhoneChange(e.target.value)}
                     />
                   </div>
                 </div>

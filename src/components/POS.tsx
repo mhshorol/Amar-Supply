@@ -29,6 +29,7 @@ import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { useSettings } from '../contexts/SettingsContext';
 import { POSInvoice } from './InvoiceTemplates';
 import { logActivity } from '../services/activityService';
+import { checkDuplicateOrder } from '../services/orderService';
 
 interface CartItem {
   id: string;
@@ -246,6 +247,29 @@ export default function POS() {
 
     setIsProcessing(true);
     try {
+      // Duplicate Detection Check
+      const duplicate = await checkDuplicateOrder({
+        customerPhone: selectedCustomer.phone,
+        customerName: selectedCustomer.name,
+        items: cart.map(item => ({
+          productId: item.productId,
+          variantId: item.variantId || '',
+          quantity: item.quantity,
+          price: item.price
+        })),
+        totalAmount: total
+      });
+
+      if (duplicate) {
+        const confirmDuplicate = window.confirm(
+          `Duplicate Order Detected!\n\nAn order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours.\n\nAre you sure you want to complete this duplicate sale?`
+        );
+        if (!confirmDuplicate) {
+          setIsProcessing(false);
+          return;
+        }
+      }
+
       await runTransaction(db, async (transaction) => {
         // 1. ALL READS FIRST
         const settingsRef = doc(db, 'settings', 'company');
@@ -360,6 +384,29 @@ export default function POS() {
       handleFirestoreError(error, OperationType.CREATE, 'orders');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleNewCustomerPhoneChange = async (phone: string) => {
+    setNewCustomer(prev => ({ ...prev, phone }));
+    
+    if (phone.length >= 11) {
+      try {
+        const q = query(collection(db, 'customers'), where('phone', '==', phone));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const customerData = querySnapshot.docs[0].data();
+          setNewCustomer(prev => ({
+            ...prev,
+            name: customerData.name || prev.name,
+            address: customerData.address || prev.address
+          }));
+          toast.success(`Found existing customer: ${customerData.name}`);
+        }
+      } catch (error) {
+        console.error("Error fetching customer data:", error);
+      }
     }
   };
 
@@ -834,7 +881,7 @@ export default function POS() {
                   className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
                   placeholder="Enter phone number"
                   value={newCustomer.phone}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                  onChange={(e) => handleNewCustomerPhoneChange(e.target.value)}
                 />
               </div>
               <div className="space-y-1">
