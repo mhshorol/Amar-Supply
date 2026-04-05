@@ -633,7 +633,7 @@ function ReturnsTab({ products, variants, warehouses }: any) {
             const product = products.find((p: any) => p.id === ret.productId);
             return (
               <tr key={ret.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-mono text-xs uppercase">{ret.orderId?.slice(0, 8)}</td>
+                <td className="px-6 py-4 font-mono text-xs uppercase">#{ret.orderNumber || ret.orderId?.slice(0, 8)}</td>
                 <td className="px-6 py-4 text-sm font-bold">{product?.name || 'Unknown'}</td>
                 <td className="px-6 py-4 text-xs text-gray-500">{ret.reason}</td>
                 <td className="px-6 py-4">

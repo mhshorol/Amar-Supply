@@ -21,7 +21,7 @@ import {
   Barcode,
   Scan
 } from 'lucide-react';
-import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, writeBatch, getDoc, getDocs, where, Timestamp } from '../firebase';
+import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, writeBatch, getDoc, getDocs, where, Timestamp, runTransaction } from '../firebase';
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'sonner';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -246,92 +246,111 @@ export default function POS() {
 
     setIsProcessing(true);
     try {
-      const batch = writeBatch(db);
-      const orderId = doc(collection(db, 'orders')).id;
-      const orderNumber = `POS-${Date.now().toString().slice(-6)}`;
+      await runTransaction(db, async (transaction) => {
+        // 1. ALL READS FIRST
+        const settingsRef = doc(db, 'settings', 'company');
+        const settingsSnap = await transaction.get(settingsRef);
 
-      const orderData = {
-        orderNumber,
-        customerName: selectedCustomer.name,
-        customerPhone: selectedCustomer.phone,
-        customerAddress: selectedCustomer.address || '',
-        items: cart.map(item => ({
-          productId: item.productId,
-          variantId: item.variantId || '',
-          name: item.name,
-          variantName: item.variantName || '',
-          price: item.price,
-          quantity: item.quantity,
-          total: item.price * item.quantity
-        })),
-        subtotal,
-        discount,
-        tax,
-        deliveryCharge: 0,
-        totalAmount: total,
-        paidAmount: total,
-        dueAmount: 0,
-        paymentMethod,
-        status: 'delivered',
-        channel: 'POS',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        uid: auth.currentUser?.uid,
-        notes: 'POS Sale'
-      };
+        const inventorySnaps: { item: any; snap: any }[] = [];
+        for (const item of cart) {
+          const invQuery = query(
+            collection(db, 'inventory'), 
+            where('productId', '==', item.productId),
+            where('variantId', '==', item.variantId || '')
+          );
+          const invSnap = await getDocs(invQuery);
+          inventorySnaps.push({ item, snap: invSnap });
+        }
 
-      batch.set(doc(db, 'orders', orderId), orderData);
+        // 2. CALCULATE NEXT ORDER NUMBER
+        let nextOrderNumber = 1001;
+        if (settingsSnap.exists() && settingsSnap.data().orderCounter) {
+          nextOrderNumber = settingsSnap.data().orderCounter + 1;
+        }
 
-      // Update Inventory
-      for (const item of cart) {
-        const invQuery = query(
-          collection(db, 'inventory'), 
-          where('productId', '==', item.productId),
-          where('variantId', '==', item.variantId || '')
-        );
-        const invSnap = await getDocs(invQuery);
-        
-        if (!invSnap.empty) {
-          const invDoc = invSnap.docs[0];
-          const currentQty = invDoc.data().quantity || 0;
-          batch.update(invDoc.ref, {
-            quantity: currentQty - item.quantity,
-            updatedAt: serverTimestamp()
-          });
-
-          // Log stock change
-          const logRef = doc(collection(db, 'stock_logs'));
-          batch.set(logRef, {
+        // 3. ALL WRITES SECOND
+        const orderRef = doc(collection(db, 'orders'));
+        const orderData = {
+          orderNumber: nextOrderNumber,
+          customerName: selectedCustomer.name,
+          customerPhone: selectedCustomer.phone,
+          customerAddress: selectedCustomer.address || '',
+          items: cart.map(item => ({
             productId: item.productId,
             variantId: item.variantId || '',
-            type: 'out',
-            quantityChange: item.quantity,
-            newQuantity: currentQty - item.quantity,
-            reason: `POS Sale #${orderNumber}`,
-            uid: auth.currentUser?.uid,
-            createdAt: serverTimestamp()
-          });
-        }
-      }
+            name: item.name,
+            variantName: item.variantName || '',
+            price: item.price,
+            quantity: item.quantity,
+            total: item.price * item.quantity
+          })),
+          subtotal,
+          discount,
+          tax,
+          deliveryCharge: 0,
+          totalAmount: total,
+          paidAmount: total,
+          dueAmount: 0,
+          paymentMethod,
+          status: 'delivered',
+          channel: 'POS',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          uid: auth.currentUser?.uid,
+          notes: 'POS Sale'
+        };
 
-      // Add to Finance
-      const transactionRef = doc(collection(db, 'transactions'));
-      batch.set(transactionRef, {
-        type: 'income',
-        category: 'Sales',
-        amount: total,
-        description: `POS Sale #${orderNumber}`,
-        date: serverTimestamp(),
-        paymentMethod,
-        orderId,
-        uid: auth.currentUser?.uid,
-        createdAt: serverTimestamp()
+        transaction.set(orderRef, orderData);
+        transaction.set(settingsRef, { orderCounter: nextOrderNumber }, { merge: true });
+
+        // Update Inventory
+        for (const invData of inventorySnaps) {
+          const { item, snap } = invData;
+          if (!snap.empty) {
+            const invDoc = snap.docs[0];
+            const currentQty = invDoc.data().quantity || 0;
+            const newQty = currentQty - item.quantity;
+            transaction.update(invDoc.ref, {
+              quantity: newQty,
+              updatedAt: serverTimestamp()
+            });
+
+            // Log stock change
+            const logRef = doc(collection(db, 'stock_logs'));
+            transaction.set(logRef, {
+              productId: item.productId,
+              variantId: item.variantId || '',
+              type: 'out',
+              quantityChange: item.quantity,
+              newQuantity: newQty,
+              reason: `POS Sale #${nextOrderNumber}`,
+              uid: auth.currentUser?.uid,
+              createdAt: serverTimestamp()
+            });
+          }
+        }
+
+        // Add to Finance
+        const transactionRef = doc(collection(db, 'transactions'));
+        transaction.set(transactionRef, {
+          type: 'income',
+          category: 'Sales',
+          amount: total,
+          description: `POS Sale #${nextOrderNumber}`,
+          date: serverTimestamp(),
+          paymentMethod,
+          orderId: orderRef.id,
+          orderNumber: nextOrderNumber,
+          uid: auth.currentUser?.uid,
+          createdAt: serverTimestamp()
+        });
+
+        // Set completed order for receipt
+        setCompletedOrder({ ...orderData, id: orderRef.id });
       });
 
-      await batch.commit();
-      await logActivity('POS Sale', 'POS', `Completed sale #${orderNumber} for ${total}`);
+      await logActivity('POS Sale', 'POS', `Completed sale for ${total}`);
       
-      setCompletedOrder({ ...orderData, id: orderId });
       setCart([]);
       setSelectedCustomer(null);
       setDiscount(0);
@@ -424,7 +443,7 @@ export default function POS() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
+        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 pb-4">
           {filteredProducts.map(product => {
             const productVariants = variants.filter(v => v.productId === product.id);
             const totalStock = getStock(product.id);
@@ -432,58 +451,96 @@ export default function POS() {
             return (
               <div 
                 key={product.id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
+                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group"
               >
-                <div className="aspect-square bg-gray-50 relative overflow-hidden">
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <Package size={48} />
-                    </div>
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${
-                      totalStock > 0 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'
-                    }`}>
-                      {totalStock} In Stock
-                    </span>
+                <div className="p-4 flex gap-4">
+                  {/* Product Image */}
+                  <div className="w-24 h-24 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 relative">
+                    {product.image ? (
+                      <img 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                        referrerPolicy="no-referrer" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <Package size={32} />
+                      </div>
+                    )}
+                    {totalStock <= 5 && totalStock > 0 && (
+                      <div className="absolute top-0 left-0 right-0 bg-orange-500/90 text-white text-[8px] font-bold text-center py-0.5">
+                        LOW STOCK
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="p-4 flex-1 flex flex-col gap-2">
-                  <h3 className="text-sm font-bold text-gray-900 line-clamp-1">{product.name}</h3>
-                  <div className="flex items-center justify-between mt-auto">
-                    <span className="text-sm font-bold text-[#00AEEF]">{currencySymbol}{product.price?.toLocaleString()}</span>
+
+                  {/* Product Details */}
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <h3 className="text-sm font-bold text-gray-900 line-clamp-1 group-hover:text-[#26A69A] transition-colors">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm font-bold text-[#00AEEF] mt-1">
+                      {currencySymbol}{product.price?.toLocaleString()}
+                    </p>
+
                     {productVariants.length > 0 ? (
-                      <div className="relative group/variants">
-                        <button className="p-2 bg-gray-50 hover:bg-[#00AEEF] hover:text-white rounded-xl transition-all">
-                          <Plus size={16} />
-                        </button>
-                        <div className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 hidden group-hover/variants:block z-10">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">Select Variant</p>
-                          {productVariants.map(v => (
+                      <div className="mt-2">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Size</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {productVariants.slice(0, 4).map(v => (
                             <button
                               key={v.id}
-                              onClick={() => addToCart(product, v)}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-xs flex justify-between items-center"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addToCart(product, v);
+                              }}
+                              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[10px] font-bold hover:border-[#26A69A] hover:text-[#26A69A] hover:bg-[#26A69A]/5 transition-all bg-white shadow-sm"
+                              title={v.name}
                             >
-                              <span>{v.name}</span>
-                              <span className="font-bold">{currencySymbol}{v.price?.toLocaleString()}</span>
+                              {v.name.length > 2 ? v.name.substring(0, 1).toUpperCase() : v.name}
                             </button>
                           ))}
+                          {productVariants.length > 4 && (
+                            <div className="w-8 h-8 rounded-full border border-dashed border-gray-200 flex items-center justify-center text-[8px] font-bold text-gray-400 bg-gray-50">
+                              +{productVariants.length - 4}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : (
-                      <button 
-                        onClick={() => addToCart(product)}
-                        disabled={totalStock <= 0}
-                        className="p-2 bg-gray-50 hover:bg-[#00AEEF] hover:text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Plus size={16} />
-                      </button>
+                      <p className="text-[10px] text-gray-500 mt-2 line-clamp-3 leading-relaxed">
+                        {product.description || 'No description available for this product.'}
+                      </p>
                     )}
                   </div>
                 </div>
+
+                {/* Add to Cart Button */}
+                <button 
+                  onClick={() => productVariants.length === 0 && addToCart(product)}
+                  disabled={totalStock <= 0 || productVariants.length > 0}
+                  className={`w-full py-3 text-xs font-bold transition-all mt-auto flex items-center justify-center gap-2 ${
+                    totalStock > 0 
+                      ? productVariants.length > 0
+                        ? 'bg-gray-50 text-gray-400 cursor-default'
+                        : 'bg-[#26A69A] text-white hover:bg-[#218d83]' 
+                      : 'bg-red-50 text-red-400 cursor-not-allowed'
+                  }`}
+                >
+                  {totalStock > 0 ? (
+                    productVariants.length > 0 ? (
+                      'Select a variant above'
+                    ) : (
+                      <>
+                        <Plus size={14} />
+                        Add to Cart
+                      </>
+                    )
+                  ) : (
+                    'Out of Stock'
+                  )}
+                </button>
               </div>
             );
           })}

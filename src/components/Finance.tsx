@@ -455,7 +455,7 @@ function Finance() {
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="text-sm font-mono font-bold text-[#141414]">{txn.id}</span>
-                        <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">{txn.orderId}</span>
+                        <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">#{txn.orderNumber || txn.orderId?.slice(0, 8)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">

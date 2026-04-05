@@ -457,7 +457,7 @@ export default function Orders() {
       await logActivity(
         editingOrder ? 'Updated Order' : 'Created Order',
         'Orders',
-        `Order #${editingOrder ? editingOrder.id.slice(0, 8) : 'New'} for ${orderForm.customerName}`
+        `Order #${editingOrder ? (editingOrder.orderNumber || editingOrder.id.slice(0, 8)) : 'New'} for ${orderForm.customerName}`
       );
 
       setIsModalOpen(false);
@@ -903,7 +903,7 @@ export default function Orders() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
-                              <span className="text-xs font-bold text-[#141414]">#{order.id.slice(0, 8)}</span>
+                              <span className="text-xs font-bold text-[#141414]">#{order.orderNumber || order.id.slice(0, 8)}</span>
                               <span className="text-[10px] text-[#9ca3af]">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A')}</span>
                             </div>
                           </td>

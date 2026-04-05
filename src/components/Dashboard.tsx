@@ -306,7 +306,7 @@ export default function Dashboard() {
             <tbody className="divide-y divide-gray-50">
               {recentOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-xs font-bold text-gray-900">#{order.id.slice(0, 8)}</td>
+                  <td className="px-6 py-4 text-xs font-bold text-gray-900">#{order.orderNumber || order.id.slice(0, 8)}</td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-gray-900">{order.customerName}</span>
