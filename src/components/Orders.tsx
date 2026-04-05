@@ -1,0 +1,1527 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Search, 
+  Filter, 
+  Download, 
+  Plus, 
+  MoreVertical, 
+  Facebook, 
+  Globe, 
+  Instagram, 
+  MessageCircle,
+  Truck,
+  CreditCard,
+  Calendar,
+  X,
+  Loader2,
+  Trash2,
+  CheckCircle,
+  LayoutGrid,
+  List,
+  ChevronRight,
+  ChevronLeft,
+  Copy,
+  FileText,
+  Send,
+  UserCheck,
+  AlertCircle,
+  Edit,
+  Printer
+} from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import type { DraggableProvided, DraggableStateSnapshot, DroppableProvided } from '@hello-pangea/dnd';
+import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp, doc, updateDoc, deleteDoc, writeBatch, getDocs, getDoc, where, arrayUnion, runTransaction } from '../firebase';
+import { useReactToPrint } from 'react-to-print';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { A5Invoice, POSInvoice } from './InvoiceTemplates';
+import { toast } from 'sonner';
+import { SteadfastService } from '../services/steadfastService';
+import { logActivity } from '../services/activityService';
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
+
+import { useSettings } from '../contexts/SettingsContext';
+
+const ChannelIcon = ({ channel }: { channel: string }) => {
+  switch (channel) {
+    case 'Facebook': return <Facebook size={14} className="text-[#2563eb]" />;
+    case 'Website': return <Globe size={14} className="text-[#4b5563]" />;
+    case 'Instagram': return <Instagram size={14} className="text-[#db2777]" />;
+    case 'Messenger': return <MessageCircle size={14} className="text-[#60a5fa]" />;
+    default: return <Globe size={14} />;
+  }
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    'pending': 'bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]',
+    'confirmed': 'bg-[#eff6ff] text-[#2563eb] border-[#dbeafe]',
+    'processing': 'bg-[#eef2ff] text-[#4f46e5] border-[#e0e7ff]',
+    'packed': 'bg-[#fefce8] text-[#ca8a04] border-[#fef9c3]',
+    'shipped': 'bg-[#faf5ff] text-[#9333ea] border-[#f3e8ff]',
+    'out_for_delivery': 'bg-[#ecfeff] text-[#0891b2] border-[#cffafe]',
+    'delivered': 'bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]',
+    'partial_delivered': 'bg-[#f0fdfa] text-[#0d9488] border-[#ccfbf1]',
+    'cancelled': 'bg-[#fef2f2] text-[#dc2626] border-[#fee2e2]',
+    'returned': 'bg-[#f9fafb] text-[#4b5563] border-[#f3f4f6]',
+  };
+  return (
+    <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md border ${colors[status] || colors['pending']}`}>
+      {status.replace(/_/g, ' ')}
+    </span>
+  );
+};
+
+export default function Orders() {
+  const { settings, currencySymbol } = useSettings();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('All');
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<any | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [variants, setVariants] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [companySettings, setCompanySettings] = useState<any>(null);
+  const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<any>(null);
+  const [printType, setPrintType] = useState<'a5' | 'pos' | null>(null);
+  const printRef = React.useRef<HTMLDivElement>(null);
+  const bulkPrintRef = React.useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    onBeforePrint: () => {
+      if (!printType) {
+        return Promise.reject("No print type selected");
+      }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 500);
+      });
+    },
+    onAfterPrint: () => {
+      setSelectedOrderForPrint(null);
+      setPrintType(null);
+    },
+    onPrintError: (errorLocation, error) => {
+      console.error("Print error:", errorLocation, error);
+      // Fallback to manual window.print if react-to-print fails
+      if (printType) {
+        toast.error("Standard print failed. Attempting manual print...");
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      }
+    }
+  });
+
+  const handleBulkPrint = useReactToPrint({
+    contentRef: bulkPrintRef,
+    onBeforePrint: () => {
+      return new Promise((resolve) => {
+        setTimeout(resolve, 500);
+      });
+    },
+    onAfterPrint: () => {
+      setSelectedOrders([]);
+    },
+    onPrintError: (errorLocation, error) => {
+      console.error("Bulk Print error:", errorLocation, error);
+      toast.error("Bulk print failed. Attempting manual print...");
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
+  });
+
+  const handleDownloadPDF = async () => {
+    if (!printRef.current || !selectedOrderForPrint) return;
+    try {
+      const canvas = await html2canvas(printRef.current, { 
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: printType === 'a5' ? 'a5' : [80, 200]
+      });
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Invoice-${selectedOrderForPrint.orderNumber || selectedOrderForPrint.id.slice(0, 8)}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  };
+
+  const handleBulkDownloadPDF = async () => {
+    if (!bulkPrintRef.current || selectedOrders.length === 0) return;
+    setLoading(true);
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a5'
+      });
+
+      const orderElements = bulkPrintRef.current.children;
+      for (let i = 0; i < orderElements.length; i++) {
+        const element = orderElements[i] as HTMLElement;
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      }
+
+      pdf.save(`Bulk-Invoices-${new Date().getTime()}.pdf`);
+    } catch (error) {
+      console.error("Error generating bulk PDF:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [orderForm, setOrderForm] = useState({
+    customerName: '',
+    customerPhone: '',
+    customerAddress: '',
+    customerCity: 'Dhaka',
+    customerZone: 'Inside Dhaka',
+    district: '',
+    area: '',
+    landmark: '',
+    subtotal: 0,
+    deliveryCharge: 60,
+    discount: 0,
+    totalAmount: 0,
+    paidAmount: 0,
+    dueAmount: 0,
+    advanceAmount: 0,
+    channel: 'Facebook',
+    paymentMethod: 'COD',
+    status: 'pending',
+    items: [] as any[],
+    warehouseId: '',
+    notes: '',
+    tags: '',
+    courierId: '',
+    courierName: '',
+    trackingNumber: ''
+  });
+  const [newItem, setNewItem] = useState({ productId: '', variantId: '', quantity: 1, price: 0 });
+
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const newStatus = destination.droppableId;
+    await handleUpdateStatus(draggableId, newStatus);
+  };
+
+  const tabs = ['All', 'pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
+  const statuses = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'partial_delivered', 'cancelled', 'returned'];
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'orders'));
+
+    const unsubProducts = onSnapshot(collection(db, 'products'), (s) => setProducts(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => handleFirestoreError(e, OperationType.LIST, 'products'));
+    const unsubVariants = onSnapshot(collection(db, 'variants'), (s) => setVariants(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => handleFirestoreError(e, OperationType.LIST, 'variants'));
+    const unsubWarehouses = onSnapshot(collection(db, 'warehouses'), (s) => setWarehouses(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => handleFirestoreError(e, OperationType.LIST, 'warehouses'));
+    const unsubInventory = onSnapshot(collection(db, 'inventory'), (s) => setInventory(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => handleFirestoreError(e, OperationType.LIST, 'inventory'));
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'company'), (s) => setCompanySettings(s.data()), (e) => handleFirestoreError(e, OperationType.GET, 'settings/company'));
+
+    return () => {
+      unsubscribe();
+      unsubProducts();
+      unsubVariants();
+      unsubWarehouses();
+      unsubInventory();
+      unsubSettings();
+    };
+  }, []);
+
+  const handleZoneChange = (zone: string) => {
+    let charge = 60;
+    if (zone === 'Outside Dhaka') charge = 120;
+    if (zone === 'Sub Dhaka') charge = 100;
+    setOrderForm({ ...orderForm, customerZone: zone, deliveryCharge: charge });
+  };
+  const handleOpenAddModal = () => {
+    setEditingOrder(null);
+    setOrderForm({
+      customerName: '',
+      customerPhone: '',
+      customerAddress: '',
+      customerCity: 'Dhaka',
+      customerZone: 'Inside Dhaka',
+      district: '',
+      area: '',
+      landmark: '',
+      subtotal: 0,
+      deliveryCharge: 60,
+      discount: 0,
+      totalAmount: 0,
+      paidAmount: 0,
+      dueAmount: 0,
+      advanceAmount: 0,
+      channel: 'Facebook',
+      paymentMethod: 'COD',
+      status: 'pending',
+      items: [],
+      warehouseId: '',
+      notes: '',
+      tags: '',
+      courierId: '',
+      courierName: '',
+      trackingNumber: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (order: any) => {
+    setEditingOrder(order);
+    setOrderForm({
+      customerName: order.customerName || '',
+      customerPhone: order.customerPhone || '',
+      customerAddress: order.customerAddress || '',
+      district: order.district || '',
+      area: order.area || '',
+      landmark: order.landmark || '',
+      subtotal: order.subtotal || 0,
+      deliveryCharge: order.deliveryCharge || 0,
+      discount: order.discount || 0,
+      totalAmount: order.totalAmount || 0,
+      paidAmount: order.paidAmount || 0,
+      dueAmount: order.dueAmount || 0,
+      advanceAmount: order.advanceAmount || 0,
+      channel: order.channel || 'Facebook',
+      paymentMethod: order.paymentMethod || 'COD',
+      status: order.status || 'pending',
+      items: order.items || [],
+      warehouseId: order.warehouseId || '',
+      notes: order.notes || '',
+      courierId: order.courierId || '',
+      courierName: order.courierName || '',
+      trackingNumber: order.trackingNumber || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const calculateTotals = (items: any[], deliveryCharge: number, discount: number, paidAmount: number) => {
+    const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.price), 0);
+    const totalAmount = subtotal + deliveryCharge - discount;
+    const dueAmount = totalAmount - paidAmount;
+    return { subtotal, totalAmount, dueAmount };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth.currentUser) return;
+
+    try {
+      const { subtotal, totalAmount, dueAmount } = calculateTotals(orderForm.items, orderForm.deliveryCharge, orderForm.discount, orderForm.paidAmount);
+      
+      const logEntry = {
+        user: auth.currentUser.email,
+        action: editingOrder ? 'Updated Order' : 'Created Order',
+        timestamp: Timestamp.now(),
+        details: editingOrder ? `Status: ${orderForm.status}` : 'Initial creation'
+      };
+
+      const data = {
+        ...orderForm,
+        subtotal,
+        totalAmount,
+        dueAmount,
+        logs: editingOrder ? [...(editingOrder.logs || []), logEntry] : [logEntry],
+        updatedAt: serverTimestamp()
+      };
+
+      await runTransaction(db, async (transaction) => {
+        // 1. ALL READS FIRST
+        const customerQuery = query(collection(db, 'customers'), where('phone', '==', orderForm.customerPhone));
+        const customerSnap = await getDocs(customerQuery);
+        
+        const settingsRef = doc(db, 'settings', 'company');
+        const settingsSnap = await transaction.get(settingsRef);
+
+        const inventorySnaps: { item: any; snap: any }[] = [];
+        if (!editingOrder && orderForm.status !== 'cancelled' && orderForm.status !== 'returned') {
+          for (const item of orderForm.items) {
+            const invQuery = query(
+              collection(db, 'inventory'),
+              where('productId', '==', item.productId),
+              where('variantId', '==', item.variantId || ''),
+              where('warehouseId', '==', orderForm.warehouseId)
+            );
+            const invSnap = await getDocs(invQuery);
+            inventorySnaps.push({ item, snap: invSnap });
+          }
+        }
+
+        // 2. ALL WRITES SECOND
+        let customerId = '';
+        if (customerSnap.empty) {
+          const customerRef = doc(collection(db, 'customers'));
+          transaction.set(customerRef, {
+            name: orderForm.customerName,
+            phone: orderForm.customerPhone,
+            address: orderForm.customerAddress,
+            orderCount: 1,
+            totalSpent: totalAmount,
+            lastOrderDate: serverTimestamp(),
+            uid: auth.currentUser!.uid,
+            createdAt: serverTimestamp()
+          });
+          customerId = customerRef.id;
+        } else {
+          const customerDoc = customerSnap.docs[0];
+          customerId = customerDoc.id;
+          transaction.update(customerDoc.ref, {
+            orderCount: (customerDoc.data().orderCount || 0) + (editingOrder ? 0 : 1),
+            totalSpent: (customerDoc.data().totalSpent || 0) + (editingOrder ? 0 : totalAmount),
+            lastOrderDate: serverTimestamp()
+          });
+        }
+
+        const finalData = { ...data, customerId };
+
+        if (editingOrder) {
+          transaction.update(doc(db, 'orders', editingOrder.id), finalData);
+        } else {
+          let nextOrderNumber = 1001;
+          if (settingsSnap.exists() && settingsSnap.data().orderCounter) {
+            nextOrderNumber = settingsSnap.data().orderCounter + 1;
+          }
+          transaction.set(settingsRef, { orderCounter: nextOrderNumber }, { merge: true });
+
+          const orderRef = doc(collection(db, 'orders'));
+          transaction.set(orderRef, {
+            ...finalData,
+            orderNumber: nextOrderNumber,
+            uid: auth.currentUser!.uid,
+            createdAt: serverTimestamp()
+          });
+
+          // Deduct Inventory
+          for (const invData of inventorySnaps) {
+            const { item, snap } = invData;
+            if (!snap.empty) {
+              const invDoc = snap.docs[0];
+              const currentQty = invDoc.data().quantity;
+              const newQty = currentQty - item.quantity;
+              transaction.update(invDoc.ref, { quantity: newQty, updatedAt: serverTimestamp() });
+
+              // Log
+              const logRef = doc(collection(db, 'inventoryLogs'));
+              transaction.set(logRef, {
+                productId: item.productId,
+                variantId: item.variantId || '',
+                warehouseId: orderForm.warehouseId,
+                type: 'out',
+                quantityChange: -item.quantity,
+                newQuantity: newQty,
+                reason: `Order #${nextOrderNumber}`,
+                uid: auth.currentUser!.uid,
+                createdAt: serverTimestamp()
+              });
+            }
+          }
+        }
+      });
+
+      await logActivity(
+        editingOrder ? 'Updated Order' : 'Created Order',
+        'Orders',
+        `Order #${editingOrder ? editingOrder.id.slice(0, 8) : 'New'} for ${orderForm.customerName}`
+      );
+
+      setIsModalOpen(false);
+    } catch (error) {
+      handleFirestoreError(error, editingOrder ? OperationType.UPDATE : OperationType.CREATE, 'orders');
+    }
+  };
+
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      const orderSnap = await getDoc(orderRef);
+      const orderData = orderSnap.data();
+
+      if (!orderData) return;
+
+      const batch = writeBatch(db);
+      batch.update(orderRef, {
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      });
+
+      // Stock Restoration Logic
+      if ((newStatus === 'Cancelled' || newStatus === 'Returned') && orderData.status !== 'Cancelled' && orderData.status !== 'Returned') {
+        for (const item of orderData.items) {
+          const invQuery = query(
+            collection(db, 'inventory'),
+            where('productId', '==', item.productId),
+            where('variantId', '==', item.variantId || ''),
+            where('warehouseId', '==', orderData.warehouseId)
+          );
+          const invSnap = await getDocs(invQuery);
+          
+          if (!invSnap.empty) {
+            const invDoc = invSnap.docs[0];
+            const currentQty = invDoc.data().quantity;
+            const newQty = currentQty + item.quantity;
+            batch.update(invDoc.ref, { quantity: newQty, updatedAt: serverTimestamp() });
+
+            // Log
+            const logRef = doc(collection(db, 'inventoryLogs'));
+            batch.set(logRef, {
+              productId: item.productId,
+              variantId: item.variantId || '',
+              warehouseId: orderData.warehouseId,
+              type: 'in',
+              quantityChange: item.quantity,
+              newQuantity: newQty,
+              reason: `Order #${orderId.slice(0, 8)} ${newStatus}`,
+              uid: auth.currentUser?.uid,
+              createdAt: serverTimestamp()
+            });
+          }
+        }
+      }
+
+      await batch.commit();
+      await logActivity('Updated Order Status', 'Orders', `Order #${orderId.slice(0, 8)} status changed to ${newStatus}`);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `orders/${orderId}`);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm('Are you sure you want to delete this order?')) return;
+    try {
+      await deleteDoc(doc(db, 'orders', orderId));
+      await logActivity('Deleted Order', 'Orders', `Order #${orderId.slice(0, 8)} removed`);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `orders/${orderId}`);
+    }
+  };
+
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    if (!auth.currentUser || selectedOrders.length === 0) return;
+    try {
+      const batch = writeBatch(db);
+      selectedOrders.forEach(id => {
+        batch.update(doc(db, 'orders', id), { 
+          status: newStatus, 
+          updatedAt: serverTimestamp(),
+          logs: arrayUnion({
+            user: auth.currentUser?.email,
+            action: 'Bulk Status Update',
+            timestamp: Timestamp.now(),
+            details: `New Status: ${newStatus}`
+          })
+        });
+      });
+      await batch.commit();
+      setSelectedOrders([]);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'orders');
+    }
+  };
+
+  const handleSendToSteadfast = async (order: any) => {
+    if (!settings.steadfastApiKey || !settings.steadfastSecretKey) {
+      toast.error('Steadfast API keys are not configured. Please go to Settings > Logistics.');
+      return;
+    }
+
+    if (['shipped', 'delivered', 'cancelled', 'returned'].includes(order.status)) {
+      toast.error(`Cannot send order with status: ${order.status.replace(/_/g, ' ')}`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const steadfast = new SteadfastService(settings.steadfastApiKey, settings.steadfastSecretKey);
+      
+      const sanitizePhone = (phone: string) => {
+        const cleaned = phone.replace(/\D/g, '');
+        return cleaned.length > 11 ? cleaned.slice(-11) : cleaned;
+      };
+
+      const phone = sanitizePhone(order.customerPhone);
+      if (phone.length !== 11 || !phone.startsWith('01')) {
+        toast.error(`Invalid phone number: ${phone}. It must be 11 digits and start with 01.`);
+        setLoading(false);
+        return;
+      }
+
+      if (!order.customerName || order.customerName.trim().length < 2) {
+        toast.error('Customer name is required (min 2 chars).');
+        setLoading(false);
+        return;
+      }
+
+      if (!order.customerAddress || order.customerAddress.trim().length < 10) {
+        toast.error('Customer address is too short. Steadfast requires a detailed address (min 10 chars).');
+        setLoading(false);
+        return;
+      }
+
+      const response = await steadfast.createOrder({
+        invoice: order.orderNumber?.toString() || order.id.slice(0, 8),
+        recipient_name: order.customerName,
+        recipient_phone: phone,
+        recipient_address: order.customerAddress,
+        cod_amount: Math.round(order.dueAmount || 0),
+        note: order.notes || ''
+      });
+
+      if (response.status === 200 && response.consignment) {
+        const trackingCode = response.consignment.tracking_code;
+        await updateDoc(doc(db, 'orders', order.id), {
+          courierName: 'Steadfast',
+          trackingNumber: trackingCode,
+          status: 'shipped',
+          updatedAt: serverTimestamp(),
+          logs: arrayUnion({
+            user: auth.currentUser?.email,
+            action: 'Sent to Steadfast',
+            timestamp: Timestamp.now(),
+            details: `Tracking Code: ${trackingCode}`
+          })
+        });
+
+        // Add to deliveries collection for tracking in Logistics
+        await addDoc(collection(db, 'deliveries'), {
+          id: trackingCode,
+          orderId: order.id,
+          courier: 'Steadfast',
+          status: 'Pending Pickup',
+          location: order.customerZone || 'Processing',
+          eta: '2-3 Days',
+          createdAt: serverTimestamp(),
+          uid: auth.currentUser?.uid
+        });
+
+        toast.success(`Order sent to Steadfast! Tracking: ${trackingCode}`);
+      }
+    } catch (error: any) {
+      console.error('Steadfast error:', error);
+      toast.error(`Failed to send to Steadfast: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkSendToSteadfast = async () => {
+    if (!settings.steadfastApiKey || !settings.steadfastSecretKey) {
+      toast.error('Steadfast API keys are not configured. Please go to Settings > Logistics.');
+      return;
+    }
+
+    const eligibleOrders = orders.filter(o => 
+      selectedOrders.includes(o.id) && 
+      !['shipped', 'delivered', 'cancelled', 'returned'].includes(o.status)
+    );
+
+    if (eligibleOrders.length === 0) {
+      toast.error('No eligible orders selected (must be pending/processing).');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to send ${eligibleOrders.length} orders to Steadfast?`)) return;
+
+    setLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const order of eligibleOrders) {
+      try {
+        const steadfast = new SteadfastService(settings.steadfastApiKey, settings.steadfastSecretKey);
+        const sanitizePhone = (phone: string) => {
+          const cleaned = phone.replace(/\D/g, '');
+          return cleaned.length > 11 ? cleaned.slice(-11) : cleaned;
+        };
+
+        const phone = sanitizePhone(order.customerPhone);
+        if (phone.length !== 11 || !phone.startsWith('01')) {
+          failCount++;
+          continue;
+        }
+
+        if (!order.customerName || order.customerName.trim().length < 2 || !order.customerAddress || order.customerAddress.trim().length < 10) {
+          failCount++;
+          continue;
+        }
+
+        const response = await steadfast.createOrder({
+          invoice: order.orderNumber?.toString() || order.id.slice(0, 8),
+          recipient_name: order.customerName,
+          recipient_phone: phone,
+          recipient_address: order.customerAddress,
+          cod_amount: Math.round(order.dueAmount || 0),
+          note: order.notes || ''
+        });
+
+        if (response.status === 200 && response.consignment) {
+          const trackingCode = response.consignment.tracking_code;
+          await updateDoc(doc(db, 'orders', order.id), {
+            courierName: 'Steadfast',
+            trackingNumber: trackingCode,
+            status: 'shipped',
+            updatedAt: serverTimestamp(),
+            logs: arrayUnion({
+              user: auth.currentUser?.email,
+              action: 'Sent to Steadfast (Bulk)',
+              timestamp: Timestamp.now(),
+              details: `Tracking Code: ${trackingCode}`
+            })
+          });
+
+          // Add to deliveries collection
+          await addDoc(collection(db, 'deliveries'), {
+            id: trackingCode,
+            orderId: order.id,
+            courier: 'Steadfast',
+            status: 'Pending Pickup',
+            location: order.customerZone || 'Processing',
+            eta: '2-3 Days',
+            createdAt: serverTimestamp(),
+            uid: auth.currentUser?.uid
+          });
+
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`Steadfast error for order ${order.id}:`, error);
+        failCount++;
+      }
+    }
+
+    setLoading(false);
+    setSelectedOrders([]);
+    toast.success(`Bulk process complete. Success: ${successCount}, Failed: ${failCount}`);
+  };
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = 
+      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customerPhone?.includes(searchTerm);
+    
+    const matchesTab = activeTab === 'All' || order.status === activeTab;
+    
+    return matchesSearch && matchesTab;
+  });
+
+  return (
+    <div className="p-8 space-y-8 max-w-7xl mx-auto no-print">
+      <div className="flex justify-between items-start">
+        <div className="space-y-4 flex-1">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold text-[#141414] tracking-tight">Order Management</h2>
+            <p className="text-sm text-[#6b7280]">Manage your F-Commerce and website orders seamlessly.</p>
+          </div>
+          
+          <div className="max-w-md relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" size={16} />
+            <input 
+              type="text"
+              placeholder="Search by Name, Phone, ID..."
+              className="w-full pl-10 pr-4 py-2.5 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-sm focus:border-[#00AEEF] outline-none transition-all shadow-sm"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setViewMode(viewMode === 'table' ? 'kanban' : 'table')}
+            className="flex items-center gap-2 px-4 py-2 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-sm font-bold hover:bg-[#f9fafb] transition-all shadow-sm"
+          >
+            {viewMode === 'table' ? <LayoutGrid size={18} /> : <List size={18} />}
+            {viewMode === 'table' ? 'Kanban View' : 'Table View'}
+          </button>
+          <button 
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 px-6 py-2 bg-[#141414] text-white rounded-xl text-sm font-bold hover:bg-black transition-all shadow-lg hover:shadow-xl"
+          >
+            <Plus size={18} />
+            New Order
+          </button>
+        </div>
+      </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedOrders.length > 0 && (
+        <div className="bg-[#141414] text-white p-4 rounded-2xl flex items-center justify-between shadow-2xl animate-in slide-in-from-top-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-bold">{selectedOrders.length} Orders Selected</span>
+            <div className="h-4 w-px bg-[#ffffff33]" />
+            <select 
+              onChange={(e) => handleBulkStatusUpdate(e.target.value)}
+              className="bg-[#ffffff1a] border border-[#ffffff33] rounded-lg px-3 py-1 text-xs font-bold outline-none"
+            >
+              <option value="" className="text-black">Update Status</option>
+              {statuses.map(s => <option key={s} value={s} className="text-black">{s.replace(/_/g, ' ')}</option>)}
+            </select>
+            <button 
+              onClick={handleBulkSendToSteadfast}
+              className="flex items-center gap-2 px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-lg text-xs font-bold transition-all"
+            >
+              <Truck size={14} /> Send to Steadfast
+            </button>
+            <button 
+              onClick={handleBulkDownloadPDF}
+              className="flex items-center gap-2 px-3 py-1 bg-[#00AEEF] hover:bg-[#0096ce] rounded-lg text-xs font-bold transition-all"
+            >
+              <Download size={14} /> Download Invoices
+            </button>
+            <button 
+              onClick={handleBulkPrint}
+              className="flex items-center gap-2 px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-lg text-xs font-bold transition-all"
+            >
+              <Printer size={14} /> Print Invoices
+            </button>
+            <button 
+              onClick={() => {
+                toast.info("Opening system print dialog for bulk invoices...");
+                setTimeout(() => window.print(), 500);
+              }}
+              className="flex items-center gap-2 px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-lg text-xs font-bold transition-all"
+              title="Use this if the standard print button fails"
+            >
+              <Printer size={14} /> Manual Bulk
+            </button>
+          </div>
+          <button 
+            onClick={() => setSelectedOrders([])}
+            className="p-2 hover:bg-[#ffffff1a] rounded-full transition-all"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6">
+        <div className="space-y-6">
+          <div className="bg-[#ffffff] p-2 rounded-2xl border border-[#f3f4f6] shadow-sm flex gap-1 overflow-x-auto no-scrollbar">
+            {tabs.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  activeTab === tab 
+                    ? 'bg-[#141414] text-white shadow-md' 
+                    : 'text-[#6b7280] hover:bg-[#f3f4f6]'
+                }`}
+              >
+                {tab.replace(/_/g, ' ')}
+              </button>
+            ))}
+          </div>
+
+          {viewMode === 'table' ? (
+            <div className="bg-[#ffffff] rounded-3xl border border-[#f3f4f6] shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#f9fafb]">
+                      <th className="px-6 py-4">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-[#d1d5db]"
+                          checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedOrders(filteredOrders.map(o => o.id));
+                            else setSelectedOrders([]);
+                          }}
+                        />
+                      </th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Order ID</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Customer</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Items</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Total</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#f9fafb]">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-12 text-center">
+                          <Loader2 className="animate-spin mx-auto text-[#9ca3af]" />
+                        </td>
+                      </tr>
+                    ) : filteredOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-12 text-center text-[#9ca3af] text-sm">
+                          No orders found matching your criteria.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredOrders.map((order) => (
+                        <tr key={order.id} className="hover:bg-[#f9fafb]/50 transition-colors group">
+                          <td className="px-6 py-4">
+                            <input 
+                              type="checkbox" 
+                              className="rounded border-[#d1d5db]"
+                              checked={selectedOrders.includes(order.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedOrders([...selectedOrders, order.id]);
+                                else setSelectedOrders(selectedOrders.filter(id => id !== order.id));
+                              }}
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-[#141414]">#{order.id.slice(0, 8)}</span>
+                              <span className="text-[10px] text-[#9ca3af]">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A')}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-[#141414]">{order.customerName}</span>
+                              <span className="text-[10px] text-[#9ca3af]">{order.customerPhone}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-xs text-[#6b7280]">{order.items?.length || 0} items</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-[#141414]">{currencySymbol}{order.totalAmount?.toLocaleString()}</span>
+                              {order.dueAmount > 0 && <span className="text-[10px] text-[#f97316] font-bold">Due: {currencySymbol}{order.dueAmount.toLocaleString()}</span>}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusBadge status={order.status} />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => {
+                                  setSelectedOrderForPrint(order);
+                                  setPrintType('a5');
+                                }}
+                                className="p-2 hover:bg-[#ffffff] rounded-lg text-[#9ca3af] hover:text-[#00AEEF] transition-colors shadow-sm border border-transparent hover:border-[#f3f4f6]"
+                                title="Print Invoice"
+                              >
+                                <Printer size={14} />
+                              </button>
+                              <button 
+                                onClick={() => handleSendToSteadfast(order)}
+                                className="p-2 hover:bg-[#ffffff] rounded-lg text-[#9ca3af] hover:text-[#16a34a] transition-colors shadow-sm border border-transparent hover:border-[#f3f4f6]"
+                                title="Send to Steadfast"
+                              >
+                                <Send size={14} />
+                              </button>
+                              <button 
+                                onClick={() => handleOpenEditModal(order)}
+                                className="p-2 hover:bg-[#ffffff] rounded-lg text-[#9ca3af] hover:text-[#141414] transition-colors shadow-sm border border-transparent hover:border-[#f3f4f6]"
+                              >
+                                <Edit size={14} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteOrder(order.id)}
+                                className="p-2 hover:bg-[#fef2f2] rounded-lg text-[#9ca3af] hover:text-[#dc2626] transition-colors shadow-sm border border-transparent hover:border-[#fee2e2]"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <DragDropContext onDragEnd={onDragEnd}>
+              <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar min-h-[600px]">
+                {statuses.map(status => (
+                  <Droppable key={status} droppableId={status}>
+                    {(provided: DroppableProvided) => (
+                      <div 
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="flex-shrink-0 w-80 space-y-4"
+                      >
+                        <div className="flex items-center justify-between px-2">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              status === 'pending' ? 'bg-[#fb923c]' :
+                              status === 'delivered' ? 'bg-[#4ade80]' :
+                              status === 'cancelled' ? 'bg-[#f87171]' : 'bg-[#60a5fa]'
+                            }`} />
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-[#6b7280]">{status.replace(/_/g, ' ')}</h3>
+                            <span className="px-2 py-0.5 bg-[#f3f4f6] rounded-full text-[10px] font-bold text-[#6b7280]">
+                              {orders.filter(o => o.status === status).length}
+                            </span>
+                          </div>
+                          <button className="p-1 hover:bg-[#f3f4f6] rounded-md transition-colors">
+                            <Plus size={14} className="text-[#9ca3af]" />
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3 min-h-[100px]">
+                          {orders.filter(o => o.status === status).map((order, index) => {
+                            const DraggableAny = Draggable as any;
+                            return (
+                              <DraggableAny key={order.id} draggableId={order.id} index={index}>
+                                {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
+                                  <div 
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    onClick={() => handleOpenEditModal(order)}
+                                    className={`bg-[#ffffff] p-4 rounded-2xl border border-[#f3f4f6] shadow-sm hover:shadow-md transition-all cursor-pointer group ${
+                                      snapshot.isDragging ? 'shadow-2xl ring-2 ring-[#00AEEF]/20 rotate-2 scale-105' : ''
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-start mb-2">
+                                      <span className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">
+                                        #ORD-{order.orderNumber || order.id.slice(0, 8)}
+                                      </span>
+                                      <span className="text-[10px] font-bold text-[#141414] bg-[#f9fafb] px-2 py-0.5 rounded-md">{order.channel}</span>
+                                    </div>
+                                    <h4 className="text-sm font-bold text-[#141414] mb-1">{order.customerName}</h4>
+                                    <p className="text-xs text-[#6b7280] mb-3">{order.customerPhone}</p>
+                                    <div className="flex justify-between items-center pt-3 border-t border-[#f9fafb]">
+                                      <div className="flex items-center gap-1">
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedOrderForPrint(order);
+                                            setPrintType('a5');
+                                          }}
+                                          className="p-1 hover:bg-[#e5e7eb] rounded transition-colors text-[#6b7280]"
+                                          title="Print Invoice"
+                                        >
+                                          <Printer size={12} />
+                                        </button>
+                                        <span className="text-sm font-bold">{currencySymbol}{order.totalAmount?.toLocaleString()}</span>
+                                      </div>
+                                      <div className="flex -space-x-2">
+                                        {order.items?.slice(0, 3).map((_: any, i: number) => (
+                                          <div key={i} className="w-6 h-6 rounded-full bg-[#f3f4f6] border-2 border-[#ffffff] flex items-center justify-center text-[8px] font-bold">
+                                            {i === 2 && order.items.length > 2 ? `+${order.items.length - 2}` : i + 1}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </DraggableAny>
+                            );
+                          })}
+                          {provided.placeholder}
+                          {orders.filter(o => o.status === status).length === 0 && (
+                            <div className="h-24 border-2 border-dashed border-[#f3f4f6] rounded-2xl flex items-center justify-center text-xs text-[#d1d5db]">
+                              No orders
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Droppable>
+                ))}
+              </div>
+            </DragDropContext>
+          )}
+        </div>
+      </div>
+
+      {/* Add/Edit Order Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-[#00000080] backdrop-blur-sm z-50 flex items-center justify-center p-6 no-print">
+          <div className="bg-[#ffffff] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-[#f3f4f6] flex items-center justify-between bg-[#f9fafb]/50">
+              <h3 className="text-lg font-bold text-[#141414]">
+                {editingOrder ? `Edit Order #ORD-${editingOrder.orderNumber || editingOrder.id.slice(0, 8)}` : 'New Order'}
+              </h3>
+              <div className="flex items-center gap-2">
+                {editingOrder && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setSelectedOrderForPrint(editingOrder);
+                      setPrintType('a5');
+                    }}
+                    className="p-2 hover:bg-[#ffffff] rounded-full transition-colors text-[#9ca3af] hover:text-[#00AEEF]"
+                    title="Print Invoice"
+                  >
+                    <Printer size={20} />
+                  </button>
+                )}
+                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-[#ffffff] rounded-full transition-colors">
+                  <X size={20} className="text-[#9ca3af]" />
+                </button>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[85vh] overflow-y-auto">
+              {/* Customer Section */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
+                  <UserCheck size={14} /> Customer Information
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Customer Name *</label>
+                    <input 
+                      required
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.customerName}
+                      onChange={e => setOrderForm({...orderForm, customerName: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Phone Number *</label>
+                    <input 
+                      required
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.customerPhone}
+                      onChange={e => setOrderForm({...orderForm, customerPhone: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Full Address</label>
+                  <textarea 
+                    className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all resize-none"
+                    rows={2}
+                    value={orderForm.customerAddress}
+                    onChange={e => setOrderForm({...orderForm, customerAddress: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">District</label>
+                    <input 
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.district}
+                      onChange={e => setOrderForm({...orderForm, district: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Area</label>
+                    <input 
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.area}
+                      onChange={e => setOrderForm({...orderForm, area: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Landmark</label>
+                    <input 
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.landmark}
+                      onChange={e => setOrderForm({...orderForm, landmark: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Section */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
+                  <Truck size={14} /> Order Items & Fulfillment
+                </h4>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Fulfillment Warehouse</label>
+                  <select 
+                    required
+                    className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                    value={orderForm.warehouseId}
+                    onChange={e => setOrderForm({...orderForm, warehouseId: e.target.value})}
+                  >
+                    <option value="">Select Warehouse</option>
+                    {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  </select>
+                </div>
+
+                <div className="bg-[#f9fafb] p-4 rounded-xl space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <select 
+                      className="p-2 bg-[#ffffff] border border-[#f3f4f6] rounded-lg text-xs"
+                      value={newItem.productId}
+                      onChange={e => {
+                        const p = products.find(prod => prod.id === e.target.value);
+                        setNewItem({...newItem, productId: e.target.value, variantId: '', price: p?.price || 0});
+                      }}
+                    >
+                      <option value="">Product</option>
+                      {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                    {newItem.productId && products.find(p => p.id === newItem.productId)?.type === 'variable' && (
+                      <select 
+                        className="p-2 bg-[#ffffff] border border-[#f3f4f6] rounded-lg text-xs"
+                        value={newItem.variantId}
+                        onChange={e => {
+                          const v = variants.find(varnt => varnt.id === e.target.value);
+                          setNewItem({...newItem, variantId: e.target.value, price: v?.price || newItem.price});
+                        }}
+                      >
+                        <option value="">Variant</option>
+                        {variants.filter(v => v.productId === newItem.productId).map(v => (
+                          <option key={v.id} value={v.id}>{v.size} / {v.color}</option>
+                        ))}
+                      </select>
+                    )}
+                    <div className="flex gap-2">
+                      <input 
+                        type="number" 
+                        placeholder="Qty" 
+                        className="w-16 p-2 bg-[#ffffff] border border-[#f3f4f6] rounded-lg text-xs"
+                        value={newItem.quantity || 0}
+                        onChange={e => setNewItem({...newItem, quantity: parseInt(e.target.value) || 0})}
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (!newItem.productId) return;
+                          const p = products.find(prod => prod.id === newItem.productId);
+                          const v = variants.find(varnt => varnt.id === newItem.variantId);
+                          const itemWithInfo = {
+                            ...newItem,
+                            name: p?.name || 'Unknown Product',
+                            variant: v ? `${v.size} / ${v.color}` : ''
+                          };
+                          setOrderForm({...orderForm, items: [...orderForm.items, itemWithInfo]});
+                          setNewItem({ productId: '', variantId: '', quantity: 1, price: 0 });
+                        }}
+                        className="flex-1 bg-[#141414] text-white rounded-lg text-xs font-bold"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {orderForm.items.map((item, idx) => {
+                      const p = products.find(prod => prod.id === item.productId);
+                      const v = variants.find(varnt => varnt.id === item.variantId);
+                      return (
+                        <div key={idx} className="flex justify-between items-center bg-[#ffffff] p-3 rounded-lg border border-[#f3f4f6] text-xs">
+                          <div className="flex flex-col">
+                            <span className="font-bold">{p?.name}</span>
+                            {v && <span className="text-[10px] text-[#9ca3af]">{v.size} / {v.color}</span>}
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span>x{item.quantity}</span>
+                            <span className="font-bold">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</span>
+                            <button 
+                              type="button"
+                              onClick={() => setOrderForm({...orderForm, items: orderForm.items.filter((_, i) => i !== idx)})}
+                              className="text-[#dc2626] hover:text-[#b91c1c]"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment & Charges Section */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
+                  <CreditCard size={14} /> Payment & Charges
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Delivery Zone</label>
+                    <select 
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.customerZone}
+                      onChange={e => handleZoneChange(e.target.value)}
+                    >
+                      <option value="Inside Dhaka">Inside Dhaka</option>
+                      <option value="Sub Dhaka">Sub Dhaka (Savar, Gazipur, etc.)</option>
+                      <option value="Outside Dhaka">Outside Dhaka</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Delivery Charge</label>
+                    <input 
+                      type="number"
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all font-bold text-blue-600"
+                      value={orderForm.deliveryCharge}
+                      onChange={e => setOrderForm({...orderForm, deliveryCharge: parseFloat(e.target.value) || 0})}
+                    />
+                  </div>
+                </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Discount</label>
+                    <input 
+                      type="number"
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.discount}
+                      onChange={e => setOrderForm({...orderForm, discount: parseFloat(e.target.value) || 0})}
+                    />
+                  </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Paid Amount (Advance)</label>
+                    <input 
+                      type="number"
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.paidAmount}
+                      onChange={e => setOrderForm({...orderForm, paidAmount: parseFloat(e.target.value) || 0})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Payment Method</label>
+                    <select 
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.paymentMethod}
+                      onChange={e => setOrderForm({...orderForm, paymentMethod: e.target.value as any})}
+                    >
+                      <option value="COD">Cash on Delivery</option>
+                      <option value="bKash">bKash</option>
+                      <option value="Nagad">Nagad</option>
+                      <option value="Rocket">Rocket</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Info Section */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
+                  <AlertCircle size={14} /> Additional Information
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Order Tags</label>
+                    <input 
+                      type="text"
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      placeholder="e.g. VIP, Urgent, Gift"
+                      value={orderForm.tags}
+                      onChange={e => setOrderForm({...orderForm, tags: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Status</label>
+                    <select 
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.status}
+                      onChange={e => setOrderForm({...orderForm, status: e.target.value as any})}
+                    >
+                      {statuses.map(s => (
+                        <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Order Notes</label>
+                  <textarea 
+                    className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all resize-none"
+                    rows={2}
+                    placeholder="Special instructions for delivery or packing..."
+                    value={orderForm.notes}
+                    onChange={e => setOrderForm({...orderForm, notes: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              {/* Summary Section */}
+              <div className="bg-[#141414] text-white p-6 rounded-2xl space-y-2 shadow-xl">
+                <div className="flex justify-between text-xs opacity-60">
+                  <span>Subtotal</span>
+                  <span>{currencySymbol}{calculateTotals(orderForm.items, orderForm.deliveryCharge, orderForm.discount, orderForm.paidAmount).subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs opacity-60">
+                  <span>Delivery Charge</span>
+                  <span>+ {currencySymbol}{orderForm.deliveryCharge.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs opacity-60">
+                  <span>Discount</span>
+                  <span>- {currencySymbol}{orderForm.discount.toLocaleString()}</span>
+                </div>
+                <div className="h-px bg-[#ffffff1a] my-2" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-bold uppercase tracking-widest">Total Amount</span>
+                  <span className="text-2xl font-bold">{currencySymbol}{calculateTotals(orderForm.items, orderForm.deliveryCharge, orderForm.discount, orderForm.paidAmount).totalAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 text-[#fb923c]">
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Due Amount</span>
+                  <span className="text-lg font-bold">{currencySymbol}{calculateTotals(orderForm.items, orderForm.deliveryCharge, orderForm.discount, orderForm.paidAmount).dueAmount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-3 border border-[#e5e7eb] rounded-xl font-bold hover:bg-[#f9fafb] transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 py-3 bg-[#141414] text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg"
+                >
+                  {editingOrder ? 'Save Changes' : 'Confirm Order'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Print Modal */}
+      {selectedOrderForPrint && (
+        <div className="fixed inset-0 bg-[#00000080] backdrop-blur-sm z-[60] flex items-center justify-center p-6 no-print">
+          <div className="bg-[#ffffff] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-[#f3f4f6] flex items-center justify-between bg-[#f9fafb]/50">
+              <h3 className="text-lg font-bold text-[#141414]">Print/Download Invoice</h3>
+              <button 
+                onClick={() => {
+                  setSelectedOrderForPrint(null);
+                  setPrintType(null);
+                }}
+                className="p-2 hover:bg-[#f3f4f6] rounded-full transition-colors text-[#9ca3af]"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { id: 'a5', name: 'A5 Invoice', icon: FileText },
+                  { id: 'pos', name: 'POS', icon: Printer },
+                ].map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => setPrintType(type.id as any)}
+                    className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                      printType === type.id 
+                        ? 'border-[#00AEEF] bg-[#00AEEF]/5 text-[#00AEEF]' 
+                        : 'border-[#f3f4f6] hover:border-[#e5e7eb] text-[#6b7280]'
+                    }`}
+                  >
+                    <type.icon size={24} />
+                    <span className="text-xs font-bold">{type.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    if (!printType) {
+                      toast.error("Please select an invoice type first");
+                      return;
+                    }
+                    handlePrint();
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                    !printType 
+                      ? 'bg-[#f3f4f6] text-[#9ca3af] cursor-not-allowed' 
+                      : 'bg-[#141414] text-white hover:bg-black'
+                  }`}
+                >
+                  <Printer size={18} /> Print
+                </button>
+                <button
+                  onClick={() => {
+                    if (!printType) {
+                      toast.error("Please select an invoice type first");
+                      return;
+                    }
+                    toast.info("Opening system print dialog...");
+                    setTimeout(() => window.print(), 500);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                    !printType 
+                      ? 'bg-[#f3f4f6] text-[#9ca3af] cursor-not-allowed' 
+                      : 'bg-[#6b7280] text-white hover:bg-[#4b5563]'
+                  }`}
+                  title="Use this if the standard print button fails"
+                >
+                  <Printer size={18} /> Manual
+                </button>
+                <button
+                  onClick={() => {
+                    if (!printType) {
+                      toast.error("Please select an invoice type first");
+                      return;
+                    }
+                    handleDownloadPDF();
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                    !printType 
+                      ? 'bg-[#f3f4f6] text-[#9ca3af] cursor-not-allowed' 
+                      : 'bg-[#00AEEF] text-white hover:bg-[#0096ce]'
+                  }`}
+                >
+                  <Download size={18} /> Download PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Print Containers - Moved outside conditional blocks to ensure refs are always attached and accessible */}
+      <div className="print-only">
+        <div ref={printRef}>
+          {selectedOrderForPrint && (
+            <>
+              {printType === 'a5' && <A5Invoice order={selectedOrderForPrint} company={companySettings || {}} currencySymbol={currencySymbol} />}
+              {printType === 'pos' && <POSInvoice order={selectedOrderForPrint} company={companySettings || {}} currencySymbol={currencySymbol} />}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Hidden Bulk Print Content */}
+      <div className="print-only">
+        <div ref={bulkPrintRef}>
+          {selectedOrders.length > 0 && selectedOrders.map(id => {
+            const order = orders.find(o => o.id === id);
+            if (!order) return null;
+            return (
+              <div key={id} className="page-break-after">
+                <A5Invoice order={order} company={companySettings || {}} currencySymbol={currencySymbol} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,342 @@
+{
+  "entities": {
+    "orders": {
+      "title": "Order",
+      "description": "Represents a customer order in the SCM system.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique order ID." },
+        "customerName": { "type": "string", "description": "Name of the customer." },
+        "customerPhone": { "type": "string", "description": "Phone number of the customer." },
+        "customerId": { "type": "string", "description": "Reference to the customer (optional)." },
+        "customerAddress": { "type": "string", "description": "Delivery address." },
+        "district": { "type": "string", "description": "District for delivery." },
+        "area": { "type": "string", "description": "Area for delivery." },
+        "landmark": { "type": "string", "description": "Landmark for delivery." },
+        "items": { "type": "array", "description": "List of items in the order." },
+        "subtotal": { "type": "number", "description": "Subtotal before charges and discounts." },
+        "deliveryCharge": { "type": "number", "description": "Delivery fee." },
+        "discount": { "type": "number", "description": "Discount amount." },
+        "totalAmount": { "type": "number", "description": "Total order value." },
+        "paidAmount": { "type": "number", "description": "Amount already paid." },
+        "dueAmount": { "type": "number", "description": "Remaining balance." },
+        "advanceAmount": { "type": "number", "description": "Advance payment made." },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered", "partial_delivered", "cancelled", "returned"], "description": "Current order status." },
+        "courierId": { "type": "string", "description": "Reference to the courier." },
+        "courierName": { "type": "string", "description": "Name of the courier." },
+        "trackingNumber": { "type": "string", "description": "Courier tracking number." },
+        "courierStatus": { "type": "string", "description": "Status from courier API." },
+        "paymentMethod": { "type": "string", "enum": ["COD", "bKash", "Nagad", "Rocket", "Bank Transfer"], "description": "Payment method used." },
+        "paymentStatus": { "type": "string", "enum": ["unpaid", "paid", "partially_paid"], "description": "Payment status." },
+        "channel": { "type": "string", "enum": ["Facebook", "Messenger", "Instagram", "Website", "WooCommerce", "Shopify", "Daraz", "Manual"], "description": "Order source channel." },
+        "notes": { "type": "string", "description": "Internal or customer notes." },
+        "logs": { "type": "array", "description": "Audit logs for the order." },
+        "returnReason": { "type": "string", "description": "Reason for return." },
+        "returnType": { "type": "string", "enum": ["full", "partial"], "description": "Type of return." },
+        "uid": { "type": "string", "description": "Owner UID." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Order creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp." }
+      },
+      "required": ["customerName", "customerPhone", "totalAmount", "status", "paymentMethod", "channel", "uid"]
+    },
+    "customers": {
+      "title": "Customer",
+      "description": "Represents a customer in the CRM.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique customer ID." },
+        "name": { "type": "string", "description": "Customer name." },
+        "phone": { "type": "string", "description": "Customer phone number." },
+        "email": { "type": "string", "description": "Customer email address." },
+        "address": { "type": "string", "description": "Default delivery address." },
+        "orderCount": { "type": "number", "description": "Total orders placed." },
+        "totalSpent": { "type": "number", "description": "Total amount spent." },
+        "lastOrderDate": { "type": "string", "format": "date-time", "description": "Date of the last order." }
+      },
+      "required": ["name", "phone"]
+    },
+    "products": {
+      "title": "Product",
+      "description": "Represents a product in the inventory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique product ID." },
+        "sku": { "type": "string", "description": "Stock Keeping Unit." },
+        "name": { "type": "string", "description": "Product name." },
+        "description": { "type": "string", "description": "Product description." },
+        "type": { "type": "string", "enum": ["simple", "variable", "bundle"], "description": "Product type." },
+        "price": { "type": "number", "description": "Default unit price." },
+        "costPrice": { "type": "number", "description": "Default purchase cost per unit." },
+        "categoryId": { "type": "string", "description": "Reference to the category." },
+        "subCategoryId": { "type": "string", "description": "Reference to the subcategory." },
+        "brandId": { "type": "string", "description": "Reference to the brand/collection." },
+        "images": { "type": "array", "items": { "type": "string" }, "description": "List of image URLs." },
+        "videos": { "type": "array", "items": { "type": "string" }, "description": "List of video URLs." },
+        "barcode": { "type": "string", "description": "Barcode value." },
+        "reorderPoint": { "type": "number", "description": "Minimum stock level before reordering." },
+        "bundleItems": { "type": "array", "items": { "type": "object", "properties": { "productId": { "type": "string" }, "quantity": { "type": "number" } } }, "description": "Items in a bundle product." },
+        "uid": { "type": "string", "description": "Owner UID." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sku", "name", "type", "uid"]
+    },
+    "variants": {
+      "title": "Product Variant",
+      "description": "Represents a specific variation of a product.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique variant ID." },
+        "productId": { "type": "string", "description": "Reference to the parent product." },
+        "sku": { "type": "string", "description": "Variant-specific SKU." },
+        "size": { "type": "string", "description": "Size (e.g., Single, Double, King)." },
+        "color": { "type": "string", "description": "Color variation." },
+        "fabric": { "type": "string", "description": "Fabric type." },
+        "price": { "type": "number", "description": "Variant-specific price." },
+        "costPrice": { "type": "number", "description": "Variant-specific cost price." },
+        "barcode": { "type": "string", "description": "Variant-specific barcode." },
+        "uid": { "type": "string", "description": "Owner UID." }
+      },
+      "required": ["productId", "sku", "uid"]
+    },
+    "warehouses": {
+      "title": "Warehouse",
+      "description": "Represents a physical storage location.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique warehouse ID." },
+        "name": { "type": "string", "description": "Warehouse name." },
+        "location": { "type": "string", "description": "Location tag (e.g., Dhaka, Chittagong)." },
+        "address": { "type": "string", "description": "Full address." },
+        "uid": { "type": "string", "description": "Owner UID." }
+      },
+      "required": ["name", "location", "uid"]
+    },
+    "inventory": {
+      "title": "Inventory Record",
+      "description": "Represents stock levels in a specific warehouse for a product or variant.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record ID." },
+        "productId": { "type": "string", "description": "Reference to the product." },
+        "variantId": { "type": "string", "description": "Reference to the variant (optional)." },
+        "warehouseId": { "type": "string", "description": "Reference to the warehouse." },
+        "quantity": { "type": "number", "description": "Quantity in this warehouse." },
+        "openingStock": { "type": "number", "description": "Initial stock level." },
+        "minStockAlert": { "type": "number", "description": "Minimum stock level for alerts." },
+        "uid": { "type": "string", "description": "Owner UID." },
+        "lastStockUpdate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "warehouseId", "quantity", "uid"]
+    },
+    "purchaseOrders": {
+      "title": "Purchase Order",
+      "description": "Represents a purchase from a supplier.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique PO ID." },
+        "supplierId": { "type": "string", "description": "Reference to the supplier." },
+        "status": { "type": "string", "enum": ["draft", "ordered", "received", "cancelled", "returned"] },
+        "items": { "type": "array", "items": { "type": "object", "properties": { "productId": { "type": "string" }, "variantId": { "type": "string" }, "quantity": { "type": "number" }, "unitCost": { "type": "number" } } } },
+        "totalCost": { "type": "number" },
+        "grnNumber": { "type": "string", "description": "Goods Received Note number." },
+        "receivedAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string", "description": "Owner UID." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["supplierId", "status", "uid"]
+    },
+    "stockAdjustments": {
+      "title": "Stock Adjustment",
+      "description": "Represents a manual stock correction.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique adjustment ID." },
+        "productId": { "type": "string" },
+        "variantId": { "type": "string" },
+        "warehouseId": { "type": "string" },
+        "type": { "type": "string", "enum": ["in", "out", "adjustment", "transfer", "damage", "lost"] },
+        "quantity": { "type": "number" },
+        "reason": { "type": "string" },
+        "fromWarehouseId": { "type": "string", "description": "For transfers." },
+        "toWarehouseId": { "type": "string", "description": "For transfers." },
+        "uid": { "type": "string", "description": "Owner UID." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "warehouseId", "type", "quantity", "uid"]
+    },
+    "inventoryLogs": {
+      "title": "Inventory Log",
+      "description": "Full stock movement history.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "variantId": { "type": "string" },
+        "warehouseId": { "type": "string" },
+        "action": { "type": "string", "description": "e.g., 'sale', 'purchase', 'adjustment', 'transfer'" },
+        "quantityChange": { "type": "number" },
+        "newQuantity": { "type": "number" },
+        "referenceId": { "type": "string", "description": "Order ID, PO ID, or Adjustment ID." },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "warehouseId", "action", "quantityChange", "newQuantity", "uid"]
+    },
+    "categories": {
+      "title": "Category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "parentId": { "type": "string", "description": "For subcategories." },
+        "uid": { "type": "string" }
+      },
+      "required": ["name", "uid"]
+    },
+    "brands": {
+      "title": "Brand",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "uid": { "type": "string" }
+      },
+      "required": ["name", "uid"]
+    },
+    "suppliers": {
+      "title": "Supplier",
+      "description": "Represents a product supplier.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique supplier ID." },
+        "name": { "type": "string", "description": "Supplier name." },
+        "contactPerson": { "type": "string", "description": "Contact person name." },
+        "phone": { "type": "string", "description": "Supplier phone number." },
+        "email": { "type": "string", "description": "Supplier email address." },
+        "address": { "type": "string", "description": "Supplier address." }
+      },
+      "required": ["name", "phone"]
+    },
+    "couriers": {
+      "title": "Courier",
+      "description": "Represents a delivery partner.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique courier ID." },
+        "name": { "type": "string", "description": "Courier name (e.g., Pathao, Steadfast)." },
+        "apiConfig": { "type": "object", "description": "API configuration for integration." },
+        "active": { "type": "boolean", "description": "Whether the courier is active." },
+        "orders": { "type": "number", "description": "Total orders handled." },
+        "success": { "type": "string", "description": "Success rate percentage." },
+        "uid": { "type": "string", "description": "Owner UID." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "uid"]
+    },
+    "deliveries": {
+      "title": "Delivery",
+      "description": "Represents a shipment tracking record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Tracking ID." },
+        "orderId": { "type": "string", "description": "Reference to the order." },
+        "courier": { "type": "string", "description": "Courier name." },
+        "status": { "type": "string", "enum": ["Pending Pickup", "In Transit", "Delivered", "Cancelled"] },
+        "location": { "type": "string", "description": "Current location." },
+        "eta": { "type": "string", "description": "Estimated time of arrival." },
+        "uid": { "type": "string", "description": "Owner UID." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "courier", "status", "uid"]
+    },
+    "transactions": {
+      "title": "Transaction",
+      "description": "Represents a financial transaction.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique transaction ID." },
+        "orderId": { "type": "string", "description": "Reference to the order (if applicable)." },
+        "type": { "type": "string", "enum": ["income", "expense"], "description": "Transaction type." },
+        "category": { "type": "string", "description": "Transaction category (e.g., Sales, Purchase, Salary, Rent)." },
+        "amount": { "type": "number", "description": "Transaction amount." },
+        "paymentMethod": { "type": "string", "description": "Payment method." },
+        "date": { "type": "string", "format": "date-time", "description": "Transaction date." },
+        "description": { "type": "string", "description": "Transaction description." }
+      },
+      "required": ["type", "amount", "date"]
+    },
+    "users": {
+      "title": "User",
+      "description": "Represents a system user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID." },
+        "name": { "type": "string", "description": "User's full name." },
+        "email": { "type": "string", "description": "User's email address." },
+        "role": { "type": "string", "enum": ["admin", "manager", "staff"], "description": "User's role in the system." },
+        "active": { "type": "boolean", "description": "Whether the user is active." }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "woocommerce_orders": {
+      "title": "WooCommerce Order",
+      "description": "Cached WooCommerce orders.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string" },
+        "total": { "type": "string" },
+        "syncedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "woocommerce_logs": {
+      "title": "WooCommerce Log",
+      "description": "Sync and API logs.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "orderId": { "type": "string" },
+        "status": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Global application settings including company information.",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "companyLogo": { "type": "string" },
+        "companyAddress": { "type": "string" },
+        "companyMobile": { "type": "string" },
+        "companyPhone": { "type": "string" },
+        "companyWebsite": { "type": "string" },
+        "orderCounter": { "type": "number", "description": "Last used numeric order ID." }
+      }
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": { "schema": "orders", "description": "Collection of orders." },
+    "/customers/{customerId}": { "schema": "customers", "description": "Collection of customers." },
+    "/products/{productId}": { "schema": "products", "description": "Collection of products." },
+    "/variants/{variantId}": { "schema": "variants", "description": "Collection of product variants." },
+    "/warehouses/{warehouseId}": { "schema": "warehouses", "description": "Collection of warehouses." },
+    "/inventory/{inventoryId}": { "schema": "inventory", "description": "Collection of inventory records." },
+    "/purchaseOrders/{poId}": { "schema": "purchaseOrders", "description": "Collection of purchase orders." },
+    "/stockAdjustments/{adjustmentId}": { "schema": "stockAdjustments", "description": "Collection of stock adjustments." },
+    "/inventoryLogs/{logId}": { "schema": "inventoryLogs", "description": "Collection of inventory logs." },
+    "/categories/{categoryId}": { "schema": "categories", "description": "Collection of categories." },
+    "/brands/{brandId}": { "schema": "brands", "description": "Collection of brands." },
+    "/suppliers/{supplierId}": { "schema": "suppliers", "description": "Collection of suppliers." },
+    "/couriers/{courierId}": { "schema": "couriers", "description": "Collection of couriers." },
+    "/deliveries/{deliveryId}": { "schema": "deliveries", "description": "Collection of deliveries." },
+    "/transactions/{transactionId}": { "schema": "transactions", "description": "Collection of financial transactions." },
+    "/users/{uid}": { "schema": "users", "description": "Collection of system users." },
+    "/woocommerce_orders/{orderId}": { "schema": "woocommerce_orders", "description": "Collection of cached WooCommerce orders." },
+    "/woocommerce_logs/{logId}": { "schema": "woocommerce_logs", "description": "Collection of WooCommerce sync logs." },
+    "/settings/{settingId}": { "schema": "settings", "description": "Global settings." }
+  }
+}
