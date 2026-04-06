@@ -84,6 +84,7 @@ export default function Dashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
   const [dailyRevenue, setDailyRevenue] = useState<any[]>([]);
+  const [bestSellingProducts, setBestSellingProducts] = useState<any[]>([]);
 
   useEffect(() => {
     const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
@@ -108,6 +109,26 @@ export default function Dashboard() {
       
       const sortedOrders = orders.sort((a: any, b: any) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       setRecentOrders(sortedOrders.slice(0, 10));
+
+      // Calculate Best Selling Products
+      const productSales: { [key: string]: { name: string, quantity: number, revenue: number } } = {};
+      orders.forEach((order: any) => {
+        if (order.items && Array.isArray(order.items)) {
+          order.items.forEach((item: any) => {
+            const key = item.productId || item.id;
+            if (!productSales[key]) {
+              productSales[key] = { name: item.name, quantity: 0, revenue: 0 };
+            }
+            productSales[key].quantity += (item.quantity || 0);
+            productSales[key].revenue += (item.price || 0) * (item.quantity || 0);
+          });
+        }
+      });
+
+      const bestSelling = Object.values(productSales)
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5);
+      setBestSellingProducts(bestSelling);
 
       // Daily Revenue for last 7 days
       const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -286,50 +307,79 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Orders Table */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Recent Orders</h3>
-          <Link to="/orders" className="text-xs font-bold text-[#00AEEF] hover:underline">View All</Link>
+      {/* Recent Orders & Best Selling Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Orders */}
+        <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Recent Orders</h3>
+            <Link to="/orders" className="text-xs font-bold text-[#00AEEF] hover:underline">View All</Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+                  <th className="px-6 py-4">Order ID</th>
+                  <th className="px-6 py-4">Customer</th>
+                  <th className="px-6 py-4">Date</th>
+                  <th className="px-6 py-4">Total</th>
+                  <th className="px-6 py-4">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {recentOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-xs font-bold text-gray-900">#{order.orderNumber || order.id.slice(0, 8)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-gray-900">{order.customerName}</span>
+                        <span className="text-[10px] text-gray-400">{order.customerPhone}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-gray-600">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A')}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-gray-900">{formatCurrency(order.totalAmount)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase ${
+                        order.status === 'delivered' ? 'bg-green-500 text-white' : 
+                        order.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-[#00AEEF] text-white'
+                      }`}>{order.status.replace(/_/g, ' ')}</span>
+                    </td>
+                  </tr>
+                ))}
+                {recentOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-400 text-sm">No orders found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50">
-                <th className="px-6 py-4">Order ID</th>
-                <th className="px-6 py-4">Customer</th>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Total</th>
-                <th className="px-6 py-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-xs font-bold text-gray-900">#{order.orderNumber || order.id.slice(0, 8)}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-gray-900">{order.customerName}</span>
-                      <span className="text-[10px] text-gray-400">{order.customerPhone}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-xs text-gray-600">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A')}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-gray-900">{formatCurrency(order.totalAmount)}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase ${
-                      order.status === 'delivered' ? 'bg-green-500 text-white' : 
-                      order.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-[#00AEEF] text-white'
-                    }`}>{order.status.replace(/_/g, ' ')}</span>
-                  </td>
-                </tr>
-              ))}
-              {recentOrders.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-400 text-sm">No orders found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+
+        {/* Best Selling Products */}
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-50">
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Best Selling Products</h3>
+          </div>
+          <div className="p-6 space-y-6">
+            {bestSellingProducts.map((product, index) => (
+              <div key={index} className="flex items-center gap-4 group">
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-xs font-black text-gray-400 group-hover:bg-[#00AEEF] group-hover:text-white transition-all">
+                  #{index + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs font-bold text-gray-900 truncate">{product.name}</h4>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{product.quantity} Units Sold</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-black text-[#00AEEF]">{formatCurrency(product.revenue)}</p>
+                </div>
+              </div>
+            ))}
+            {bestSellingProducts.length === 0 && (
+              <div className="text-center py-12 text-gray-400 text-xs">No sales data yet.</div>
+            )}
+          </div>
         </div>
       </div>
     </div>

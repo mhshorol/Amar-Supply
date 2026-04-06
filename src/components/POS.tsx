@@ -490,7 +490,7 @@ export default function POS() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-4">
+        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pb-8">
           {filteredProducts.map(product => {
             const productVariants = variants.filter(v => v.productId === product.id);
             const totalStock = getStock(product.id);
@@ -498,69 +498,66 @@ export default function POS() {
             return (
               <div 
                 key={product.id}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group cursor-pointer"
+                className="bg-white aspect-square border border-gray-100 rounded-2xl overflow-hidden transition-all flex flex-col group cursor-pointer relative"
                 onClick={() => productVariants.length === 0 && totalStock > 0 && addToCart(product)}
               >
+                {/* Status Badge */}
+                <div className="absolute top-2 right-2 z-10">
+                  {totalStock <= 0 ? (
+                    <span className="bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">Out of Stock</span>
+                  ) : totalStock <= 5 ? (
+                    <span className="bg-orange-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">Low Stock</span>
+                  ) : (
+                    <span className="bg-[#00AEEF] text-white text-[7px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">{totalStock} In Stock</span>
+                  )}
+                </div>
+
                 {/* Product Image */}
-                <div className="aspect-square bg-gray-50 overflow-hidden relative">
+                <div className="flex-1 w-full flex items-center justify-center p-2 relative overflow-hidden">
                   {product.image ? (
                     <img 
                       src={product.image} 
                       alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 relative z-10" 
                       referrerPolicy="no-referrer" 
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <Package size={24} />
-                    </div>
-                  )}
-                  {totalStock <= 5 && totalStock > 0 && (
-                    <div className="absolute top-0 left-0 right-0 bg-orange-500/90 text-white text-[8px] font-bold text-center py-0.5">
-                      LOW STOCK
-                    </div>
-                  )}
-                  {totalStock <= 0 && (
-                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                      <span className="bg-red-500 text-white text-[8px] font-bold px-2 py-1 rounded">OUT OF STOCK</span>
+                    <div className="w-full h-full flex items-center justify-center text-gray-100 relative z-10">
+                      <Package size={40} strokeWidth={1} />
                     </div>
                   )}
                 </div>
 
-                {/* Product Details */}
-                <div className="p-1.5 flex-1 flex flex-col justify-between bg-white">
-                  <div>
-                    <h3 className="text-[10px] font-bold text-gray-900 line-clamp-1 group-hover:text-[#00AEEF] transition-colors leading-tight">
-                      {product.name}
-                    </h3>
-                    <p className="text-[10px] font-black text-[#00AEEF]">
-                      {currencySymbol}{product.price?.toLocaleString()}
-                    </p>
-                  </div>
+                {/* Product Info */}
+                <div className="p-2 bg-gray-50/50 border-t border-gray-100">
+                  <h3 className="text-[10px] font-bold text-gray-900 line-clamp-1 group-hover:text-[#00AEEF] transition-colors uppercase tracking-tight">
+                    {product.name}
+                  </h3>
+                  <p className="text-[11px] font-black text-[#00AEEF]">
+                    {currencySymbol}{product.price?.toLocaleString()}
+                  </p>
+                </div>
 
-                  {productVariants.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-0.5">
-                      {productVariants.slice(0, 2).map(v => (
+                {/* Variant Quick Select Overlay (on hover) */}
+                {productVariants.length > 0 && (
+                  <div className="absolute inset-0 bg-white/95 p-2 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-20">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Select Variant</p>
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {productVariants.map(v => (
                         <button
                           key={v.id}
                           onClick={(e) => {
                             e.stopPropagation();
                             addToCart(product, v);
                           }}
-                          className="px-1 py-0.5 rounded border border-gray-100 flex items-center justify-center text-[8px] font-bold hover:border-[#00AEEF] hover:text-[#00AEEF] hover:bg-[#00AEEF]/5 transition-all bg-white"
-                          title={v.name}
+                          className="px-2 py-1 bg-white text-gray-900 text-[9px] font-bold hover:bg-[#00AEEF] hover:text-white transition-all border border-gray-100 rounded-lg"
                         >
-                          {v.name.length > 2 ? v.name.substring(0, 1).toUpperCase() : v.name}
+                          {v.name}
                         </button>
                       ))}
-                      {productVariants.length > 2 && (
-                        <div className="px-1 py-0.5 text-[7px] font-bold text-gray-400">
-                          +{productVariants.length - 2}
-                        </div>
-                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
