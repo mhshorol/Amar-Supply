@@ -111,6 +111,10 @@ export const dataService = {
       return onSnapshot(q, (snapshot) => {
         const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
         callback(orders);
+      }, (error) => {
+        if (error.code !== 'permission-denied') {
+          console.error("Error subscribing to orders:", error);
+        }
       });
     } else {
       const orders = getLocalData(STORAGE_KEYS.ORDERS, MOCK_ORDERS);
@@ -148,6 +152,10 @@ export const dataService = {
       return onSnapshot(q, (snapshot) => {
         const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
         callback(products);
+      }, (error) => {
+        if (error.code !== 'permission-denied') {
+          console.error("Error subscribing to products:", error);
+        }
       });
     } else {
       const products = getLocalData(STORAGE_KEYS.PRODUCTS, MOCK_PRODUCTS);
@@ -174,6 +182,10 @@ export const dataService = {
       return onSnapshot(q, (snapshot) => {
         const customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
         callback(customers);
+      }, (error) => {
+        if (error.code !== 'permission-denied') {
+          console.error("Error subscribing to customers:", error);
+        }
       });
     } else {
       const customers = getLocalData(STORAGE_KEYS.CUSTOMERS, MOCK_CUSTOMERS);
@@ -211,6 +223,10 @@ export const dataService = {
       return onSnapshot(q, (snapshot) => {
         const couriers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
         callback(couriers);
+      }, (error) => {
+        if (error.code !== 'permission-denied') {
+          console.error("Error subscribing to couriers:", error);
+        }
       });
     } else {
       const couriers = getLocalData(STORAGE_KEYS.COURIERS, MOCK_COURIERS);
@@ -226,6 +242,10 @@ export const dataService = {
       return onSnapshot(q, (snapshot) => {
         const shipments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
         callback(shipments);
+      }, (error) => {
+        if (error.code !== 'permission-denied') {
+          console.error("Error subscribing to shipments:", error);
+        }
       });
     } else {
       const shipments = getLocalData(STORAGE_KEYS.SHIPMENTS, MOCK_SHIPMENTS);
@@ -252,6 +272,10 @@ export const dataService = {
       return onSnapshot(q, (snapshot) => {
         const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
         callback(transactions);
+      }, (error) => {
+        if (error.code !== 'permission-denied') {
+          console.error("Error subscribing to transactions:", error);
+        }
       });
     } else {
       const transactions = getLocalData(STORAGE_KEYS.TRANSACTIONS, MOCK_TRANSACTIONS);

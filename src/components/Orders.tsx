@@ -247,13 +247,37 @@ export default function Orders() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'orders'));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'orders');
+      }
+    });
 
-    const unsubProducts = onSnapshot(collection(db, 'products'), (s) => setProducts(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => handleFirestoreError(e, OperationType.LIST, 'products'));
-    const unsubVariants = onSnapshot(collection(db, 'variants'), (s) => setVariants(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => handleFirestoreError(e, OperationType.LIST, 'variants'));
-    const unsubWarehouses = onSnapshot(collection(db, 'warehouses'), (s) => setWarehouses(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => handleFirestoreError(e, OperationType.LIST, 'warehouses'));
-    const unsubInventory = onSnapshot(collection(db, 'inventory'), (s) => setInventory(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => handleFirestoreError(e, OperationType.LIST, 'inventory'));
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'company'), (s) => setCompanySettings(s.data()), (e) => handleFirestoreError(e, OperationType.GET, 'settings/company'));
+    const unsubProducts = onSnapshot(collection(db, 'products'), (s) => setProducts(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.LIST, 'products');
+      }
+    });
+    const unsubVariants = onSnapshot(collection(db, 'variants'), (s) => setVariants(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.LIST, 'variants');
+      }
+    });
+    const unsubWarehouses = onSnapshot(collection(db, 'warehouses'), (s) => setWarehouses(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.LIST, 'warehouses');
+      }
+    });
+    const unsubInventory = onSnapshot(collection(db, 'inventory'), (s) => setInventory(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.LIST, 'inventory');
+      }
+    });
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'company'), (s) => setCompanySettings(s.data()), (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.GET, 'settings/company');
+      }
+    });
 
     return () => {
       unsubscribe();

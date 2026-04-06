@@ -90,7 +90,9 @@ export default function CRM() {
       }
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'customers');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'customers');
+      }
       setLoading(false);
     });
 

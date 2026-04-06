@@ -160,19 +160,36 @@ function Finance() {
     const unsubTxns = onSnapshot(qTxns, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[]);
       setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'transactions'));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'transactions');
+      }
+      setLoading(false);
+    });
 
     const unsubAccounts = onSnapshot(qAccounts, (snapshot) => {
       setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Account[]);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'accounts'));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'accounts');
+      }
+    });
 
     const unsubSuppliers = onSnapshot(qSuppliers, (snapshot) => {
       setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Supplier[]);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'suppliers'));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'suppliers');
+      }
+    });
 
     const unsubSupplierPayments = onSnapshot(qSupplierPayments, (snapshot) => {
       setSupplierPayments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SupplierPayment[]);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'supplierPayments'));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'supplierPayments');
+      }
+    });
 
     return () => {
       unsubTxns();

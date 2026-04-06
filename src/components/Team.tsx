@@ -56,14 +56,18 @@ export default function Team() {
       setUsers(snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as any as User)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'users');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'users');
+      }
     });
 
     // Subscribe to activity logs
     const unsubLogs = onSnapshot(query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc')), (snapshot) => {
       setActivityLogs(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any as ActivityLog)));
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'activityLogs');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'activityLogs');
+      }
     });
 
     return () => {

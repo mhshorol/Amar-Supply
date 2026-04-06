@@ -95,7 +95,10 @@ export default function Logistics() {
       setDeliveries(deliveryData);
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'deliveries');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'deliveries');
+      }
+      setLoading(false);
     });
 
     const unsubscribeCouriers = onSnapshot(qCouriers, (snapshot) => {
@@ -105,7 +108,9 @@ export default function Logistics() {
       })) as Courier[];
       setCouriers(courierData);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'couriers');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'couriers');
+      }
     });
 
     return () => {

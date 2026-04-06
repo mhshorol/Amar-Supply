@@ -258,12 +258,12 @@ function AppContent() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <SettingsProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <SettingsProvider>
           <AppContent />
           <Toaster position="top-right" richColors />
-        </AuthProvider>
-      </SettingsProvider>
+        </SettingsProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

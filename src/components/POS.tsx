@@ -87,23 +87,43 @@ export default function POS() {
     const unsubProducts = onSnapshot(collection(db, 'products'), (s) => {
       setProducts(s.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
-    }, (e) => handleFirestoreError(e, OperationType.LIST, 'products'));
+    }, (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.LIST, 'products');
+      }
+    });
 
     const unsubVariants = onSnapshot(collection(db, 'variants'), (s) => {
       setVariants(s.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (e) => handleFirestoreError(e, OperationType.LIST, 'variants'));
+    }, (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.LIST, 'variants');
+      }
+    });
 
     const unsubInventory = onSnapshot(collection(db, 'inventory'), (s) => {
       setInventory(s.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (e) => handleFirestoreError(e, OperationType.LIST, 'inventory'));
+    }, (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.LIST, 'inventory');
+      }
+    });
 
     const unsubCustomers = onSnapshot(collection(db, 'customers'), (s) => {
       setCustomers(s.docs.map(d => ({ id: d.id, ...d.data() } as Customer)));
-    }, (e) => handleFirestoreError(e, OperationType.LIST, 'customers'));
+    }, (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.LIST, 'customers');
+      }
+    });
 
     const unsubSettings = onSnapshot(doc(db, 'settings', 'company'), (s) => {
       setCompanySettings(s.data());
-    }, (e) => handleFirestoreError(e, OperationType.GET, 'settings/company'));
+    }, (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.GET, 'settings/company');
+      }
+    });
 
     return () => {
       unsubProducts();

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { db, doc, onSnapshot } from '../firebase';
+import { useAuth } from './AuthContext';
 
 interface CompanySettings {
   companyName: string;
@@ -40,10 +41,16 @@ const defaultSettings: CompanySettings = {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<CompanySettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onSnapshot(doc(db, 'settings', 'company'), (docSnap) => {
       if (docSnap.exists()) {
         setSettings(prev => ({ ...prev, ...docSnap.data() }));
@@ -55,7 +62,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const getCurrencySymbol = (currency: string) => {
     switch (currency) {

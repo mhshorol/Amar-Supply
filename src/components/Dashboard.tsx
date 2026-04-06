@@ -151,19 +151,25 @@ export default function Dashboard() {
 
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'orders');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'orders');
+      }
     });
 
     const unsubCustomers = onSnapshot(collection(db, 'customers'), (snapshot) => {
       setStats(prev => ({ ...prev, totalCustomer: snapshot.size }));
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'customers');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'customers');
+      }
     });
 
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
       setStats(prev => ({ ...prev, totalProduct: snapshot.size }));
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'products');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'products');
+      }
     });
 
     return () => {

@@ -105,7 +105,9 @@ export default function Inventory() {
         col.setter(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         if (col.name === 'products') setLoading(false);
       }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, col.name);
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, col.name);
+        }
       });
       unsubscribes.push(unsubscribe);
     });
