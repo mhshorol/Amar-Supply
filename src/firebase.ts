@@ -1,6 +1,6 @@
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, onSnapshot, updateDoc, deleteDoc, addDoc, serverTimestamp, Timestamp, getDocFromServer, orderBy, writeBatch, arrayUnion, runTransaction } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, onSnapshot, updateDoc, deleteDoc, addDoc, serverTimestamp, Timestamp, getDocFromServer, orderBy, writeBatch, arrayUnion, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -15,7 +15,13 @@ if (isFirebaseConfigured) {
   console.warn("Firebase configuration is missing. Please set up Firebase using the tool.");
 }
 
-export const db = isFirebaseConfigured ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : null as any;
+// Initialize Firestore with long polling for better stability in some environments
+export const db = isFirebaseConfigured 
+  ? initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    }, firebaseConfig.firestoreDatabaseId)
+  : null as any;
+
 export const auth = isFirebaseConfigured ? getAuth(app) : null as any;
 export const storage = isFirebaseConfigured ? getStorage(app) : null as any;
 export const googleProvider = new GoogleAuthProvider();

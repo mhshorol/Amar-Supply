@@ -10,6 +10,7 @@ export interface UserPermissions {
   logistics: boolean;
   tasks: boolean;
   finance: boolean;
+  hr: boolean;
   team: boolean;
   settings: boolean;
   reports: boolean;
@@ -246,6 +247,69 @@ export interface SupplierPayment {
   paymentType: string;
   paidAmount: number;
   remark?: string;
+  uid: string;
+  createdAt: any;
+}
+
+export interface Designation {
+  id: string;
+  name: string;
+  description?: string;
+  uid: string;
+  createdAt: any;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  designationId: string;
+  designationName: string;
+  joiningDate: string;
+  baseSalary: number;
+  profileImage?: string;
+  status: 'Active' | 'Inactive';
+  uid: string;
+  createdAt: any;
+}
+
+export interface Attendance {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  date: string; // YYYY-MM-DD
+  status: 'Present' | 'Absent' | 'Late' | 'Leave';
+  note?: string;
+  uid: string;
+  createdAt: any;
+}
+
+export interface SalaryAdvance {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  amount: number;
+  date: string;
+  note?: string;
+  status: 'Pending' | 'Deducted';
+  uid: string;
+  createdAt: any;
+}
+
+export interface SalaryRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  month: string; // YYYY-MM
+  baseSalary: number;
+  deductions: number;
+  advanceDeduction: number;
+  bonus: number;
+  netSalary: number;
+  status: 'Paid' | 'Pending';
+  paidAt?: any;
   uid: string;
   createdAt: any;
 }

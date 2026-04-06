@@ -490,7 +490,7 @@ export default function POS() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 pb-4">
+        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-4">
           {filteredProducts.map(product => {
             const productVariants = variants.filter(v => v.productId === product.id);
             const totalStock = getStock(product.id);
@@ -498,96 +498,69 @@ export default function POS() {
             return (
               <div 
                 key={product.id}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group"
+                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group cursor-pointer"
+                onClick={() => productVariants.length === 0 && totalStock > 0 && addToCart(product)}
               >
-                <div className="p-4 flex gap-4">
-                  {/* Product Image */}
-                  <div className="w-24 h-24 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 relative">
-                    {product.image ? (
-                      <img 
-                        src={product.image} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                        referrerPolicy="no-referrer" 
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <Package size={32} />
-                      </div>
-                    )}
-                    {totalStock <= 5 && totalStock > 0 && (
-                      <div className="absolute top-0 left-0 right-0 bg-orange-500/90 text-white text-[8px] font-bold text-center py-0.5">
-                        LOW STOCK
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    <h3 className="text-sm font-bold text-gray-900 line-clamp-1 group-hover:text-[#26A69A] transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm font-bold text-[#00AEEF] mt-1">
-                      {currencySymbol}{product.price?.toLocaleString()}
-                    </p>
-
-                    {productVariants.length > 0 ? (
-                      <div className="mt-2">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Size</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {productVariants.slice(0, 4).map(v => (
-                            <button
-                              key={v.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToCart(product, v);
-                              }}
-                              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[10px] font-bold hover:border-[#26A69A] hover:text-[#26A69A] hover:bg-[#26A69A]/5 transition-all bg-white shadow-sm"
-                              title={v.name}
-                            >
-                              {v.name.length > 2 ? v.name.substring(0, 1).toUpperCase() : v.name}
-                            </button>
-                          ))}
-                          {productVariants.length > 4 && (
-                            <div className="w-8 h-8 rounded-full border border-dashed border-gray-200 flex items-center justify-center text-[8px] font-bold text-gray-400 bg-gray-50">
-                              +{productVariants.length - 4}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-gray-500 mt-2 line-clamp-3 leading-relaxed">
-                        {product.description || 'No description available for this product.'}
-                      </p>
-                    )}
-                  </div>
+                {/* Product Image */}
+                <div className="aspect-square bg-gray-50 overflow-hidden relative">
+                  {product.image ? (
+                    <img 
+                      src={product.image} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                      referrerPolicy="no-referrer" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                      <Package size={24} />
+                    </div>
+                  )}
+                  {totalStock <= 5 && totalStock > 0 && (
+                    <div className="absolute top-0 left-0 right-0 bg-orange-500/90 text-white text-[8px] font-bold text-center py-0.5">
+                      LOW STOCK
+                    </div>
+                  )}
+                  {totalStock <= 0 && (
+                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                      <span className="bg-red-500 text-white text-[8px] font-bold px-2 py-1 rounded">OUT OF STOCK</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Add to Cart Button */}
-                <button 
-                  onClick={() => productVariants.length === 0 && addToCart(product)}
-                  disabled={totalStock <= 0 || productVariants.length > 0}
-                  className={`w-full py-3 text-xs font-bold transition-all mt-auto flex items-center justify-center gap-2 ${
-                    totalStock > 0 
-                      ? productVariants.length > 0
-                        ? 'bg-gray-50 text-gray-400 cursor-default'
-                        : 'bg-[#26A69A] text-white hover:bg-[#218d83]' 
-                      : 'bg-red-50 text-red-400 cursor-not-allowed'
-                  }`}
-                >
-                  {totalStock > 0 ? (
-                    productVariants.length > 0 ? (
-                      'Select a variant above'
-                    ) : (
-                      <>
-                        <Plus size={14} />
-                        Add to Cart
-                      </>
-                    )
-                  ) : (
-                    'Out of Stock'
+                {/* Product Details */}
+                <div className="p-1.5 flex-1 flex flex-col justify-between bg-white">
+                  <div>
+                    <h3 className="text-[10px] font-bold text-gray-900 line-clamp-1 group-hover:text-[#00AEEF] transition-colors leading-tight">
+                      {product.name}
+                    </h3>
+                    <p className="text-[10px] font-black text-[#00AEEF]">
+                      {currencySymbol}{product.price?.toLocaleString()}
+                    </p>
+                  </div>
+
+                  {productVariants.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-0.5">
+                      {productVariants.slice(0, 2).map(v => (
+                        <button
+                          key={v.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(product, v);
+                          }}
+                          className="px-1 py-0.5 rounded border border-gray-100 flex items-center justify-center text-[8px] font-bold hover:border-[#00AEEF] hover:text-[#00AEEF] hover:bg-[#00AEEF]/5 transition-all bg-white"
+                          title={v.name}
+                        >
+                          {v.name.length > 2 ? v.name.substring(0, 1).toUpperCase() : v.name}
+                        </button>
+                      ))}
+                      {productVariants.length > 2 && (
+                        <div className="px-1 py-0.5 text-[7px] font-bold text-gray-400">
+                          +{productVariants.length - 2}
+                        </div>
+                      )}
+                    </div>
                   )}
-                </button>
+                </div>
               </div>
             );
           })}
@@ -700,54 +673,51 @@ export default function POS() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto px-4 py-2">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-2">
                 <ShoppingCart size={48} className="opacity-20" />
                 <p className="text-xs font-medium">Your cart is empty</p>
               </div>
             ) : (
-              cart.map(item => (
-                <div key={item.id} className="p-3 bg-gray-50 rounded-2xl flex gap-3 group">
-                  <div className="w-12 h-12 bg-white rounded-xl overflow-hidden border border-gray-100 flex-shrink-0">
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <Package size={20} />
+              <div className="divide-y divide-gray-50">
+                {cart.map(item => (
+                  <div key={item.id} className="py-2 flex items-center gap-3 group">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[11px] font-bold text-gray-900 truncate">
+                        {item.name}
+                        {item.variantName && <span className="ml-1 text-[9px] text-gray-400 font-medium">({item.variantName})</span>}
+                      </h4>
+                      <p className="text-[10px] font-bold text-[#00AEEF]">{currencySymbol}{item.price.toLocaleString()}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-0.5 border border-gray-100">
+                        <button 
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="p-0.5 hover:bg-white hover:shadow-sm rounded transition-all text-gray-500"
+                        >
+                          <Minus size={10} />
+                        </button>
+                        <span className="text-[11px] font-bold w-4 text-center">{item.quantity}</span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="p-0.5 hover:bg-white hover:shadow-sm rounded transition-all text-gray-500"
+                        >
+                          <Plus size={10} />
+                        </button>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-gray-900 truncate">{item.name}</h4>
-                    {item.variantName && <p className="text-[10px] text-gray-500">{item.variantName}</p>}
-                    <p className="text-xs font-bold text-[#00AEEF] mt-1">{currencySymbol}{item.price.toLocaleString()}</p>
-                  </div>
-                  <div className="flex flex-col items-end justify-between">
-                    <button 
-                      onClick={() => removeFromCart(item.id)}
-                      className="p-1 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                    <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-100">
+                      
                       <button 
-                        onClick={() => updateQuantity(item.id, -1)}
-                        className="p-0.5 hover:bg-gray-50 rounded transition-all"
+                        onClick={() => removeFromCart(item.id)}
+                        className="p-1 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
                       >
-                        <Minus size={12} />
-                      </button>
-                      <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(item.id, 1)}
-                        className="p-0.5 hover:bg-gray-50 rounded transition-all"
-                      >
-                        <Plus size={12} />
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
 

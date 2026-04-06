@@ -10,6 +10,7 @@ import Logistics from './components/Logistics';
 import POS from './components/POS';
 import Suppliers from './components/Suppliers';
 import Finance from './components/Finance';
+import HR from './components/HR';
 import Team from './components/Team';
 import Tasks from './components/Tasks';
 import Settings from './components/Settings';
@@ -243,6 +244,7 @@ function AppContent() {
           <Route path="/suppliers" element={hasPermission('suppliers') ? <Suppliers /> : <Navigate to="/" replace />} />
           <Route path="/logistics" element={hasPermission('logistics') ? <Logistics /> : <Navigate to="/" replace />} />
           <Route path="/finance" element={hasPermission('finance') ? <Finance /> : <Navigate to="/" replace />} />
+          <Route path="/hr" element={hasPermission('hr') ? <HR /> : <Navigate to="/" replace />} />
           <Route path="/team" element={hasPermission('team') ? <Team /> : <Navigate to="/" replace />} />
           <Route path="/tasks" element={hasPermission('tasks') ? <Tasks /> : <Navigate to="/" replace />} />
           <Route path="/settings" element={hasPermission('settings') ? <Settings /> : <Navigate to="/" replace />} />

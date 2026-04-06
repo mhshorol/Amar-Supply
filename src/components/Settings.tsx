@@ -15,6 +15,10 @@ import {
   Truck,
   ShoppingCart,
   Users,
+  UserPlus,
+  CreditCard,
+  Calculator,
+  ClipboardList,
   Check,
   X,
   Loader2
@@ -930,13 +934,18 @@ export default function Settings() {
                         <div className="grid grid-cols-1 gap-3">
                           {[
                             { key: 'dashboard', label: 'Dashboard', icon: Globe },
+                            { key: 'pos', label: 'POS', icon: Calculator },
                             { key: 'orders', label: 'Orders', icon: ShoppingCart },
                             { key: 'inventory', label: 'Inventory', icon: Database },
-                            { key: 'products', label: 'Products', icon: ShoppingCart },
-                            { key: 'customers', label: 'Customers', icon: UserIcon },
-                            { key: 'reports', label: 'Reports', icon: Shield },
+                            { key: 'crm', label: 'CRM / Customers', icon: UserIcon },
+                            { key: 'suppliers', label: 'Suppliers', icon: UserPlus },
+                            { key: 'logistics', label: 'Logistics', icon: Truck },
+                            { key: 'tasks', label: 'Tasks', icon: ClipboardList },
+                            { key: 'finance', label: 'Finance', icon: CreditCard },
+                            { key: 'hr', label: 'HR Management', icon: Users },
                             { key: 'team', label: 'Team', icon: Users },
                             { key: 'settings', label: 'Settings', icon: SettingsIcon },
+                            { key: 'reports', label: 'Reports', icon: Shield },
                           ].map((module) => (
                             <div key={module.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                               <div className="flex items-center gap-3">

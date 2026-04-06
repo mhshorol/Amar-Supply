@@ -42,6 +42,7 @@ const navItems: { name: string; path: string; icon: any; permission: keyof UserP
   { name: 'Logistics', path: '/logistics', icon: Truck, permission: 'logistics' },
   { name: 'Tasks', path: '/tasks', icon: ClipboardList, permission: 'tasks' },
   { name: 'Finance', path: '/finance', icon: CreditCard, permission: 'finance' },
+  { name: 'HR', path: '/hr', icon: Users, permission: 'hr' },
   { name: 'Team', path: '/team', icon: UserPlus, permission: 'team' },
   { name: 'Settings', path: '/settings', icon: Settings, permission: 'settings' },
 ];

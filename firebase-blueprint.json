@@ -341,6 +341,89 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["supplierId", "amount", "paidAmount", "uid"]
+    },
+    "designations": {
+      "title": "Designation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "uid"]
+    },
+    "employees": {
+      "title": "Employee",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "designationId": { "type": "string" },
+        "designationName": { "type": "string" },
+        "joiningDate": { "type": "string", "format": "date" },
+        "baseSalary": { "type": "number" },
+        "profileImage": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Inactive"] },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "designationId", "baseSalary", "uid"]
+    },
+    "attendance": {
+      "title": "Attendance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["Present", "Absent", "Late", "Leave"] },
+        "note": { "type": "string" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["employeeId", "date", "status", "uid"]
+    },
+    "salaryAdvances": {
+      "title": "Salary Advance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date" },
+        "note": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Deducted"] },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["employeeId", "amount", "date", "uid"]
+    },
+    "salaryRecords": {
+      "title": "Salary Record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "month": { "type": "string" },
+        "baseSalary": { "type": "number" },
+        "deductions": { "type": "number" },
+        "advanceDeduction": { "type": "number" },
+        "bonus": { "type": "number" },
+        "netSalary": { "type": "number" },
+        "status": { "type": "string", "enum": ["Paid", "Pending"] },
+        "paidAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["employeeId", "month", "netSalary", "uid"]
     }
   },
   "firestore": {
@@ -360,6 +443,11 @@
     "/deliveries/{deliveryId}": { "schema": "deliveries", "description": "Collection of deliveries." },
     "/transactions/{transactionId}": { "schema": "transactions", "description": "Collection of financial transactions." },
     "/supplierPayments/{paymentId}": { "schema": "supplierPayments", "description": "Collection of supplier payments." },
+    "/designations/{designationId}": { "schema": "designations", "description": "Collection of designations." },
+    "/employees/{employeeId}": { "schema": "employees", "description": "Collection of employees." },
+    "/attendance/{attendanceId}": { "schema": "attendance", "description": "Collection of attendance records." },
+    "/salaryAdvances/{advanceId}": { "schema": "salaryAdvances", "description": "Collection of salary advances." },
+    "/salaryRecords/{recordId}": { "schema": "salaryRecords", "description": "Collection of salary records." },
     "/users/{uid}": { "schema": "users", "description": "Collection of system users." },
     "/woocommerce_orders/{orderId}": { "schema": "woocommerce_orders", "description": "Collection of cached WooCommerce orders." },
     "/woocommerce_logs/{logId}": { "schema": "woocommerce_logs", "description": "Collection of WooCommerce sync logs." },

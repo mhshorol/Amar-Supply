@@ -117,11 +117,13 @@ export default function Team() {
     } catch (error: any) {
       console.error('Error adding member:', error);
       if (error.code === 'auth/email-already-in-use') {
-        toast.error('Email is already in use.');
+        toast.error('This email is already registered. Please use a different email.');
       } else if (error.code === 'auth/operation-not-allowed') {
         toast.error('Email/Password authentication is not enabled in Firebase Console.');
+      } else if (error.code === 'permission-denied' || error.message?.includes('permission-denied')) {
+        toast.error('Missing or insufficient permissions to add a team member. Please check your role.');
       } else {
-        toast.error('Failed to add team member.');
+        toast.error(`Error adding member: ${error.message || 'Unknown error'}`);
       }
     } finally {
       setIsCreating(false);
