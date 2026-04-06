@@ -30,6 +30,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 import { useSettings } from '../contexts/SettingsContext';
@@ -155,6 +156,43 @@ export default function CRM() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (customers.length === 0) {
+      toast.error('No customers to export');
+      return;
+    }
+
+    const headers = ['ID', 'Name', 'Phone', 'Email', 'Address', 'Order Count', 'Total Spent', 'Last Order Date', 'Created At'];
+    const csvRows = [headers.join(',')];
+
+    customers.forEach(customer => {
+      const row = [
+        customer.id,
+        `"${customer.name || ''}"`,
+        `"${customer.phone || ''}"`,
+        `"${customer.email || ''}"`,
+        `"${(customer.address || '').replace(/"/g, '""')}"`,
+        customer.orderCount || 0,
+        customer.totalSpent || 0,
+        customer.lastOrderDate?.toDate ? customer.lastOrderDate.toDate().toLocaleString() : (customer.lastOrderDate?.seconds ? new Date(customer.lastOrderDate.seconds * 1000).toLocaleString() : 'N/A'),
+        customer.createdAt?.toDate ? customer.createdAt.toDate().toLocaleString() : (customer.createdAt?.seconds ? new Date(customer.createdAt.seconds * 1000).toLocaleString() : 'N/A')
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `customers_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Customers exported successfully');
+  };
+
   const filteredCustomers = customers.filter(customer => 
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.phone.includes(searchTerm) ||
@@ -174,7 +212,10 @@ export default function CRM() {
           <p className="text-sm text-gray-500 mt-1">Manage customer relationships, track history, and improve loyalty.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
             <Download size={16} />
             Export CRM
           </button>

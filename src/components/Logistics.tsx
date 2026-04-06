@@ -298,6 +298,41 @@ export default function Logistics() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (deliveries.length === 0) {
+      toast.error('No deliveries to export');
+      return;
+    }
+
+    const headers = ['ID', 'Order ID', 'Courier', 'Status', 'Location', 'ETA', 'Created At'];
+    const csvRows = [headers.join(',')];
+
+    deliveries.forEach(delivery => {
+      const row = [
+        delivery.id,
+        delivery.orderId || '',
+        delivery.courier || '',
+        delivery.status || '',
+        `"${delivery.location || ''}"`,
+        delivery.eta || '',
+        delivery.createdAt?.toDate ? delivery.createdAt.toDate().toLocaleString() : (delivery.createdAt?.seconds ? new Date(delivery.createdAt.seconds * 1000).toLocaleString() : 'N/A')
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `deliveries_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Deliveries exported successfully');
+  };
+
   const filteredDeliveries = deliveries.filter(delivery => 
     delivery.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     delivery.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -314,9 +349,12 @@ export default function Logistics() {
           <p className="text-sm text-gray-500 mt-1">Track shipments, manage courier partners, and optimize routes.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            <BarChart2 size={16} />
-            SLA Report
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            <Download size={16} />
+            Export CSV
           </button>
           <button 
             onClick={handleOpenAddDeliveryModal}

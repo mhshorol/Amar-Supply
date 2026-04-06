@@ -55,6 +55,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 import { useSettings } from '../contexts/SettingsContext';
@@ -279,6 +280,45 @@ function Finance() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (transactions.length === 0) {
+      toast.error('No transactions to export');
+      return;
+    }
+
+    const headers = ['ID', 'Order ID', 'Type', 'Category', 'Subcategory', 'Amount', 'Method', 'Account ID', 'Status', 'Date', 'Created At'];
+    const csvRows = [headers.join(',')];
+
+    transactions.forEach(txn => {
+      const row = [
+        txn.id,
+        txn.orderId || '',
+        txn.type || '',
+        `"${txn.category || ''}"`,
+        `"${txn.subCategory || ''}"`,
+        txn.amount || 0,
+        txn.method || '',
+        txn.accountId || '',
+        txn.status || '',
+        txn.date || '',
+        txn.createdAt?.toDate ? txn.createdAt.toDate().toLocaleString() : (txn.createdAt?.seconds ? new Date(txn.createdAt.seconds * 1000).toLocaleString() : 'N/A')
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `transactions_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Transactions exported successfully');
+  };
+
   const filteredTransactions = transactions.filter(txn => 
     txn.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     txn.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -441,6 +481,13 @@ function Finance() {
           <p className="text-sm text-gray-500 mt-1">Comprehensive financial management and reporting.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            <Download size={16} />
+            Export CSV
+          </button>
           <button 
             onClick={() => handleOpenAccountModal()}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"

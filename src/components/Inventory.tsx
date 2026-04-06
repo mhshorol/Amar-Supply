@@ -113,10 +113,70 @@ export default function Inventory() {
     return () => unsubscribes.forEach(unsub => unsub());
   }, []);
 
+  const handleDeleteProduct = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this product? This will not delete its inventory records but will remove it from the catalog.')) return;
+    try {
+      await deleteDoc(doc(db, 'products', id));
+      await logActivity('Deleted Product', 'Inventory', `Product ID: ${id} deleted`);
+      toast.success('Product deleted successfully');
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, `products/${id}`);
+    }
+  };
+
+  const handleDeleteWarehouse = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this warehouse?')) return;
+    try {
+      await deleteDoc(doc(db, 'warehouses', id));
+      await logActivity('Deleted Warehouse', 'Inventory', `Warehouse ID: ${id} deleted`);
+      toast.success('Warehouse deleted successfully');
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, `warehouses/${id}`);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (products.length === 0) {
+      toast.error('No products to export');
+      return;
+    }
+
+    const headers = ['ID', 'Name', 'SKU', 'Barcode', 'Category', 'Brand', 'Price', 'Cost Price', 'Status', 'Created At'];
+    const csvRows = [headers.join(',')];
+
+    products.forEach(product => {
+      const row = [
+        product.id,
+        `"${product.name || ''}"`,
+        `"${product.sku || ''}"`,
+        `"${product.barcode || ''}"`,
+        `"${product.category || ''}"`,
+        `"${product.brand || ''}"`,
+        product.price || 0,
+        product.costPrice || 0,
+        product.status || '',
+        product.createdAt?.toDate ? product.createdAt.toDate().toLocaleString() : (product.createdAt?.seconds ? new Date(product.createdAt.seconds * 1000).toLocaleString() : 'N/A')
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Products exported successfully');
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'products': return <ProductsTab products={products} variants={variants} categories={categories} brands={brands} onEdit={(p: any) => { setEditingItem(p); setIsProductModalOpen(true); }} onAddCategory={() => setIsCategoryModalOpen(true)} onAddBrand={() => setIsBrandModalOpen(true)} />;
-      case 'warehouses': return <WarehousesTab warehouses={warehouses} onEdit={(w: any) => { setEditingItem(w); setIsWarehouseModalOpen(true); }} />;
+      case 'products': return <ProductsTab products={products} variants={variants} categories={categories} brands={brands} onEdit={(p: any) => { setEditingItem(p); setIsProductModalOpen(true); }} onDelete={handleDeleteProduct} onAddCategory={() => setIsCategoryModalOpen(true)} onAddBrand={() => setIsBrandModalOpen(true)} />;
+      case 'warehouses': return <WarehousesTab warehouses={warehouses} onEdit={(w: any) => { setEditingItem(w); setIsWarehouseModalOpen(true); }} onDelete={handleDeleteWarehouse} />;
       case 'stock': return <StockTab inventory={inventory} products={products} variants={variants} warehouses={warehouses} onAdjust={() => setIsAdjustmentModalOpen(true)} onTransfer={() => setIsTransferModalOpen(true)} />;
       case 'purchases': return <PurchasesTab pos={purchaseOrders} suppliers={suppliers} products={products} variants={variants} onAdd={() => setIsPOModalOpen(true)} />;
       case 'suppliers': return <SuppliersTab suppliers={suppliers} onEdit={(s: any) => { setEditingItem(s); setIsSupplierModalOpen(true); }} />;
@@ -155,6 +215,13 @@ export default function Inventory() {
           <p className="text-sm text-gray-500 mt-1">Full-stack control over products, variants, warehouses, and stock movements.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            <Download size={16} />
+            Export CSV
+          </button>
           <button 
             onClick={() => {
               setEditingItem(null);
@@ -215,7 +282,7 @@ export default function Inventory() {
 
 // --- Sub-components for Tabs ---
 
-function ProductsTab({ products, variants, categories, brands, onEdit, onAddCategory, onAddBrand }: any) {
+function ProductsTab({ products, variants, categories, brands, onEdit, onDelete, onAddCategory, onAddBrand }: any) {
   const { currencySymbol } = useSettings();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -326,6 +393,9 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onAddCate
                   <button onClick={() => onEdit(p)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                     <Edit size={16} className="text-gray-400" />
                   </button>
+                  <button onClick={() => onDelete(p.id)} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-600">
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </td>
             </tr>
@@ -336,7 +406,7 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onAddCate
   );
 }
 
-function WarehousesTab({ warehouses, onEdit }: any) {
+function WarehousesTab({ warehouses, onEdit, onDelete }: any) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {warehouses.map((w: any) => (
@@ -345,9 +415,14 @@ function WarehousesTab({ warehouses, onEdit }: any) {
             <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
               <Warehouse size={24} />
             </div>
-            <button onClick={() => onEdit(w)} className="p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Edit size={16} className="text-gray-400" />
-            </button>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={() => onEdit(w)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <Edit size={16} className="text-gray-400" />
+              </button>
+              <button onClick={() => onDelete(w.id)} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-600">
+                <Trash2 size={16} />
+              </button>
+            </div>
           </div>
           <h3 className="text-lg font-bold text-[#141414]">{w.name}</h3>
           <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">

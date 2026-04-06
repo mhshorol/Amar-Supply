@@ -778,6 +778,51 @@ export default function Orders() {
     toast.success(`Bulk process complete. Success: ${successCount}, Failed: ${failCount}`);
   };
 
+  const handleExportCSV = () => {
+    if (orders.length === 0) {
+      toast.error('No orders to export');
+      return;
+    }
+
+    const headers = ['Order ID', 'Order Number', 'Customer Name', 'Phone', 'Address', 'City', 'Zone', 'Subtotal', 'Delivery Charge', 'Discount', 'Total Amount', 'Paid Amount', 'Due Amount', 'Status', 'Channel', 'Payment Method', 'Created At'];
+    const csvRows = [headers.join(',')];
+
+    orders.forEach(order => {
+      const row = [
+        order.id,
+        order.orderNumber || '',
+        `"${order.customerName || ''}"`,
+        `"${order.customerPhone || ''}"`,
+        `"${(order.customerAddress || '').replace(/"/g, '""')}"`,
+        order.customerCity || '',
+        order.customerZone || '',
+        order.subtotal || 0,
+        order.deliveryCharge || 0,
+        order.discount || 0,
+        order.totalAmount || 0,
+        order.paidAmount || 0,
+        order.dueAmount || 0,
+        order.status || '',
+        order.channel || '',
+        order.paymentMethod || '',
+        order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString() : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleString() : 'N/A')
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Orders exported successfully');
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -810,6 +855,13 @@ export default function Orders() {
           </div>
         </div>
         <div className="flex gap-3">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-sm font-bold hover:bg-[#f9fafb] transition-all shadow-sm"
+          >
+            <Download size={18} />
+            Export CSV
+          </button>
           <button 
             onClick={() => setViewMode(viewMode === 'table' ? 'kanban' : 'table')}
             className="flex items-center gap-2 px-4 py-2 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-sm font-bold hover:bg-[#f9fafb] transition-all shadow-sm"
