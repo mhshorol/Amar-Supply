@@ -67,8 +67,8 @@ const StatusBadge = ({ status }: { status: string }) => {
     'returned': 'bg-[#f9fafb] text-[#4b5563] border-[#f3f4f6]',
   };
   return (
-    <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md border ${colors[status] || colors['pending']}`}>
-      {status.replace(/_/g, ' ')}
+    <span className={`text-[10px] font-bold px-2 py-1 rounded-md border ${colors[status] || colors['pending']}`}>
+      {status.replace(/_/g, ' ').charAt(0).toUpperCase() + status.replace(/_/g, ' ').slice(1)}
     </span>
   );
 };
@@ -890,7 +890,7 @@ export default function Orders() {
               className="bg-[#ffffff1a] border border-[#ffffff33] rounded-lg px-3 py-1 text-xs font-bold outline-none"
             >
               <option value="" className="text-black">Update Status</option>
-              {statuses.map(s => <option key={s} value={s} className="text-black">{s.replace(/_/g, ' ')}</option>)}
+              {statuses.map(s => <option key={s} value={s} className="text-black">{s.replace(/_/g, ' ').charAt(0).toUpperCase() + s.replace(/_/g, ' ').slice(1)}</option>)}
             </select>
             <button 
               onClick={handleBulkSendToSteadfast}
@@ -943,7 +943,7 @@ export default function Orders() {
                     : 'text-[#6b7280] hover:bg-[#f3f4f6]'
                 }`}
               >
-                {tab.replace(/_/g, ' ')}
+                {tab.replace(/_/g, ' ').charAt(0).toUpperCase() + tab.replace(/_/g, ' ').slice(1)}
               </button>
             ))}
           </div>
@@ -1082,7 +1082,7 @@ export default function Orders() {
                               status === 'delivered' ? 'bg-[#4ade80]' :
                               status === 'cancelled' ? 'bg-[#f87171]' : 'bg-[#60a5fa]'
                             }`} />
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-[#6b7280]">{status.replace(/_/g, ' ')}</h3>
+                            <h3 className="text-xs font-bold tracking-widest text-[#6b7280]">{status.replace(/_/g, ' ').charAt(0).toUpperCase() + status.replace(/_/g, ' ').slice(1)}</h3>
                             <span className="px-2 py-0.5 bg-[#f3f4f6] rounded-full text-[10px] font-bold text-[#6b7280]">
                               {orders.filter(o => o.status === status).length}
                             </span>
@@ -1440,7 +1440,7 @@ export default function Orders() {
                       onChange={e => setOrderForm({...orderForm, status: e.target.value as any})}
                     >
                       {statuses.map(s => (
-                        <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                        <option key={s} value={s}>{s.replace(/_/g, ' ').charAt(0).toUpperCase() + s.replace(/_/g, ' ').slice(1)}</option>
                       ))}
                     </select>
                   </div>

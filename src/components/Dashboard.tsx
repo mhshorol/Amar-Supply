@@ -339,10 +339,10 @@ export default function Dashboard() {
                     <td className="px-6 py-4 text-xs text-gray-600">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A')}</td>
                     <td className="px-6 py-4 text-xs font-bold text-gray-900">{formatCurrency(order.totalAmount)}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase ${
+                      <span className={`px-2 py-1 text-[10px] font-bold rounded-md ${
                         order.status === 'delivered' ? 'bg-green-500 text-white' : 
                         order.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-[#00AEEF] text-white'
-                      }`}>{order.status.replace(/_/g, ' ')}</span>
+                      }`}>{(order.status.charAt(0).toUpperCase() + order.status.slice(1)).replace(/_/g, ' ')}</span>
                     </td>
                   </tr>
                 ))}

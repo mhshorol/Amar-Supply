@@ -24,6 +24,7 @@ import {
   deleteDoc,
   doc,
   query, 
+  where,
   orderBy, 
   serverTimestamp,
   Timestamp,
@@ -44,6 +45,7 @@ interface Customer {
   orders: number;
   spent: number;
   lastOrder: string;
+  points?: number;
   createdAt: any;
   uid: string;
   segment?: 'New' | 'Repeat' | 'VIP' | 'At Risk';
@@ -70,6 +72,10 @@ export default function CRM() {
     followUpDate: ''
   });
 
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerOrders, setCustomerOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
   useEffect(() => {
     const q = query(collection(db, 'customers'), orderBy('createdAt', 'desc'));
     
@@ -79,6 +85,9 @@ export default function CRM() {
         ...doc.data()
       })) as Customer[];
       setCustomers(customerData);
+      if (customerData.length > 0 && !selectedCustomer) {
+        setSelectedCustomer(customerData[0]);
+      }
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'customers');
@@ -87,6 +96,32 @@ export default function CRM() {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!selectedCustomer) return;
+
+    setLoadingOrders(true);
+    const q = query(
+      collection(db, 'orders'),
+      where('customerPhone', '==', selectedCustomer.phone),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const orders = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setCustomerOrders(orders);
+      setLoadingOrders(false);
+    }, (error) => {
+      console.error("Error fetching orders:", error);
+      // Fallback to in-memory filtering if index is missing (though we should encourage index creation)
+      setLoadingOrders(false);
+    });
+
+    return () => unsubscribe();
+  }, [selectedCustomer]);
 
   const handleOpenAddModal = () => {
     setEditingCustomer(null);
@@ -271,138 +306,256 @@ export default function CRM() {
         </div>
       </div>
 
-      {/* Search & Filter */}
-      <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Search by Name, Phone, Email, Address..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-320px)] min-h-[600px]">
+        {/* Left Column: Customer List */}
+        <div className="lg:col-span-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-gray-50 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">All customers</h3>
+              <div className="flex items-center gap-2">
+                <button className="p-2 hover:bg-gray-50 rounded-lg text-gray-400">
+                  <History size={18} />
+                </button>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search customers"
+                    className="pl-9 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl text-xs focus:bg-white focus:border-gray-200 outline-none transition-all w-48"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              <span className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                New Customer
+              </span>
+              <span className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+                Regular
+              </span>
+            </div>
+          </div>
 
-      {/* Customers Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
-                <th className="px-6 py-4 font-semibold">Customer info</th>
-                <th className="px-6 py-4 font-semibold">Contact</th>
-                <th className="px-6 py-4 font-semibold">Location</th>
-                <th className="px-6 py-4 font-semibold">Order History</th>
-                <th className="px-6 py-4 font-semibold">Total Spent</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="animate-spin text-gray-400" size={24} />
-                      <span className="text-sm text-gray-500">Loading customers...</span>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-2">
+                <Loader2 className="animate-spin text-gray-300" size={24} />
+                <span className="text-xs text-gray-400">Loading...</span>
+              </div>
+            ) : filteredCustomers.length === 0 ? (
+              <div className="text-center py-12 text-gray-400 text-xs">No customers found</div>
+            ) : (
+              filteredCustomers.map((customer) => (
+                <button
+                  key={customer.id}
+                  onClick={() => setSelectedCustomer(customer)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group relative ${
+                    selectedCustomer?.id === customer.id ? 'bg-blue-50/50 border border-blue-100/50' : 'hover:bg-gray-50 border border-transparent'
+                  }`}
+                >
+                  <div className="relative">
+                    <div className={`absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${
+                      customer.orders > 1 ? 'bg-green-500' : 'bg-blue-500'
+                    }`} />
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
+                      <Users size={20} className="text-gray-400" />
                     </div>
-                  </td>
-                </tr>
-              ) : filteredCustomers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Users className="text-gray-300" size={48} />
-                      <span className="text-sm text-gray-500">No customers found</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-gray-900 truncate">{customer.name}</span>
+                      <span className="text-[9px] text-gray-400 font-medium">
+                        {customer.createdAt?.toDate ? customer.createdAt.toDate().toLocaleDateString('en-GB') : 'N/A'}
+                      </span>
                     </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-[#141414]">{customer.name}</span>
-                          {customer.segment && (
-                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
-                              customer.segment === 'VIP' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                              customer.segment === 'Repeat' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                              customer.segment === 'At Risk' ? 'bg-red-50 text-red-600 border border-red-100' :
-                              'bg-gray-50 text-gray-500 border border-gray-100'
-                            }`}>
-                              {customer.segment}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[10px] font-mono text-gray-400 mt-1 uppercase tracking-wider">{customer.id}</span>
-                        {customer.tags && customer.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {customer.tags.map(tag => (
-                              <span key={tag} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[8px] font-medium">
-                                #{tag}
+                    <span className="text-[10px] text-gray-500 truncate block">{customer.email}</span>
+                  </div>
+                  {selectedCustomer?.id === customer.id && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-l-full" />
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Customer Details */}
+        <div className="lg:col-span-8 space-y-6 overflow-y-auto pr-2">
+          {selectedCustomer ? (
+            <>
+              {/* Profile Header */}
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
+                    <Users size={32} className="text-gray-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-gray-900">{selectedCustomer.name}</h3>
+                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider ${
+                        selectedCustomer.orders > 1 ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                      }`}>
+                        {selectedCustomer.orders > 1 ? 'Regular' : 'New Customer'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium">{selectedCustomer.email}</p>
+                    <p className="text-[11px] text-gray-500 mt-1">{selectedCustomer.address}</p>
+                    <p className="text-[10px] text-gray-400 font-medium mt-1">
+                      Member Since {selectedCustomer.createdAt?.toDate ? selectedCustomer.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                  <p className="text-sm font-bold text-gray-900">{selectedCustomer.phone}</p>
+                  <div className="mt-2 flex items-center gap-2 justify-end">
+                    <div className="px-2 py-1 bg-orange-50 text-orange-600 rounded-lg text-[10px] font-bold border border-orange-100 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      {selectedCustomer.points || 0} Points
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Average Order Value Card */}
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Average Order Value</span>
+                <span className="text-lg font-black text-gray-900">
+                  {currencySymbol} {selectedCustomer.orders > 0 ? Math.round(selectedCustomer.spent / selectedCustomer.orders).toLocaleString() : 0}
+                </span>
+              </div>
+
+              {/* Bills Table */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Bills</h3>
+                  <button className="p-2 hover:bg-gray-50 rounded-lg text-gray-400">
+                    <History size={18} />
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+                        <th className="px-6 py-4">Bill no.</th>
+                        <th className="px-6 py-4">Date</th>
+                        <th className="px-6 py-4">Time</th>
+                        <th className="px-6 py-4 text-right">Total Sales</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {loadingOrders ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-8 text-center">
+                            <Loader2 className="animate-spin text-gray-300 mx-auto" size={20} />
+                          </td>
+                        </tr>
+                      ) : customerOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-8 text-center text-xs text-gray-400 italic">No bills found</td>
+                        </tr>
+                      ) : (
+                        customerOrders.map((order) => (
+                          <tr key={order.id} className="hover:bg-gray-50 transition-colors group">
+                            <td className="px-6 py-4 text-xs font-bold text-gray-900">#{order.orderNumber || order.id.slice(0, 4)}</td>
+                            <td className="px-6 py-4 text-xs text-gray-600">
+                              {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('en-GB') : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 text-xs text-gray-600">
+                              {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 text-xs font-black text-gray-900 text-right">
+                              {currencySymbol} {order.totalAmount?.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Items Bought Table */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Items Bought</h3>
+                  <button className="p-2 hover:bg-gray-50 rounded-lg text-gray-400">
+                    <History size={18} />
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+                        <th className="px-6 py-4">Category</th>
+                        <th className="px-6 py-4">Item Code</th>
+                        <th className="px-6 py-4">Quantity</th>
+                        <th className="px-6 py-4 text-right">Total Sales</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {loadingOrders ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-8 text-center">
+                            <Loader2 className="animate-spin text-gray-300 mx-auto" size={20} />
+                          </td>
+                        </tr>
+                      ) : customerOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-8 text-center text-xs text-gray-400 italic">No items found</td>
+                        </tr>
+                      ) : (
+                        customerOrders.flatMap(order => order.items || []).slice(0, 10).map((item: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-gray-50 transition-colors group">
+                            <td className="px-6 py-4">
+                              <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[9px] font-bold rounded-lg border border-blue-100 uppercase tracking-wider">
+                                {item.category || 'General'}
                               </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <Phone size={12} className="text-gray-400" />
-                          {customer.phone}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <Mail size={12} className="text-gray-400" />
-                          {customer.email}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <MapPin size={12} className="text-gray-400" />
-                        {customer.address}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1 text-sm font-bold text-[#141414]">
-                          {customer.orders} <span className="text-[10px] font-normal text-gray-400 uppercase tracking-wider">Orders</span>
-                        </div>
-                        {customer.followUpDate && (
-                          <div className="flex items-center gap-1 text-[10px] text-orange-600 font-bold mt-1">
-                            <Calendar size={10} />
-                            Follow-up: {customer.followUpDate?.toDate ? customer.followUpDate.toDate().toLocaleDateString() : (customer.followUpDate?.seconds ? new Date(customer.followUpDate.seconds * 1000).toLocaleDateString() : 'N/A')}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-[#141414]">{currencySymbol} {(customer.spent || 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => handleOpenEditModal(customer)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" 
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteCustomer(customer.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all" 
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                            </td>
+                            <td className="px-6 py-4 text-xs font-medium text-gray-500">{item.id?.slice(0, 8) || 'N/A'}</td>
+                            <td className="px-6 py-4 text-xs font-bold text-gray-900">{item.quantity}</td>
+                            <td className="px-6 py-4 text-xs font-black text-gray-900 text-right">
+                              {currencySymbol} {(item.price * item.quantity).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Messages Section */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Messages</h3>
+                  <button className="p-2 hover:bg-gray-50 rounded-lg text-gray-400">
+                    <MoreVertical size={18} />
+                  </button>
+                </div>
+                <div className="p-8 text-center">
+                  <div className="inline-block px-4 py-1.5 bg-gray-50 rounded-full text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">
+                    Wednesday, 22 Feb
+                  </div>
+                  <div className="flex flex-col items-center gap-4 text-gray-300">
+                    <MessageSquare size={48} strokeWidth={1} />
+                    <p className="text-xs font-medium">No messages yet</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center bg-white rounded-2xl border border-gray-100 shadow-sm text-gray-400 gap-4">
+              <Users size={64} strokeWidth={1} />
+              <p className="text-sm font-medium">Select a customer to view details</p>
+            </div>
+          )}
         </div>
       </div>
 

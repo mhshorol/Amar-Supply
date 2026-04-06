@@ -585,12 +585,12 @@ export default function Logistics() {
                           ) : (
                             <Clock size={14} className="text-blue-500" />
                           )}
-                          <span className={`text-[10px] font-bold uppercase ${
+                          <span className={`text-[10px] font-bold ${
                             delivery.status === 'Delivered' ? 'text-green-600' :
                             delivery.status === 'Cancelled' ? 'text-red-600' :
                             'text-blue-600'
                           }`}>
-                            {delivery.status}
+                            {delivery.status.charAt(0).toUpperCase() + delivery.status.slice(1)}
                           </span>
                         </div>
                         <span className="text-[10px] text-gray-400">{delivery.eta}</span>

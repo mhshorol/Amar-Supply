@@ -13,6 +13,7 @@ interface CompanySettings {
   language: string;
   steadfastApiKey?: string;
   steadfastSecretKey?: string;
+  rewardPointsRate?: number; // Points per 100 currency units
 }
 
 interface SettingsContextType {
@@ -32,7 +33,8 @@ const defaultSettings: CompanySettings = {
   timezone: 'Asia/Dhaka',
   language: 'English',
   steadfastApiKey: '',
-  steadfastSecretKey: ''
+  steadfastSecretKey: '',
+  rewardPointsRate: 1 // Default: 1 point per 100 BDT
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

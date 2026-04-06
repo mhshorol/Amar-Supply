@@ -48,6 +48,7 @@ interface Customer {
   name: string;
   phone: string;
   address?: string;
+  points?: number;
 }
 
 export default function POS() {
@@ -316,7 +317,7 @@ export default function POS() {
           paidAmount: total,
           dueAmount: 0,
           paymentMethod,
-          status: 'delivered',
+          status: 'Delivered',
           channel: 'POS',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -352,6 +353,26 @@ export default function POS() {
               createdAt: serverTimestamp()
             });
           }
+        }
+
+        // Update Customer Points & Stats
+        const customerRef = doc(db, 'customers', selectedCustomer.id);
+        const customerSnap = await transaction.get(customerRef);
+        if (customerSnap.exists()) {
+          const currentPoints = customerSnap.data().points || 0;
+          const currentSpent = customerSnap.data().spent || 0;
+          const currentOrders = customerSnap.data().orders || 0;
+          
+          const pointsRate = companySettings?.rewardPointsRate || 1;
+          const earnedPoints = Math.floor((total / 100) * pointsRate);
+          
+          transaction.update(customerRef, {
+            points: currentPoints + earnedPoints,
+            spent: currentSpent + total,
+            orders: currentOrders + 1,
+            lastOrder: new Date().toISOString(),
+            updatedAt: serverTimestamp()
+          });
         }
 
         // Add to Finance

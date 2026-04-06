@@ -58,7 +58,8 @@ export default function Settings() {
     steadfastSecretKey: '',
     wooUrl: '',
     wooConsumerKey: '',
-    wooConsumerSecret: ''
+    wooConsumerSecret: '',
+    rewardPointsRate: 1
   });
 
   useEffect(() => {
@@ -417,6 +418,19 @@ export default function Settings() {
                       <option value="Bengali">Bengali</option>
                       <option value="Spanish">Spanish</option>
                     </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Reward Points (per 100 {companyInfo.currency})</label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        value={companyInfo.rewardPointsRate} 
+                        onChange={e => setCompanyInfo({...companyInfo, rewardPointsRate: parseFloat(e.target.value) || 0})}
+                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all pr-12" 
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 uppercase">Points</div>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1">Example: 1 point for every 100 {companyInfo.currency} spent.</p>
                   </div>
                 </div>
               </div>

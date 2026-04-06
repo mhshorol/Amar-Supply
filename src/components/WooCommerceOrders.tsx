@@ -238,7 +238,7 @@ export default function WooCommerceOrders() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${STATUS_COLORS[order.status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider border ${STATUS_COLORS[order.status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
                           <StatusIcon size={12} />
                           {getStatusLabel(order.status)}
                         </span>
