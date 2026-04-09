@@ -4,6 +4,7 @@ import { onAuthStateChanged, signInWithPopup, googleProvider, auth, isFirebaseCo
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Orders from './components/Orders';
+import NewOrder from './components/NewOrder';
 import Inventory from './components/Inventory';
 import CRM from './components/CRM';
 import Logistics from './components/Logistics';
@@ -13,6 +14,8 @@ import Finance from './components/Finance';
 import HR from './components/HR';
 import Team from './components/Team';
 import Tasks from './components/Tasks';
+import Reports from './components/Reports';
+import Returns from './components/Returns';
 import Settings from './components/Settings';
 import { LogIn, AlertTriangle, ShieldCheck, Mail, Lock, Loader2 } from 'lucide-react';
 import { SettingsProvider } from './contexts/SettingsContext';
@@ -239,14 +242,17 @@ function AppContent() {
           <Route path="/" element={hasPermission('dashboard') ? <Dashboard /> : <Navigate to="/tasks" replace />} />
           <Route path="/pos" element={hasPermission('pos') ? <POS /> : <Navigate to="/" replace />} />
           <Route path="/orders" element={hasPermission('orders') ? <Orders /> : <Navigate to="/" replace />} />
+          <Route path="/orders/new" element={hasPermission('orders') ? <NewOrder /> : <Navigate to="/" replace />} />
           <Route path="/inventory" element={hasPermission('inventory') ? <Inventory /> : <Navigate to="/" replace />} />
           <Route path="/crm" element={hasPermission('crm') ? <CRM /> : <Navigate to="/" replace />} />
+          <Route path="/returns" element={hasPermission('orders') ? <Returns /> : <Navigate to="/" replace />} />
           <Route path="/suppliers" element={hasPermission('suppliers') ? <Suppliers /> : <Navigate to="/" replace />} />
           <Route path="/logistics" element={hasPermission('logistics') ? <Logistics /> : <Navigate to="/" replace />} />
           <Route path="/finance" element={hasPermission('finance') ? <Finance /> : <Navigate to="/" replace />} />
           <Route path="/hr" element={hasPermission('hr') ? <HR /> : <Navigate to="/" replace />} />
           <Route path="/team" element={hasPermission('team') ? <Team /> : <Navigate to="/" replace />} />
           <Route path="/tasks" element={hasPermission('tasks') ? <Tasks /> : <Navigate to="/" replace />} />
+          <Route path="/reports" element={hasPermission('dashboard') ? <Reports /> : <Navigate to="/" replace />} />
           <Route path="/settings" element={hasPermission('settings') ? <Settings /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

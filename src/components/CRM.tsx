@@ -42,9 +42,9 @@ interface Customer {
   phone: string;
   email: string;
   address: string;
-  orders: number;
-  spent: number;
-  lastOrder: string;
+  orderCount: number;
+  totalSpent: number;
+  lastOrderDate: any;
   points?: number;
   createdAt: any;
   uid: string;
@@ -117,8 +117,9 @@ export default function CRM() {
       setCustomerOrders(orders);
       setLoadingOrders(false);
     }, (error) => {
-      console.error("Error fetching orders:", error);
-      // Fallback to in-memory filtering if index is missing (though we should encourage index creation)
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'orders');
+      }
       setLoadingOrders(false);
     });
 
@@ -171,9 +172,9 @@ export default function CRM() {
       } else {
         await addDoc(collection(db, 'customers'), {
           ...data,
-          orders: 0,
-          spent: 0,
-          lastOrder: 'Never',
+          orderCount: 0,
+          totalSpent: 0,
+          lastOrderDate: null,
           createdAt: serverTimestamp(),
           uid: auth.currentUser.uid
         });
@@ -237,8 +238,8 @@ export default function CRM() {
     customer.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalSpent = customers.reduce((sum, c) => sum + (c.spent || 0), 0);
-  const avgSpent = customers.length > 0 ? totalSpent / customers.length : 0;
+  const totalSpentAll = customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+  const avgSpent = customers.length > 0 ? totalSpentAll / customers.length : 0;
 
   return (
     <div className="space-y-6">
@@ -284,7 +285,7 @@ export default function CRM() {
           <div>
             <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Repeat Customers</p>
             <p className="text-xl font-bold">
-              {customers.length > 0 ? Math.round((customers.filter(c => c.orders > 1).length / customers.length) * 100) : 0}%
+              {customers.length > 0 ? Math.round((customers.filter(c => c.orderCount > 1).length / customers.length) * 100) : 0}%
             </p>
           </div>
         </div>
@@ -363,7 +364,7 @@ export default function CRM() {
                 >
                   <div className="relative">
                     <div className={`absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${
-                      customer.orders > 1 ? 'bg-green-500' : 'bg-blue-500'
+                      customer.orderCount > 1 ? 'bg-green-500' : 'bg-blue-500'
                     }`} />
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
                       <Users size={20} className="text-gray-400" />
@@ -401,9 +402,12 @@ export default function CRM() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-bold text-gray-900">{selectedCustomer.name}</h3>
                       <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider ${
-                        selectedCustomer.orders > 1 ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                        selectedCustomer.segment === 'VIP' ? 'bg-purple-50 text-purple-600 border border-purple-100' :
+                        selectedCustomer.segment === 'Repeat' ? 'bg-green-50 text-green-600 border border-green-100' :
+                        selectedCustomer.segment === 'At Risk' ? 'bg-red-50 text-red-600 border border-red-100' :
+                        'bg-blue-50 text-blue-600 border border-blue-100'
                       }`}>
-                        {selectedCustomer.orders > 1 ? 'Regular' : 'New Customer'}
+                        {selectedCustomer.segment || 'New Customer'}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 font-medium">{selectedCustomer.email}</p>
@@ -429,7 +433,7 @@ export default function CRM() {
               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                 <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Average Order Value</span>
                 <span className="text-lg font-black text-gray-900">
-                  {currencySymbol} {selectedCustomer.orders > 0 ? Math.round(selectedCustomer.spent / selectedCustomer.orders).toLocaleString() : 0}
+                  {currencySymbol} {selectedCustomer.orderCount > 0 ? Math.round(selectedCustomer.totalSpent / selectedCustomer.orderCount).toLocaleString() : 0}
                 </span>
               </div>
 

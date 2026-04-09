@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Plus, 
@@ -53,6 +54,7 @@ interface Customer {
 
 export default function POS() {
   const { currencySymbol } = useSettings();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
@@ -299,23 +301,27 @@ export default function POS() {
         }
       }
 
-      await runTransaction(db, async (transaction) => {
-        // 1. ALL READS FIRST
+      // 1. PRE-TRANSACTION READS
+      const inventorySnaps: { item: any; snap: any }[] = [];
+      for (const item of cart) {
+        const invQuery = query(
+          collection(db, 'inventory'), 
+          where('productId', '==', item.productId),
+          where('variantId', '==', item.variantId || '')
+        );
+        const invSnap = await getDocs(invQuery);
+        inventorySnaps.push({ item, snap: invSnap });
+      }
+
+      const result = await runTransaction(db, async (transaction) => {
+        // 2. TRANSACTION READS
         const settingsRef = doc(db, 'settings', 'company');
         const settingsSnap = await transaction.get(settingsRef);
 
-        const inventorySnaps: { item: any; snap: any }[] = [];
-        for (const item of cart) {
-          const invQuery = query(
-            collection(db, 'inventory'), 
-            where('productId', '==', item.productId),
-            where('variantId', '==', item.variantId || '')
-          );
-          const invSnap = await getDocs(invQuery);
-          inventorySnaps.push({ item, snap: invSnap });
-        }
+        const customerRef = doc(db, 'customers', selectedCustomer.id);
+        const customerSnap = await transaction.get(customerRef);
 
-        // 2. CALCULATE NEXT ORDER NUMBER
+        // 3. CALCULATE NEXT ORDER NUMBER
         let nextOrderNumber = 1001;
         if (settingsSnap.exists() && settingsSnap.data().orderCounter) {
           nextOrderNumber = settingsSnap.data().orderCounter + 1;
@@ -345,7 +351,7 @@ export default function POS() {
           paidAmount: total,
           dueAmount: 0,
           paymentMethod,
-          status: 'Delivered',
+          status: 'delivered',
           channel: 'POS',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -384,8 +390,6 @@ export default function POS() {
         }
 
         // Update Customer Points & Stats
-        const customerRef = doc(db, 'customers', selectedCustomer.id);
-        const customerSnap = await transaction.get(customerRef);
         if (customerSnap.exists()) {
           const currentPoints = customerSnap.data().points || 0;
           const currentSpent = customerSnap.data().spent || 0;
@@ -418,9 +422,14 @@ export default function POS() {
           createdAt: serverTimestamp()
         });
 
-        // Set completed order for receipt
-        setCompletedOrder({ ...orderData, id: orderRef.id });
+        // 4. PREPARE COMPLETED ORDER DATA
+        const finalCompletedOrder = { ...orderData, id: orderRef.id };
+        return finalCompletedOrder;
       });
+
+      if (result) {
+        setCompletedOrder(result);
+      }
 
       await logActivity('POS Sale', 'POS', `Completed sale for ${total}`);
       
@@ -539,7 +548,7 @@ export default function POS() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pb-8">
+        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 pb-8">
           {filteredProducts.map(product => {
             const productVariants = variants.filter(v => v.productId === product.id);
             const totalStock = getStock(product.id);
@@ -547,7 +556,7 @@ export default function POS() {
             return (
               <div 
                 key={product.id}
-                className="bg-white aspect-square border border-gray-100 rounded-2xl overflow-hidden transition-all flex flex-col group cursor-pointer relative"
+                className="bg-white border border-gray-100 rounded-2xl overflow-hidden transition-all flex flex-col group cursor-pointer relative hover:shadow-md hover:border-[#00AEEF]/20"
                 onClick={() => productVariants.length === 0 && totalStock > 0 && addToCart(product)}
               >
                 {/* Status Badge */}
@@ -562,27 +571,27 @@ export default function POS() {
                 </div>
 
                 {/* Product Image */}
-                <div className="flex-1 w-full flex items-center justify-center p-2 relative overflow-hidden">
+                <div className="h-32 w-full flex items-center justify-center p-3 relative overflow-hidden bg-gray-50/30">
                   {product.image ? (
                     <img 
                       src={product.image} 
                       alt={product.name} 
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 relative z-10" 
+                      className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 relative z-10" 
                       referrerPolicy="no-referrer" 
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-100 relative z-10">
+                    <div className="w-full h-full flex items-center justify-center text-gray-200 relative z-10">
                       <Package size={40} strokeWidth={1} />
                     </div>
                   )}
                 </div>
 
                 {/* Product Info */}
-                <div className="p-2 bg-gray-50/50 border-t border-gray-100">
-                  <h3 className="text-[10px] font-bold text-gray-900 line-clamp-1 group-hover:text-[#00AEEF] transition-colors uppercase tracking-tight">
+                <div className="p-3 bg-white border-t border-gray-50 flex-1 flex flex-col justify-between">
+                  <h3 className="text-[11px] font-bold text-gray-900 line-clamp-2 group-hover:text-[#00AEEF] transition-colors uppercase tracking-tight leading-tight mb-1">
                     {product.name}
                   </h3>
-                  <p className="text-[11px] font-black text-[#00AEEF]">
+                  <p className="text-xs font-black text-[#00AEEF]">
                     {currencySymbol}{product.price?.toLocaleString()}
                   </p>
                 </div>
@@ -631,9 +640,9 @@ export default function POS() {
           </div>
 
           {selectedCustomer ? (
-            <div className="p-3 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-between">
+            <div className="p-3 rounded-2xl flex items-center justify-between" style={{ backgroundColor: '#eff6ff', border: '1px solid #dbeafe' }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#00AEEF] font-bold">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-bold" style={{ color: '#00AEEF' }}>
                   {selectedCustomer.name[0]}
                 </div>
                 <div>
@@ -726,7 +735,7 @@ export default function POS() {
                 <p className="text-xs font-medium">Your cart is empty</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y" style={{ borderColor: '#f9fafb' }}>
                 {cart.map(item => (
                   <div key={item.id} className="py-2 flex items-center gap-3 group">
                     <div className="flex-1 min-w-0">
@@ -734,11 +743,11 @@ export default function POS() {
                         {item.name}
                         {item.variantName && <span className="ml-1 text-[9px] text-gray-400 font-medium">({item.variantName})</span>}
                       </h4>
-                      <p className="text-[10px] font-bold text-[#00AEEF]">{currencySymbol}{item.price.toLocaleString()}</p>
+                      <p className="text-[10px] font-bold" style={{ color: '#00AEEF' }}>{currencySymbol}{item.price.toLocaleString()}</p>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-0.5 border border-gray-100">
+                      <div className="flex items-center gap-1.5 rounded-lg p-0.5 border" style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6' }}>
                         <button 
                           onClick={() => updateQuantity(item.id, -1)}
                           className="p-0.5 hover:bg-white hover:shadow-sm rounded transition-all text-gray-500"
@@ -935,10 +944,13 @@ export default function POS() {
               
               <div className="flex gap-3">
                 <button 
-                  onClick={() => setCompletedOrder(null)}
+                  onClick={() => {
+                    setCompletedOrder(null);
+                    navigate('/orders');
+                  }}
                   className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-all"
                 >
-                  Close
+                  Go to Orders
                 </button>
                 <button 
                   onClick={() => handlePrint()}
@@ -948,6 +960,12 @@ export default function POS() {
                   Print Receipt
                 </button>
               </div>
+              <button 
+                onClick={() => setCompletedOrder(null)}
+                className="w-full py-3 text-sm font-bold text-gray-400 hover:text-gray-600 transition-all"
+              >
+                New Sale
+              </button>
             </div>
           </div>
         </div>

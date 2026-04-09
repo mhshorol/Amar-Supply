@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { 
   Users, 
   UserPlus, 
@@ -98,22 +99,42 @@ const HR: React.FC = () => {
   useEffect(() => {
     const unsubDesignations = onSnapshot(query(collection(db, 'designations'), orderBy('createdAt', 'desc')), (snapshot) => {
       setDesignations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Designation)));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'designations');
+      }
     });
 
     const unsubEmployees = onSnapshot(query(collection(db, 'employees'), orderBy('createdAt', 'desc')), (snapshot) => {
       setEmployees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee)));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'employees');
+      }
     });
 
     const unsubAttendance = onSnapshot(query(collection(db, 'attendance'), orderBy('date', 'desc')), (snapshot) => {
       setAttendance(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attendance)));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'attendance');
+      }
     });
 
     const unsubAdvances = onSnapshot(query(collection(db, 'salaryAdvances'), orderBy('date', 'desc')), (snapshot) => {
       setSalaryAdvances(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SalaryAdvance)));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'salaryAdvances');
+      }
     });
 
     const unsubSalaries = onSnapshot(query(collection(db, 'salaryRecords'), orderBy('month', 'desc')), (snapshot) => {
       setSalaryRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SalaryRecord)));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'salaryRecords');
+      }
     });
 
     return () => {

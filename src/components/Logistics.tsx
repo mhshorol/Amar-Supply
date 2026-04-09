@@ -16,7 +16,8 @@ import {
   X,
   Trash2,
   Edit,
-  RefreshCw
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 import { 
   collection, 
@@ -27,13 +28,14 @@ import {
   getDoc,
   query, 
   orderBy, 
+  getDocs,
+  limit,
   serverTimestamp,
   Timestamp,
   updateDoc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useSettings } from '../contexts/SettingsContext';
-import { SteadfastService } from '../services/steadfastService';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
@@ -63,9 +65,40 @@ export default function Logistics() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [courierConfigs, setCourierConfigs] = useState<Record<string, any>>({});
+  const [courierLogs, setCourierLogs] = useState<any[]>([]);
+  const [activeSubTab, setActiveSubTab] = useState<'shipments' | 'couriers' | 'logs'>('shipments');
+
+  useEffect(() => {
+    const fetchCourierData = async () => {
+      try {
+        const response = await fetch('/api/couriers/configs');
+        if (response.ok) {
+          const data = await response.json();
+          setCourierConfigs(data);
+        }
+
+        // Fetch logs if on logs tab
+        if (activeSubTab === 'logs') {
+          try {
+            const logsSnap = await getDocs(query(collection(db, 'courier_logs'), limit(50)));
+            setCourierLogs(logsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          } catch (logError) {
+            console.error("Error fetching courier logs:", logError);
+            toast.error("Failed to fetch courier logs. Check permissions.");
+          }
+        }
+      } catch (error) {
+        console.error("Error in fetchCourierData:", error);
+      }
+    };
+    fetchCourierData();
+  }, [activeSubTab]);
   const [steadfastBalance, setSteadfastBalance] = useState<number | null>(null);
   const [pathaoBalance, setPathaoBalance] = useState<number | null>(null);
   const [redxBalance, setRedxBalance] = useState<number | null>(null);
+  const [carrybeeBalance, setCarrybeeBalance] = useState<number | null>(null);
+  const [paperflyBalance, setPaperflyBalance] = useState<number | null>(null);
   const [fetchingBalance, setFetchingBalance] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
@@ -120,53 +153,59 @@ export default function Logistics() {
   }, []);
 
   useEffect(() => {
-    if (settings.steadfastApiKey && settings.steadfastSecretKey) {
-      fetchSteadfastBalance();
-    }
-  }, [settings.steadfastApiKey, settings.steadfastSecretKey]);
+    if (courierConfigs.steadfast?.isActive) fetchBalance('steadfast');
+    if (courierConfigs.pathao?.isActive) fetchBalance('pathao');
+    if (courierConfigs.redx?.isActive) fetchBalance('redx');
+    if (courierConfigs.carrybee?.isActive) fetchBalance('carrybee');
+    if (courierConfigs.paperfly?.isActive) fetchBalance('paperfly');
+  }, [courierConfigs]);
 
-  const fetchSteadfastBalance = async () => {
-    if (!settings.steadfastApiKey || !settings.steadfastSecretKey) {
-      toast.error('Steadfast API keys are not configured.');
-      return;
-    }
+  const fetchBalance = async (courier: string) => {
     setFetchingBalance(true);
     try {
-      const steadfast = new SteadfastService(settings.steadfastApiKey, settings.steadfastSecretKey);
-      const response = await steadfast.getBalance();
-      if (response.status === 200) {
-        setSteadfastBalance(response.balance);
-        toast.success('Steadfast balance updated.');
+      const response = await fetch(`/api/couriers/balance/${courier.toLowerCase()}`);
+      const data = await response.json();
+      if (response.ok) {
+        if (courier.toLowerCase() === 'steadfast') setSteadfastBalance(data.balance);
+        if (courier.toLowerCase() === 'pathao') setPathaoBalance(data.balance);
+        if (courier.toLowerCase() === 'redx') setRedxBalance(data.balance);
+        if (courier.toLowerCase() === 'carrybee') setCarrybeeBalance(data.balance);
+        if (courier.toLowerCase() === 'paperfly') setPaperflyBalance(data.balance);
+        toast.success(`${courier} balance updated.`);
+      } else {
+        throw new Error(data.error || 'Failed to fetch balance');
       }
     } catch (error: any) {
-      console.error('Error fetching Steadfast balance:', error);
-      toast.error(error.message || 'Failed to fetch Steadfast balance.');
+      console.error(`Error fetching ${courier} balance:`, error);
+      toast.error(error.message || `Failed to fetch ${courier} balance.`);
     } finally {
       setFetchingBalance(false);
     }
   };
 
   const handleSyncStatus = async (delivery: Delivery) => {
-    if (!settings.steadfastApiKey || !settings.steadfastSecretKey) return;
-    if (delivery.courier !== 'Steadfast' || !delivery.id) return;
+    if (!delivery.courier || !delivery.id) return;
 
-    toast.loading('Syncing status with Steadfast...', { id: 'sync-status' });
+    toast.loading(`Syncing status with ${delivery.courier}...`, { id: 'sync-status' });
     try {
-      const steadfast = new SteadfastService(settings.steadfastApiKey, settings.steadfastSecretKey);
-      const response = await steadfast.getStatusByTracking(delivery.id);
+      const response = await fetch(`/api/couriers/track/${delivery.courier.toLowerCase()}/${delivery.id}`);
+      const data = await response.json();
       
-      if (response.status === 200 && response.delivery_status) {
-        // Map Steadfast status to our app status
+      if (response.ok) {
+        // Map courier-specific status to our app status
+        let rawStatus = data.delivery_status || data.status;
+        
         const statusMap: Record<string, string> = {
-          'pending': 'Pending Pickup',
-          'delivered': 'Delivered',
-          'cancelled': 'Cancelled',
-          'in_transit': 'In Transit',
-          'hold': 'On Hold',
-          'return': 'Returning'
+          'pending': 'pending_pickup',
+          'delivered': 'delivered',
+          'cancelled': 'cancelled',
+          'in_transit': 'in_transit',
+          'hold': 'hold',
+          'return': 'returned',
+          'delivered_approval_pending': 'delivered'
         };
 
-        const newStatus = statusMap[response.delivery_status] || response.delivery_status;
+        const newStatus = statusMap[rawStatus] || rawStatus;
         
         await updateDoc(doc(db, 'deliveries', delivery.id), {
           status: newStatus,
@@ -183,13 +222,15 @@ export default function Logistics() {
               'cancelled': 'cancelled',
               'in_transit': 'shipped'
             };
-            if (orderStatusMap[response.delivery_status]) {
-              await updateDoc(orderRef, { status: orderStatusMap[response.delivery_status] });
+            if (orderStatusMap[rawStatus]) {
+              await updateDoc(orderRef, { status: orderStatusMap[rawStatus] });
             }
           }
         }
 
         toast.success(`Status updated: ${newStatus}`, { id: 'sync-status' });
+      } else {
+        throw new Error(data.error || 'Failed to sync status');
       }
     } catch (error: any) {
       console.error('Sync status error:', error);
@@ -241,7 +282,7 @@ export default function Logistics() {
     setDeliveryForm({
       orderId: '',
       courier: couriers[0]?.name || '',
-      status: 'In Transit',
+      status: 'in_transit',
       location: '',
       eta: '2-3 Days',
     });
@@ -378,94 +419,191 @@ export default function Logistics() {
         </div>
       </div>
 
-      {/* Courier Partners Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Steadfast Integration Card */}
-        <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-6 rounded-xl border border-blue-500 shadow-lg text-white relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 opacity-10">
-            <Truck size={120} />
-          </div>
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="font-bold text-white flex items-center gap-2">
-              <CheckCircle2 size={16} className={settings.steadfastApiKey ? 'text-green-300' : 'text-blue-300'} />
-              Steadfast
-            </h4>
-            <button 
-              onClick={fetchSteadfastBalance}
-              disabled={fetchingBalance}
-              className="p-1 hover:bg-white/10 rounded-md transition-all"
-            >
-              <RefreshCw size={14} className={fetchingBalance ? 'animate-spin' : ''} />
-            </button>
-          </div>
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-[10px] uppercase font-bold text-blue-100 tracking-wider">Balance</p>
-              <p className="text-xl font-bold">
-                {fetchingBalance ? '...' : steadfastBalance !== null ? `৳${steadfastBalance.toLocaleString()}` : 'N/A'}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] uppercase font-bold text-blue-100 tracking-wider">Status</p>
-              <p className="text-xs font-bold">{settings.steadfastApiKey ? 'Connected' : 'Not Configured'}</p>
-            </div>
-          </div>
-        </div>
+      {/* Tabs */}
+      <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl w-fit">
+        <button 
+          onClick={() => setActiveSubTab('shipments')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSubTab === 'shipments' ? 'bg-white text-[#141414] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          Shipments
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('couriers')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSubTab === 'couriers' ? 'bg-white text-[#141414] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          Courier Partners
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('logs')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSubTab === 'logs' ? 'bg-white text-[#141414] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          API Logs
+        </button>
+      </div>
 
-        {/* Pathao Integration Card */}
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl border border-orange-400 shadow-lg text-white relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 opacity-10">
-            <Navigation size={120} />
-          </div>
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="font-bold text-white flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-orange-200" />
-              Pathao
-            </h4>
-          </div>
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-[10px] uppercase font-bold text-orange-100 tracking-wider">Balance</p>
-              <p className="text-xl font-bold">৳0</p>
+      {activeSubTab === 'couriers' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Steadfast */}
+          <div className={`p-6 rounded-xl border shadow-lg text-white relative overflow-hidden transition-all ${courierConfigs.steadfast?.isActive ? 'bg-gradient-to-br from-blue-600 to-blue-700 border-blue-500' : 'bg-gray-400 border-gray-300 opacity-75'}`}>
+            <div className="absolute -right-4 -top-4 opacity-10">
+              <Truck size={120} />
             </div>
-            <div className="text-right">
-              <p className="text-[10px] uppercase font-bold text-orange-100 tracking-wider">Status</p>
-              <p className="text-xs font-bold">Coming Soon</p>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-bold text-white flex items-center gap-2">
+                <CheckCircle2 size={16} className={courierConfigs.steadfast?.apiKey ? 'text-green-300' : 'text-blue-300'} />
+                Steadfast
+              </h4>
+              <button 
+                onClick={() => fetchBalance('steadfast')}
+                disabled={fetchingBalance}
+                className="p-1 hover:bg-white/10 rounded-md transition-all"
+              >
+                <RefreshCw size={14} className={fetchingBalance ? 'animate-spin' : ''} />
+              </button>
+            </div>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-blue-100 tracking-wider">Balance</p>
+                <p className="text-xl font-bold">
+                  {fetchingBalance ? '...' : steadfastBalance !== null ? `৳${steadfastBalance.toLocaleString()}` : 'N/A'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase font-bold text-blue-100 tracking-wider">Status</p>
+                <p className="text-xs font-bold">{courierConfigs.steadfast?.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* RedX Integration Card */}
-        <div className="bg-gradient-to-br from-red-600 to-red-700 p-6 rounded-xl border border-red-500 shadow-lg text-white relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 opacity-10">
-            <Truck size={120} />
-          </div>
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="font-bold text-white flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-red-200" />
-              RedX
-            </h4>
-          </div>
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-[10px] uppercase font-bold text-red-100 tracking-wider">Balance</p>
-              <p className="text-xl font-bold">৳0</p>
+          {/* Pathao */}
+          <div className={`p-6 rounded-xl border shadow-lg text-white relative overflow-hidden transition-all ${courierConfigs.pathao?.isActive ? 'bg-gradient-to-br from-orange-500 to-orange-600 border-orange-400' : 'bg-gray-400 border-gray-300 opacity-75'}`}>
+            <div className="absolute -right-4 -top-4 opacity-10">
+              <Navigation size={120} />
             </div>
-            <div className="text-right">
-              <p className="text-[10px] uppercase font-bold text-red-100 tracking-wider">Status</p>
-              <p className="text-xs font-bold">Coming Soon</p>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-bold text-white flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-orange-200" />
+                Pathao
+              </h4>
+              <button 
+                onClick={() => fetchBalance('pathao')}
+                disabled={fetchingBalance}
+                className="p-1 hover:bg-white/10 rounded-md transition-all"
+              >
+                <RefreshCw size={14} className={fetchingBalance ? 'animate-spin' : ''} />
+              </button>
+            </div>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-orange-100 tracking-wider">Balance</p>
+                <p className="text-xl font-bold">
+                  {fetchingBalance ? '...' : pathaoBalance !== null ? `৳${pathaoBalance.toLocaleString()}` : 'N/A'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase font-bold text-orange-100 tracking-wider">Status</p>
+                <p className="text-xs font-bold">{courierConfigs.pathao?.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {couriers.filter(c => !['Steadfast', 'Pathao', 'RedX'].includes(c.name)).length === 0 && !loading ? (
-          <div className="col-span-full py-8 text-center bg-white rounded-xl border border-dashed border-gray-200">
-            <p className="text-sm text-gray-400">No additional couriers connected yet.</p>
+          {/* RedX */}
+          <div className={`p-6 rounded-xl border shadow-lg text-white relative overflow-hidden transition-all ${courierConfigs.redx?.isActive ? 'bg-gradient-to-br from-red-600 to-red-700 border-red-500' : 'bg-gray-400 border-gray-300 opacity-75'}`}>
+            <div className="absolute -right-4 -top-4 opacity-10">
+              <Truck size={120} />
+            </div>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-bold text-white flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-red-200" />
+                RedX
+              </h4>
+              <button 
+                onClick={() => fetchBalance('redx')}
+                disabled={fetchingBalance}
+                className="p-1 hover:bg-white/10 rounded-md transition-all"
+              >
+                <RefreshCw size={14} className={fetchingBalance ? 'animate-spin' : ''} />
+              </button>
+            </div>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-red-100 tracking-wider">Balance</p>
+                <p className="text-xl font-bold">
+                  {fetchingBalance ? '...' : redxBalance !== null ? `৳${redxBalance.toLocaleString()}` : 'N/A'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase font-bold text-red-100 tracking-wider">Status</p>
+                <p className="text-xs font-bold">{courierConfigs.redx?.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
+            </div>
           </div>
-        ) : (
-          couriers
-            .filter(c => !['Steadfast', 'Pathao', 'RedX'].includes(c.name))
-            .map((courier) => (
+
+          {/* Carrybee */}
+          <div className={`p-6 rounded-xl border shadow-lg text-white relative overflow-hidden transition-all ${courierConfigs.carrybee?.isActive ? 'bg-gradient-to-br from-yellow-500 to-yellow-600 border-yellow-400' : 'bg-gray-400 border-gray-300 opacity-75'}`}>
+            <div className="absolute -right-4 -top-4 opacity-10">
+              <Zap size={120} />
+            </div>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-bold text-white flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-yellow-200" />
+                Carrybee
+              </h4>
+              <button 
+                onClick={() => fetchBalance('carrybee')}
+                disabled={fetchingBalance}
+                className="p-1 hover:bg-white/10 rounded-md transition-all"
+              >
+                <RefreshCw size={14} className={fetchingBalance ? 'animate-spin' : ''} />
+              </button>
+            </div>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-yellow-100 tracking-wider">Balance</p>
+                <p className="text-xl font-bold">
+                  {fetchingBalance ? '...' : carrybeeBalance !== null ? `৳${carrybeeBalance.toLocaleString()}` : 'N/A'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase font-bold text-yellow-100 tracking-wider">Status</p>
+                <p className="text-xs font-bold">{courierConfigs.carrybee?.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Paperfly */}
+          <div className={`p-6 rounded-xl border shadow-lg text-white relative overflow-hidden transition-all ${courierConfigs.paperfly?.isActive ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 border-indigo-400' : 'bg-gray-400 border-gray-300 opacity-75'}`}>
+            <div className="absolute -right-4 -top-4 opacity-10">
+              <Truck size={120} />
+            </div>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-bold text-white flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-indigo-200" />
+                Paperfly
+              </h4>
+              <button 
+                onClick={() => fetchBalance('paperfly')}
+                disabled={fetchingBalance}
+                className="p-1 hover:bg-white/10 rounded-md transition-all"
+              >
+                <RefreshCw size={14} className={fetchingBalance ? 'animate-spin' : ''} />
+              </button>
+            </div>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-indigo-100 tracking-wider">Balance</p>
+                <p className="text-xl font-bold">
+                  {fetchingBalance ? '...' : paperflyBalance !== null ? `৳${paperflyBalance.toLocaleString()}` : 'N/A'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase font-bold text-indigo-100 tracking-wider">Status</p>
+                <p className="text-xs font-bold">{courierConfigs.paperfly?.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
+            </div>
+          </div>
+
+          {couriers.filter(c => !['steadfast', 'pathao', 'redx', 'carrybee', 'paperfly'].includes(c.name.toLowerCase())).map((courier) => (
             <div key={courier.id} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative group">
               <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                 <button 
@@ -496,9 +634,74 @@ export default function Logistics() {
                 </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {activeSubTab === 'logs' && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
+            <h4 className="text-sm font-bold text-gray-900">Courier API Logs</h4>
+            <button 
+              onClick={() => setActiveSubTab('logs')}
+              className="p-1 hover:bg-gray-200 rounded-md transition-all"
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                  <th className="px-6 py-3">Timestamp</th>
+                  <th className="px-6 py-3">Courier</th>
+                  <th className="px-6 py-3">Order ID</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Details</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {courierLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-xs text-gray-500">
+                      {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-bold text-gray-900 uppercase">{log.courier}</span>
+                    </td>
+                    <td className="px-6 py-4 text-xs font-medium text-gray-600">#{log.orderId}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                        log.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                      }`}>
+                        {log.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button 
+                        onClick={() => console.log(log)}
+                        className="text-[10px] font-bold text-blue-600 hover:underline"
+                      >
+                        View JSON
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {courierLogs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-400">
+                      No logs found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'shipments' && (
+        <>
 
       {/* Search & Filter */}
       <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -583,19 +786,19 @@ export default function Logistics() {
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1">
-                          {delivery.status === 'Delivered' ? (
+                          {delivery.status?.toLowerCase() === 'delivered' ? (
                             <CheckCircle2 size={14} className="text-green-500" />
-                          ) : delivery.status === 'Cancelled' ? (
+                          ) : delivery.status?.toLowerCase() === 'cancelled' ? (
                             <AlertCircle size={14} className="text-red-500" />
                           ) : (
                             <Clock size={14} className="text-blue-500" />
                           )}
                           <span className={`text-[10px] font-bold ${
-                            delivery.status === 'Delivered' ? 'text-green-600' :
-                            delivery.status === 'Cancelled' ? 'text-red-600' :
+                            delivery.status?.toLowerCase() === 'delivered' ? 'text-green-600' :
+                            delivery.status?.toLowerCase() === 'cancelled' ? 'text-red-600' :
                             'text-blue-600'
                           }`}>
-                            {delivery.status.charAt(0).toUpperCase() + delivery.status.slice(1)}
+                            {delivery.status.replace(/_/g, ' ').charAt(0).toUpperCase() + delivery.status.replace(/_/g, ' ').slice(1)}
                           </span>
                         </div>
                         <span className="text-[10px] text-gray-400">{delivery.eta}</span>
@@ -604,7 +807,7 @@ export default function Logistics() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {delivery.courier === 'Steadfast' && (
+                          {delivery.id && (
                             <>
                               <button 
                                 onClick={() => handleSyncStatus(delivery)}
@@ -613,15 +816,28 @@ export default function Logistics() {
                               >
                                 <RefreshCw size={16} />
                               </button>
-                              <a 
-                                href={`https://steadfast.com.bd/t/${delivery.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all flex items-center justify-center" 
-                                title="Live Tracking"
-                              >
-                                <Navigation size={16} />
-                              </a>
+                              {delivery.courier?.toLowerCase() === 'steadfast' && (
+                                <a 
+                                  href={`https://steadfast.com.bd/t/${delivery.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all flex items-center justify-center" 
+                                  title="Live Tracking"
+                                >
+                                  <Navigation size={16} />
+                                </a>
+                              )}
+                              {delivery.courier?.toLowerCase() === 'pathao' && (
+                                <a 
+                                  href={`https://pathao.com/courier/tracking/${delivery.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all flex items-center justify-center" 
+                                  title="Live Tracking"
+                                >
+                                  <Navigation size={16} />
+                                </a>
+                              )}
                             </>
                           )}
                           <button 
@@ -648,6 +864,8 @@ export default function Logistics() {
           </table>
         </div>
       </div>
+      </>
+    )}
 
       {/* Add/Edit Courier Modal */}
       {isModalOpen && (
@@ -760,10 +978,10 @@ export default function Logistics() {
                     value={deliveryForm.status}
                     onChange={(e) => setDeliveryForm({...deliveryForm, status: e.target.value})}
                   >
-                    <option value="Pending Pickup">Pending Pickup</option>
-                    <option value="In Transit">In Transit</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
+                    <option value="pending_pickup">Pending Pickup</option>
+                    <option value="in_transit">In Transit</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
                 <div className="space-y-2">

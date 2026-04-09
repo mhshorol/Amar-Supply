@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { 
   Settings as SettingsIcon, 
   User as UserIcon, 
@@ -24,9 +25,94 @@ import {
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { db, auth, doc, getDoc, setDoc, onSnapshot, collection, getDocs, query, where, deleteDoc, writeBatch, updateDoc, addDoc, Timestamp } from '../firebase';
+import { db, auth, doc, getDoc, setDoc, onSnapshot, collection, getDocs, query, where, deleteDoc, writeBatch, updateDoc, addDoc, Timestamp, orderBy, limit } from '../firebase';
 import { User, UserRole, UserPermissions } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+
+function ActivityLogsTab() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc'), limit(100));
+    const unsub = onSnapshot(q, (snapshot) => {
+      setLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching activity logs:", error);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin text-gray-400" size={24} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <ClipboardList size={20} /> Activity Logs
+        </h3>
+        <span className="text-xs text-gray-500 font-medium">Last 100 activities</span>
+      </div>
+
+      <div className="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-100 text-[10px] uppercase tracking-widest text-gray-500">
+                <th className="px-6 py-4 font-semibold">Time</th>
+                <th className="px-6 py-4 font-semibold">User</th>
+                <th className="px-6 py-4 font-semibold">Action</th>
+                <th className="px-6 py-4 font-semibold">Module</th>
+                <th className="px-6 py-4 font-semibold">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {logs.map((log) => (
+                <tr key={log.id} className="hover:bg-white transition-colors">
+                  <td className="px-6 py-4 text-[10px] text-gray-500 whitespace-nowrap">
+                    {log.timestamp?.toDate().toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-gray-900">{log.userName}</span>
+                      <span className="text-[10px] text-gray-400">{log.userId?.slice(0, 8)}...</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-xs font-medium text-gray-700">{log.action}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-500 uppercase">
+                      {log.module}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-xs text-gray-500 max-w-xs truncate">
+                    {log.details}
+                  </td>
+                </tr>
+              ))}
+              {logs.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-400 italic">
+                    No activity logs found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Settings() {
   const { user: currentUser, role: currentUserRole } = useAuth();
@@ -94,6 +180,10 @@ export default function Settings() {
     if (currentUserRole === 'admin') {
       const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
         setUsers(snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as any as User)));
+      }, (error) => {
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'users');
+        }
       });
       return () => unsubUsers();
     }
@@ -187,6 +277,14 @@ export default function Settings() {
     biometricAuth: false
   });
 
+  const [courierConfigs, setCourierConfigs] = useState<Record<string, any>>({
+    steadfast: { apiKey: '', secretKey: '', isActive: false },
+    pathao: { clientId: '', clientSecret: '', username: '', password: '', isActive: false },
+    redx: { apiKey: '', isActive: false },
+    paperfly: { apiKey: '', isActive: false },
+    carrybee: { apiKey: '', isActive: false }
+  });
+
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -206,6 +304,13 @@ export default function Settings() {
           if (data.integrations) setIntegrationSettings(prev => ({ ...prev, ...data.integrations }));
           if (data.dataManagement) setDataSettings(prev => ({ ...prev, ...data.dataManagement }));
           if (data.mobile) setMobileSettings(prev => ({ ...prev, ...data.mobile }));
+        }
+
+        // Fetch courier configs from backend
+        const response = await fetch('/api/couriers/configs');
+        if (response.ok) {
+          const data = await response.json();
+          setCourierConfigs(prev => ({ ...prev, ...data }));
         }
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -294,8 +399,22 @@ export default function Settings() {
     setSaving(true);
     setMessage(null);
     try {
-      if (activeTab === 'General' || activeTab === 'Company Info' || activeTab === 'Logistics') {
+      if (activeTab === 'General' || activeTab === 'Company Info') {
         await setDoc(doc(db, 'settings', 'company'), companyInfo, { merge: true });
+      } else if (activeTab === 'Logistics') {
+        // Save each courier config to backend
+        for (const [courier, config] of Object.entries(courierConfigs)) {
+          await fetch(`/api/couriers/configs/${courier}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+          });
+        }
+        // Also update companyInfo for legacy support if needed
+        await setDoc(doc(db, 'settings', 'company'), {
+          steadfastApiKey: courierConfigs.steadfast.apiKey,
+          steadfastSecretKey: courierConfigs.steadfast.secretKey
+        }, { merge: true });
       } else {
         const userDocRef = doc(db, 'settings', `user_${auth.currentUser?.uid}`);
         const updateData: any = {};
@@ -356,6 +475,7 @@ export default function Settings() {
             { name: 'Logistics', icon: Truck },
             { name: 'Data Management', icon: Database },
             { name: 'Mobile App', icon: Smartphone },
+            { name: 'Activity Logs', icon: ClipboardList },
             ...(currentUserRole === 'admin' ? [{ name: 'Team Permissions', icon: Users }] : []),
           ].map((item) => (
             <button
@@ -766,42 +886,208 @@ export default function Settings() {
             )}
 
             {activeTab === 'Logistics' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <h3 className="text-lg font-bold flex items-center gap-2">
-                  <Truck size={20} /> Logistics Integration
+                  <Truck size={20} /> Courier Integrations
                 </h3>
-                <div className="p-6 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-4">
-                  <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm">
-                    <AlertCircle size={20} />
+                
+                <div className="space-y-6">
+                  {/* Steadfast */}
+                  <div className="p-6 bg-gray-50 rounded-xl border border-gray-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">Steadfast Courier</h4>
+                          <p className="text-[10px] text-gray-500">Automated delivery for Bangladesh</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setCourierConfigs(prev => ({ 
+                          ...prev, 
+                          steadfast: { ...prev.steadfast, isActive: !prev.steadfast.isActive } 
+                        }))}
+                        className={`w-12 h-6 rounded-full transition-all relative ${courierConfigs.steadfast.isActive ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${courierConfigs.steadfast.isActive ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">API Key</label>
+                        <input 
+                          type="text" 
+                          value={courierConfigs.steadfast.apiKey} 
+                          onChange={e => setCourierConfigs(prev => ({ 
+                            ...prev, 
+                            steadfast: { ...prev.steadfast, apiKey: e.target.value } 
+                          }))}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-blue-500 outline-none transition-all" 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">Secret Key</label>
+                        <input 
+                          type="password" 
+                          value={courierConfigs.steadfast.secretKey} 
+                          onChange={e => setCourierConfigs(prev => ({ 
+                            ...prev, 
+                            steadfast: { ...prev.steadfast, secretKey: e.target.value } 
+                          }))}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-blue-500 outline-none transition-all" 
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-blue-900">Steadfast Courier Integration</h4>
-                    <p className="text-xs text-blue-700 mt-1 leading-relaxed">
-                      Connect your Steadfast Courier account to automate order fulfillment. 
-                      You can find your API Key and Secret Key in your Steadfast Portal settings.
-                    </p>
+
+                  {/* Pathao */}
+                  <div className="p-6 bg-gray-50 rounded-xl border border-gray-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center text-white font-bold">P</div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">Pathao Courier</h4>
+                          <p className="text-[10px] text-gray-500">Fast and reliable delivery service</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setCourierConfigs(prev => ({ 
+                          ...prev, 
+                          pathao: { ...prev.pathao, isActive: !prev.pathao.isActive } 
+                        }))}
+                        className={`w-12 h-6 rounded-full transition-all relative ${courierConfigs.pathao.isActive ? 'bg-orange-500' : 'bg-gray-300'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${courierConfigs.pathao.isActive ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">Client ID</label>
+                        <input 
+                          type="text" 
+                          value={courierConfigs.pathao.clientId} 
+                          onChange={e => setCourierConfigs(prev => ({ 
+                            ...prev, 
+                            pathao: { ...prev.pathao, clientId: e.target.value } 
+                          }))}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-orange-500 outline-none transition-all" 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">Client Secret</label>
+                        <input 
+                          type="password" 
+                          value={courierConfigs.pathao.clientSecret} 
+                          onChange={e => setCourierConfigs(prev => ({ 
+                            ...prev, 
+                            pathao: { ...prev.pathao, clientSecret: e.target.value } 
+                          }))}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-orange-500 outline-none transition-all" 
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Steadfast API Key</label>
-                    <input 
-                      type="text" 
-                      value={companyInfo.steadfastApiKey} 
-                      onChange={e => setCompanyInfo({...companyInfo, steadfastApiKey: e.target.value})}
-                      placeholder="Enter your Steadfast API Key"
-                      className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all" 
-                    />
+
+                  {/* RedX */}
+                  <div className="p-6 bg-gray-50 rounded-xl border border-gray-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold">R</div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">RedX</h4>
+                          <p className="text-[10px] text-gray-500">Logistics for modern businesses</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setCourierConfigs(prev => ({ 
+                          ...prev, 
+                          redx: { ...prev.redx, isActive: !prev.redx.isActive } 
+                        }))}
+                        className={`w-12 h-6 rounded-full transition-all relative ${courierConfigs.redx.isActive ? 'bg-red-600' : 'bg-gray-300'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${courierConfigs.redx.isActive ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">API Key</label>
+                      <input 
+                        type="text" 
+                        value={courierConfigs.redx.apiKey} 
+                        onChange={e => setCourierConfigs(prev => ({ 
+                          ...prev, 
+                          redx: { ...prev.redx, apiKey: e.target.value } 
+                        }))}
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-red-500 outline-none transition-all" 
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Steadfast Secret Key</label>
-                    <input 
-                      type="password" 
-                      value={companyInfo.steadfastSecretKey} 
-                      onChange={e => setCompanyInfo({...companyInfo, steadfastSecretKey: e.target.value})}
-                      placeholder="Enter your Steadfast Secret Key"
-                      className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all" 
-                    />
+
+                  {/* Carrybee */}
+                  <div className="p-6 bg-gray-50 rounded-xl border border-gray-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center text-white font-bold">C</div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">Carrybee</h4>
+                          <p className="text-[10px] text-gray-500">Fast and secure delivery</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setCourierConfigs(prev => ({ 
+                          ...prev, 
+                          carrybee: { ...prev.carrybee, isActive: !prev.carrybee.isActive } 
+                        }))}
+                        className={`w-12 h-6 rounded-full transition-all relative ${courierConfigs.carrybee.isActive ? 'bg-yellow-500' : 'bg-gray-300'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${courierConfigs.carrybee.isActive ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">API Key</label>
+                      <input 
+                        type="text" 
+                        value={courierConfigs.carrybee.apiKey} 
+                        onChange={e => setCourierConfigs(prev => ({ 
+                          ...prev, 
+                          carrybee: { ...prev.carrybee, apiKey: e.target.value } 
+                        }))}
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-yellow-500 outline-none transition-all" 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Paperfly */}
+                  <div className="p-6 bg-gray-50 rounded-xl border border-gray-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">P</div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">Paperfly</h4>
+                          <p className="text-[10px] text-gray-500">Smart logistics for smart businesses</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setCourierConfigs(prev => ({ 
+                          ...prev, 
+                          paperfly: { ...prev.paperfly, isActive: !prev.paperfly.isActive } 
+                        }))}
+                        className={`w-12 h-6 rounded-full transition-all relative ${courierConfigs.paperfly.isActive ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${courierConfigs.paperfly.isActive ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">API Key</label>
+                      <input 
+                        type="text" 
+                        value={courierConfigs.paperfly.apiKey} 
+                        onChange={e => setCourierConfigs(prev => ({ 
+                          ...prev, 
+                          paperfly: { ...prev.paperfly, apiKey: e.target.value } 
+                        }))}
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-500 outline-none transition-all" 
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -905,6 +1191,10 @@ export default function Settings() {
               </div>
             </div>
           )}
+
+            {activeTab === 'Activity Logs' && (
+              <ActivityLogsTab />
+            )}
 
             {activeTab === 'Team Permissions' && currentUserRole === 'admin' && (
               <div className="space-y-6">

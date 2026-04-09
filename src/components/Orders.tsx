@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { 
   Search, 
   Filter, 
@@ -27,7 +27,8 @@ import {
   UserCheck,
   AlertCircle,
   Edit,
-  Printer
+  Printer,
+  ChevronDown
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import type { DraggableProvided, DraggableStateSnapshot, DroppableProvided } from '@hello-pangea/dnd';
@@ -54,7 +55,7 @@ const ChannelIcon = ({ channel }: { channel: string }) => {
   }
 };
 
-const StatusBadge = ({ status, onClick }: { status: string; onClick?: () => void }) => {
+const StatusBadge = ({ status, onClick, isOpen }: { status: string; onClick?: (e?: React.MouseEvent) => void; isOpen?: boolean }) => {
   const colors: Record<string, string> = {
     'pending': 'bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]',
     'confirmed': 'bg-[#eff6ff] text-[#2563eb] border-[#dbeafe]',
@@ -68,12 +69,13 @@ const StatusBadge = ({ status, onClick }: { status: string; onClick?: () => void
     'returned': 'bg-[#f9fafb] text-[#4b5563] border-[#f3f4f6]',
   };
   return (
-    <span 
+    <button 
       onClick={onClick}
-      className={`text-[10px] font-bold px-2 py-1 rounded-md border cursor-pointer hover:opacity-80 transition-opacity ${colors[status] || colors['pending']}`}
+      className={`text-[10px] font-bold px-2 py-1 rounded-md border cursor-pointer hover:opacity-80 transition-all flex items-center gap-1.5 ${colors[status] || colors['pending']}`}
     >
       {status.replace(/_/g, ' ').charAt(0).toUpperCase() + status.replace(/_/g, ' ').slice(1)}
-    </span>
+      <ChevronDown size={10} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+    </button>
   );
 };
 
@@ -82,7 +84,7 @@ export default function Orders() {
   const { settings, currencySymbol } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All');
-  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,10 +102,7 @@ export default function Orders() {
   const bulkPrintRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (searchParams.get('new') === 'true') {
-      setIsModalOpen(true);
-      setSearchParams({}, { replace: true });
-    }
+    // Removed auto-open modal logic for new orders as it is now a separate page
   }, [searchParams, setSearchParams]);
 
   const handlePrint = useReactToPrint({
@@ -447,29 +446,30 @@ export default function Orders() {
         updatedAt: serverTimestamp()
       };
 
+      // 1. PRE-TRANSACTION READS
+      const customerQuery = query(collection(db, 'customers'), where('phone', '==', orderForm.customerPhone));
+      const customerSnap = await getDocs(customerQuery);
+
+      const inventorySnaps: { item: any; snap: any }[] = [];
+      if (!editingOrder && orderForm.status !== 'cancelled' && orderForm.status !== 'returned') {
+        for (const item of orderForm.items) {
+          const invQuery = query(
+            collection(db, 'inventory'),
+            where('productId', '==', item.productId),
+            where('variantId', '==', item.variantId || ''),
+            where('warehouseId', '==', orderForm.warehouseId)
+          );
+          const invSnap = await getDocs(invQuery);
+          inventorySnaps.push({ item, snap: invSnap });
+        }
+      }
+
       await runTransaction(db, async (transaction) => {
-        // 1. ALL READS FIRST
-        const customerQuery = query(collection(db, 'customers'), where('phone', '==', orderForm.customerPhone));
-        const customerSnap = await getDocs(customerQuery);
-        
+        // 2. TRANSACTION READS
         const settingsRef = doc(db, 'settings', 'company');
         const settingsSnap = await transaction.get(settingsRef);
 
-        const inventorySnaps: { item: any; snap: any }[] = [];
-        if (!editingOrder && orderForm.status !== 'cancelled' && orderForm.status !== 'returned') {
-          for (const item of orderForm.items) {
-            const invQuery = query(
-              collection(db, 'inventory'),
-              where('productId', '==', item.productId),
-              where('variantId', '==', item.variantId || ''),
-              where('warehouseId', '==', orderForm.warehouseId)
-            );
-            const invSnap = await getDocs(invQuery);
-            inventorySnaps.push({ item, snap: invSnap });
-          }
-        }
-
-        // 2. ALL WRITES SECOND
+        // 3. ALL WRITES SECOND
         let customerId = '';
         if (customerSnap.empty) {
           const customerRef = doc(collection(db, 'customers'));
@@ -645,10 +645,39 @@ export default function Orders() {
     }
   };
 
-  const handleSendToSteadfast = async (order: any) => {
-    if (!settings.steadfastApiKey || !settings.steadfastSecretKey) {
-      toast.error('Steadfast API keys are not configured. Please go to Settings > Logistics.');
-      return;
+  const [courierConfigs, setCourierConfigs] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    const fetchCourierConfigs = async () => {
+      try {
+        const response = await fetch('/api/couriers/configs');
+        if (response.ok) {
+          const data = await response.json();
+          setCourierConfigs(data);
+        }
+      } catch (error) {
+        console.error("Error fetching courier configs:", error);
+      }
+    };
+    fetchCourierConfigs();
+  }, []);
+
+  const handleSendToCourier = async (order: any, courierName?: string) => {
+    // Determine which courier to use
+    const activeCouriers = Object.entries(courierConfigs).filter(([_, config]: [string, any]) => config.isActive);
+    
+    let targetCourier = courierName;
+    if (!targetCourier) {
+      if (activeCouriers.length === 0) {
+        toast.error('No courier is active. Please go to Settings > Logistics to activate one.');
+        return;
+      }
+      if (activeCouriers.length === 1) {
+        targetCourier = activeCouriers[0][0];
+      } else {
+        // If multiple active, we could show a selection modal, but for now use the first one
+        targetCourier = activeCouriers[0][0];
+      }
     }
 
     if (['shipped', 'delivered', 'cancelled', 'returned'].includes(order.status)) {
@@ -658,51 +687,43 @@ export default function Orders() {
 
     setLoading(true);
     try {
-      const steadfast = new SteadfastService(settings.steadfastApiKey, settings.steadfastSecretKey);
-      
       const sanitizePhone = (phone: string) => {
         const cleaned = phone.replace(/\D/g, '');
         return cleaned.length > 11 ? cleaned.slice(-11) : cleaned;
       };
 
       const phone = sanitizePhone(order.customerPhone);
-      if (phone.length !== 11 || !phone.startsWith('01')) {
-        toast.error(`Invalid phone number: ${phone}. It must be 11 digits and start with 01.`);
-        setLoading(false);
-        return;
-      }
-
-      if (!order.customerName || order.customerName.trim().length < 2) {
-        toast.error('Customer name is required (min 2 chars).');
-        setLoading(false);
-        return;
-      }
-
-      if (!order.customerAddress || order.customerAddress.trim().length < 10) {
-        toast.error('Customer address is too short. Steadfast requires a detailed address (min 10 chars).');
-        setLoading(false);
-        return;
-      }
-
-      const response = await steadfast.createOrder({
+      
+      const orderData = {
         invoice: order.orderNumber?.toString() || order.id.slice(0, 8),
-        recipient_name: order.customerName,
-        recipient_phone: phone,
-        recipient_address: order.customerAddress,
+        customer_name: order.customerName,
+        customer_phone: phone,
+        customer_address: order.customerAddress,
+        amount: order.totalAmount,
         cod_amount: Math.round(order.dueAmount || 0),
-        note: order.notes || ''
+        note: order.notes || '',
+        weight: 0.5 // Default weight
+      };
+
+      const response = await fetch('/api/couriers/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courier: targetCourier, orderData })
       });
 
-      if (response.status === 200 && response.consignment) {
-        const trackingCode = response.consignment.tracking_code;
+      const result = await response.json();
+
+      if (response.ok) {
+        const trackingCode = result.consignment?.tracking_code || result.tracking_id || result.tracking_code;
+        
         await updateDoc(doc(db, 'orders', order.id), {
-          courierName: 'Steadfast',
+          courierName: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
           trackingNumber: trackingCode,
           status: 'shipped',
           updatedAt: serverTimestamp(),
           logs: arrayUnion({
             user: auth.currentUser?.email,
-            action: 'Sent to Steadfast',
+            action: `Sent to ${targetCourier}`,
             timestamp: Timestamp.now(),
             details: `Tracking Code: ${trackingCode}`
           })
@@ -712,7 +733,7 @@ export default function Orders() {
         await addDoc(collection(db, 'deliveries'), {
           id: trackingCode,
           orderId: order.id,
-          courier: 'Steadfast',
+          courier: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
           status: 'Pending Pickup',
           location: order.customerZone || 'Processing',
           eta: '2-3 Days',
@@ -720,21 +741,25 @@ export default function Orders() {
           uid: auth.currentUser?.uid
         });
 
-        toast.success(`Order sent to Steadfast! Tracking: ${trackingCode}`);
+        toast.success(`Order sent to ${targetCourier}! Tracking: ${trackingCode}`);
+      } else {
+        throw new Error(result.error || `Failed to send to ${targetCourier}`);
       }
     } catch (error: any) {
-      console.error('Steadfast error:', error);
-      toast.error(`Failed to send to Steadfast: ${error.message}`);
+      console.error('Courier error:', error);
+      toast.error(`Failed to send to courier: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBulkSendToSteadfast = async () => {
-    if (!settings.steadfastApiKey || !settings.steadfastSecretKey) {
-      toast.error('Steadfast API keys are not configured. Please go to Settings > Logistics.');
+  const handleBulkSendToCourier = async () => {
+    const activeCouriers = Object.entries(courierConfigs).filter(([_, config]: [string, any]) => config.isActive);
+    if (activeCouriers.length === 0) {
+      toast.error('No courier is active. Please go to Settings > Logistics to activate one.');
       return;
     }
+    const targetCourier = activeCouriers[0][0];
 
     const eligibleOrders = orders.filter(o => 
       selectedOrders.includes(o.id) && 
@@ -746,7 +771,7 @@ export default function Orders() {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to send ${eligibleOrders.length} orders to Steadfast?`)) return;
+    if (!window.confirm(`Are you sure you want to send ${eligibleOrders.length} orders to ${targetCourier}?`)) return;
 
     setLoading(true);
     let successCount = 0;
@@ -754,42 +779,43 @@ export default function Orders() {
 
     for (const order of eligibleOrders) {
       try {
-        const steadfast = new SteadfastService(settings.steadfastApiKey, settings.steadfastSecretKey);
         const sanitizePhone = (phone: string) => {
           const cleaned = phone.replace(/\D/g, '');
           return cleaned.length > 11 ? cleaned.slice(-11) : cleaned;
         };
 
         const phone = sanitizePhone(order.customerPhone);
-        if (phone.length !== 11 || !phone.startsWith('01')) {
-          failCount++;
-          continue;
-        }
-
-        if (!order.customerName || order.customerName.trim().length < 2 || !order.customerAddress || order.customerAddress.trim().length < 10) {
-          failCount++;
-          continue;
-        }
-
-        const response = await steadfast.createOrder({
+        
+        const orderData = {
           invoice: order.orderNumber?.toString() || order.id.slice(0, 8),
-          recipient_name: order.customerName,
-          recipient_phone: phone,
-          recipient_address: order.customerAddress,
+          customer_name: order.customerName,
+          customer_phone: phone,
+          customer_address: order.customerAddress,
+          amount: order.totalAmount,
           cod_amount: Math.round(order.dueAmount || 0),
-          note: order.notes || ''
+          note: order.notes || '',
+          weight: 0.5
+        };
+
+        const response = await fetch('/api/couriers/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ courier: targetCourier, orderData })
         });
 
-        if (response.status === 200 && response.consignment) {
-          const trackingCode = response.consignment.tracking_code;
+        const result = await response.json();
+
+        if (response.ok) {
+          const trackingCode = result.consignment?.tracking_code || result.tracking_id || result.tracking_code;
+          
           await updateDoc(doc(db, 'orders', order.id), {
-            courierName: 'Steadfast',
+            courierName: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
             trackingNumber: trackingCode,
             status: 'shipped',
             updatedAt: serverTimestamp(),
             logs: arrayUnion({
               user: auth.currentUser?.email,
-              action: 'Sent to Steadfast (Bulk)',
+              action: `Sent to ${targetCourier} (Bulk)`,
               timestamp: Timestamp.now(),
               details: `Tracking Code: ${trackingCode}`
             })
@@ -799,7 +825,7 @@ export default function Orders() {
           await addDoc(collection(db, 'deliveries'), {
             id: trackingCode,
             orderId: order.id,
-            courier: 'Steadfast',
+            courier: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
             status: 'Pending Pickup',
             location: order.customerZone || 'Processing',
             eta: '2-3 Days',
@@ -812,7 +838,7 @@ export default function Orders() {
           failCount++;
         }
       } catch (error) {
-        console.error(`Steadfast error for order ${order.id}:`, error);
+        console.error(`${targetCourier} error for order ${order.id}:`, error);
         failCount++;
       }
     }
@@ -907,19 +933,19 @@ export default function Orders() {
             Export CSV
           </button>
           <button 
-            onClick={() => setViewMode(viewMode === 'table' ? 'kanban' : 'table')}
+            onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
             className="flex items-center gap-2 px-4 py-2 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-sm font-bold hover:bg-[#f9fafb] transition-all shadow-sm"
           >
             {viewMode === 'table' ? <LayoutGrid size={18} /> : <List size={18} />}
-            {viewMode === 'table' ? 'Kanban View' : 'Table View'}
+            {viewMode === 'table' ? 'Grid View' : 'Table View'}
           </button>
-          <button 
-            onClick={handleOpenAddModal}
+          <Link 
+            to="/orders/new"
             className="flex items-center gap-2 px-6 py-2 bg-[#141414] text-white rounded-xl text-sm font-bold hover:bg-black transition-all shadow-lg hover:shadow-xl"
           >
             <Plus size={18} />
             New Order
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -937,10 +963,10 @@ export default function Orders() {
               {statuses.map(s => <option key={s} value={s} className="text-black">{s.replace(/_/g, ' ').charAt(0).toUpperCase() + s.replace(/_/g, ' ').slice(1)}</option>)}
             </select>
             <button 
-              onClick={handleBulkSendToSteadfast}
-              className="flex items-center gap-2 px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-lg text-xs font-bold transition-all"
+              onClick={handleBulkSendToCourier}
+              className="flex items-center gap-2 px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-xl text-xs font-bold transition-all"
             >
-              <Truck size={14} /> Send to Steadfast
+              <Truck size={14} /> Send to Courier
             </button>
             <button 
               onClick={handleBulkDownloadPDF}
@@ -1069,21 +1095,29 @@ export default function Orders() {
                             <StatusBadge 
                               status={order.status} 
                               onClick={() => setIsStatusMenuOpen(isStatusMenuOpen === order.id ? null : order.id)}
+                              isOpen={isStatusMenuOpen === order.id}
                             />
                             {isStatusMenuOpen === order.id && (
-                              <div className="absolute left-6 mt-2 w-40 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 z-50">
-                                {statuses.map(s => (
-                                  <button
-                                    key={s}
-                                    onClick={() => {
-                                      handleUpdateStatus(order.id, s);
-                                      setIsStatusMenuOpen(null);
-                                    }}
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[10px] font-bold text-gray-700 transition-colors"
-                                  >
-                                    {s.replace(/_/g, ' ').charAt(0).toUpperCase() + s.replace(/_/g, ' ').slice(1)}
-                                  </button>
-                                ))}
+                              <div className="absolute left-6 mt-2 w-44 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="grid grid-cols-1 gap-1">
+                                  {statuses.map(s => (
+                                    <button
+                                      key={s}
+                                      onClick={() => {
+                                        handleUpdateStatus(order.id, s);
+                                        setIsStatusMenuOpen(null);
+                                      }}
+                                      className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-between ${
+                                        order.status === s 
+                                          ? 'bg-[#00AEEF] text-white' 
+                                          : 'text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      {s.replace(/_/g, ' ').charAt(0).toUpperCase() + s.replace(/_/g, ' ').slice(1)}
+                                      {order.status === s && <CheckCircle size={10} />}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </td>
@@ -1100,11 +1134,11 @@ export default function Orders() {
                                 <Printer size={14} />
                               </button>
                               <button 
-                                onClick={() => handleSendToSteadfast(order)}
+                                onClick={() => handleSendToCourier(order)}
                                 className="p-2 hover:bg-[#ffffff] rounded-lg text-[#9ca3af] hover:text-[#16a34a] transition-colors shadow-sm border border-transparent hover:border-[#f3f4f6]"
-                                title="Send to Steadfast"
+                                title="Send to Courier"
                               >
-                                <Send size={14} />
+                                <Truck size={14} />
                               </button>
                               <button 
                                 onClick={() => handleOpenEditModal(order)}
@@ -1150,9 +1184,9 @@ export default function Orders() {
                               {orders.filter(o => o.status === status).length}
                             </span>
                           </div>
-                          <button className="p-1 hover:bg-[#f3f4f6] rounded-md transition-colors">
+                          <Link to="/orders/new" className="p-1 hover:bg-[#f3f4f6] rounded-md transition-colors">
                             <Plus size={14} className="text-[#9ca3af]" />
-                          </button>
+                          </Link>
                         </div>
                         
                         <div className="space-y-3 min-h-[100px]">
@@ -1171,9 +1205,45 @@ export default function Orders() {
                                     }`}
                                   >
                                     <div className="flex justify-between items-start mb-2">
-                                      <span className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">
-                                        #ORD-{order.orderNumber || order.id.slice(0, 8)}
-                                      </span>
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">
+                                          #ORD-{order.orderNumber || order.id.slice(0, 8)}
+                                        </span>
+                                        <div className="relative">
+                                          <StatusBadge 
+                                            status={order.status} 
+                                            onClick={(e) => {
+                                              e?.stopPropagation();
+                                              setIsStatusMenuOpen(isStatusMenuOpen === order.id ? null : order.id);
+                                            }}
+                                            isOpen={isStatusMenuOpen === order.id}
+                                          />
+                                          {isStatusMenuOpen === order.id && (
+                                            <div className="absolute left-0 mt-2 w-44 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                              <div className="grid grid-cols-1 gap-1">
+                                                {statuses.map(s => (
+                                                  <button
+                                                    key={s}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleUpdateStatus(order.id, s);
+                                                      setIsStatusMenuOpen(null);
+                                                    }}
+                                                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-between ${
+                                                      order.status === s 
+                                                        ? 'bg-[#00AEEF] text-white' 
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                                  >
+                                                    {s.replace(/_/g, ' ').charAt(0).toUpperCase() + s.replace(/_/g, ' ').slice(1)}
+                                                    {order.status === s && <CheckCircle size={10} />}
+                                                  </button>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
                                       <span className="text-[10px] font-bold text-[#141414] bg-[#f9fafb] px-2 py-0.5 rounded-md">{order.channel}</span>
                                     </div>
                                     <h4 className="text-sm font-bold text-[#141414] mb-1">{order.customerName}</h4>
@@ -1511,6 +1581,20 @@ export default function Orders() {
                       <option value="others">Others</option>
                     </select>
                   </div>
+                  {editingOrder && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Order Status</label>
+                      <select 
+                        className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                        value={orderForm.status}
+                        onChange={e => setOrderForm({...orderForm, status: e.target.value as any})}
+                      >
+                        {statuses.map(s => (
+                          <option key={s} value={s}>{s.replace(/_/g, ' ').charAt(0).toUpperCase() + s.replace(/_/g, ' ').slice(1)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Order Notes</label>

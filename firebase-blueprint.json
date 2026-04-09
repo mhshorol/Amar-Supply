@@ -16,6 +16,8 @@
         "items": { "type": "array", "description": "List of items in the order." },
         "subtotal": { "type": "number", "description": "Subtotal before charges and discounts." },
         "deliveryCharge": { "type": "number", "description": "Delivery fee." },
+        "vatAmount": { "type": "number", "description": "VAT amount." },
+        "taxAmount": { "type": "number", "description": "Tax amount." },
         "discount": { "type": "number", "description": "Discount amount." },
         "totalAmount": { "type": "number", "description": "Total order value." },
         "paidAmount": { "type": "number", "description": "Amount already paid." },
@@ -49,6 +51,8 @@
         "phone": { "type": "string", "description": "Customer phone number." },
         "email": { "type": "string", "description": "Customer email address." },
         "address": { "type": "string", "description": "Default delivery address." },
+        "loyaltyPoints": { "type": "number", "description": "Total loyalty points earned." },
+        "segment": { "type": "string", "enum": ["VIP", "Regular", "New", "Inactive"], "description": "Customer segment." },
         "orderCount": { "type": "number", "description": "Total orders placed." },
         "totalSpent": { "type": "number", "description": "Total amount spent." },
         "lastOrderDate": { "type": "string", "format": "date-time", "description": "Date of the last order." }
@@ -316,6 +320,9 @@
         "companyEmail": { "type": "string" },
         "companyWebsite": { "type": "string" },
         "companyVat": { "type": "string" },
+        "vatRate": { "type": "number", "description": "Default VAT rate in percentage." },
+        "taxRate": { "type": "number", "description": "Default Tax rate in percentage." },
+        "loyaltyPointRate": { "type": "number", "description": "Points earned per 100 currency units." },
         "invoiceFooterNote": { "type": "string" },
         "signatureImage": { "type": "string" },
         "orderCounter": { "type": "number", "description": "Last used numeric order ID." }
@@ -424,6 +431,113 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["employeeId", "month", "netSalary", "uid"]
+    },
+    "courier_logs": {
+      "title": "Courier Log",
+      "description": "Logs for courier API interactions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "courier": { "type": "string" },
+        "action": { "type": "string" },
+        "status": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["courier", "action", "status", "timestamp", "uid"]
+    },
+    "courier_configs": {
+      "title": "Courier Configuration",
+      "description": "API configurations for different couriers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Courier name as ID (lowercase)." },
+        "apiKey": { "type": "string" },
+        "secretKey": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientSecret": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "stock_transfers": {
+      "title": "Stock Transfer",
+      "description": "Represents a request to move stock between warehouses.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fromWarehouseId": { "type": "string" },
+        "toWarehouseId": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "object", "properties": { "productId": { "type": "string" }, "variantId": { "type": "string" }, "quantity": { "type": "number" } } } },
+        "status": { "type": "string", "enum": ["pending", "approved", "shipped", "received", "cancelled"] },
+        "requestedBy": { "type": "string" },
+        "approvedBy": { "type": "string" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromWarehouseId", "toWarehouseId", "items", "status", "uid"]
+    },
+    "rma_requests": {
+      "title": "RMA Request",
+      "description": "Return Merchandise Authorization for order returns.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "object", "properties": { "productId": { "type": "string" }, "variantId": { "type": "string" }, "quantity": { "type": "number" }, "reason": { "type": "string" } } } },
+        "status": { "type": "string", "enum": ["pending", "approved", "received", "refunded", "rejected"] },
+        "refundAmount": { "type": "number" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "items", "status", "uid"]
+    },
+    "loyalty_points_logs": {
+      "title": "Loyalty Points Log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "points": { "type": "number" },
+        "action": { "type": "string", "enum": ["earned", "redeemed", "adjusted"] },
+        "orderId": { "type": "string" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "points", "action", "uid"]
+    },
+    "activity_logs": {
+      "title": "Activity Log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "module": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "action", "module", "timestamp"]
+    },
+    "petty_cash": {
+      "title": "Petty Cash",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "description", "date", "uid"]
     }
   },
   "firestore": {
@@ -448,6 +562,13 @@
     "/attendance/{attendanceId}": { "schema": "attendance", "description": "Collection of attendance records." },
     "/salaryAdvances/{advanceId}": { "schema": "salaryAdvances", "description": "Collection of salary advances." },
     "/salaryRecords/{recordId}": { "schema": "salaryRecords", "description": "Collection of salary records." },
+    "/courier_logs/{logId}": { "schema": "courier_logs", "description": "Collection of courier API logs." },
+    "/courier_configs/{courierId}": { "schema": "courier_configs", "description": "Collection of courier API configurations." },
+    "/stock_transfers/{transferId}": { "schema": "stock_transfers", "description": "Collection of stock transfer requests." },
+    "/rma_requests/{rmaId}": { "schema": "rma_requests", "description": "Collection of RMA requests." },
+    "/loyalty_points_logs/{logId}": { "schema": "loyalty_points_logs", "description": "Collection of loyalty points history." },
+    "/activity_logs/{logId}": { "schema": "activity_logs", "description": "Collection of system activity logs." },
+    "/petty_cash/{cashId}": { "schema": "petty_cash", "description": "Collection of petty cash transactions." },
     "/users/{uid}": { "schema": "users", "description": "Collection of system users." },
     "/woocommerce_orders/{orderId}": { "schema": "woocommerce_orders", "description": "Collection of cached WooCommerce orders." },
     "/woocommerce_logs/{logId}": { "schema": "woocommerce_logs", "description": "Collection of WooCommerce sync logs." },

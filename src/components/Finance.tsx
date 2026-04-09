@@ -58,6 +58,7 @@ import { db, auth } from '../firebase';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { useSettings } from '../contexts/SettingsContext';
+import PettyCash from './PettyCash';
 import { Supplier, SupplierPayment } from '../types';
 
 interface Transaction {
@@ -100,7 +101,7 @@ const COA_STRUCTURE = {
 
 function Finance() {
   const { currencySymbol } = useSettings();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'transactions' | 'coa' | 'reports' | 'ar_ap' | 'supplier_payments'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'transactions' | 'coa' | 'reports' | 'ar_ap' | 'supplier_payments' | 'petty_cash'>('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -660,6 +661,15 @@ function Finance() {
           <Building2 size={14} />
           Supplier Payments
         </button>
+        <button
+          onClick={() => setActiveTab('petty_cash')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            activeTab === 'petty_cash' ? 'bg-white text-[#141414] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Wallet size={14} />
+          Petty Cash
+        </button>
       </div>
 
       {activeTab === 'dashboard' && (
@@ -1099,6 +1109,8 @@ function Finance() {
           </div>
         </div>
       )}
+
+      {activeTab === 'petty_cash' && <PettyCash />}
 
       {/* Supplier Payment Modal */}
       {isSupplierPaymentModalOpen && (

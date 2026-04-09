@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { 
   Plus, 
   Search, 
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 import { db, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from '../firebase';
 import { Supplier, PurchaseOrder } from '../types';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -46,6 +47,12 @@ export default function Suppliers() {
       (snapshot) => {
         setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier)));
         setLoading(false);
+      },
+      (error) => {
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'suppliers');
+        }
+        setLoading(false);
       }
     );
 
@@ -53,6 +60,11 @@ export default function Suppliers() {
       query(collection(db, 'purchaseOrders'), orderBy('createdAt', 'desc')),
       (snapshot) => {
         setPurchaseOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder)));
+      },
+      (error) => {
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'purchaseOrders');
+        }
       }
     );
 

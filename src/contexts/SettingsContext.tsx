@@ -57,7 +57,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       }
       setLoading(false);
     }, (error) => {
-      console.error("Error listening to settings:", error);
+      if (error.code !== 'permission-denied') {
+        console.error("Error listening to settings:", error);
+      }
       setLoading(false);
     });
 

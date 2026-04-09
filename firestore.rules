@@ -53,6 +53,27 @@ service cloud.firestore {
     // Collection: accounts
     // Fields: id, name, type, balance, accountNumber, uid, createdAt
     //
+    // Collection: courier_logs
+    // Fields: courier, orderId, request, response, status, timestamp
+    //
+    // Collection: courier_configs
+    // Fields: apiKey, secretKey, clientId, clientSecret, username, password, isActive, updatedAt
+    //
+    // Collection: stock_transfers
+    // Fields: fromWarehouseId, toWarehouseId, items, status, requestedBy, approvedBy, uid, createdAt, updatedAt
+    //
+    // Collection: rma_requests
+    // Fields: orderId, items, status, refundAmount, uid, createdAt, updatedAt
+    //
+    // Collection: loyalty_points_logs
+    // Fields: customerId, points, action, orderId, uid, createdAt
+    //
+    // Collection: activity_logs
+    // Fields: userId, userName, action, module, details, timestamp
+    //
+    // Collection: petty_cash
+    // Fields: amount, description, category, date, uid, createdAt
+    //
     // Collection: woocommerce_orders
     // Fields: id, status, total, customer, syncedAt
     //
@@ -199,6 +220,34 @@ service cloud.firestore {
       return hasRequiredFields(['productId', 'action', 'quantity', 'uid']);
     }
 
+    function isValidCourierLog(data) {
+      return hasRequiredFields(['courier', 'status', 'timestamp']);
+    }
+
+    function isValidCourierConfig(data) {
+      return hasRequiredFields(['isActive']);
+    }
+
+    function isValidStockTransfer(data) {
+      return hasRequiredFields(['fromWarehouseId', 'toWarehouseId', 'items', 'status', 'uid']) &&
+             data.status in ['pending', 'approved', 'shipped', 'received', 'cancelled'];
+    }
+
+    function isValidRMARequest(data) {
+      return hasRequiredFields(['orderId', 'items', 'status', 'uid']) &&
+             data.status in ['pending', 'approved', 'received', 'refunded', 'rejected'];
+    }
+
+    function isValidLoyaltyLog(data) {
+      return hasRequiredFields(['customerId', 'points', 'action', 'uid']) &&
+             data.action in ['earned', 'redeemed', 'adjusted'];
+    }
+
+    function isValidPettyCash(data) {
+      return hasRequiredFields(['amount', 'description', 'date', 'uid']) &&
+             data.amount is number;
+    }
+
     function isValidSupplierPayment(data) {
       return hasRequiredFields(['supplierId', 'amount', 'paidAmount', 'uid']) &&
              data.amount is number && data.amount >= 0 &&
@@ -236,7 +285,7 @@ service cloud.firestore {
              data.status in ['todo', 'in_progress', 'completed', 'on_hold'];
     }
     function isValidActivityLog(data) {
-      return hasRequiredFields(['userId', 'userName', 'action', 'module', 'timestamp']) &&
+      return hasRequiredFields(['userId', 'userName', 'action', 'module', 'details', 'timestamp']) &&
              data.userId == request.auth.uid;
     }
 
@@ -374,6 +423,49 @@ service cloud.firestore {
       allow create: if isAuthenticated() && uidUnchanged() && isValidStockLog(request.resource.data);
       allow update: if (isDocOwner() || isStaff()) && uidNotModified() && isValidStockLog(request.resource.data);
       allow delete: if (isDocOwner() || isAdmin());
+    }
+
+    match /courier_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /courier_configs/{courierId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /stock_transfers/{transferId} {
+      allow read: if isStaff();
+      allow create: if isStaff() && uidUnchanged() && isValidStockTransfer(request.resource.data);
+      allow update: if (isAdmin() || isManager()) && uidNotModified() && isValidStockTransfer(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /rma_requests/{rmaId} {
+      allow read: if isStaff();
+      allow create: if isStaff() && uidUnchanged() && isValidRMARequest(request.resource.data);
+      allow update: if isManager() && uidNotModified() && isValidRMARequest(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /loyalty_points_logs/{logId} {
+      allow read: if isStaff();
+      allow create: if isStaff() && uidUnchanged() && isValidLoyaltyLog(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /activity_logs/{logId} {
+      allow read: if isManager();
+      allow create: if isAuthenticated() && isValidActivityLog(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /petty_cash/{cashId} {
+      allow read: if isManager();
+      allow create: if isManager() && uidUnchanged() && isValidPettyCash(request.resource.data);
+      allow update: if isManager() && uidNotModified() && isValidPettyCash(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /woocommerce_orders/{orderId} {

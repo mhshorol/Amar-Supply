@@ -18,6 +18,7 @@ import {
   LayoutGrid,
   List
 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp, doc, updateDoc, deleteDoc, where, getDocs } from '../firebase';
 import { Task, User as TeamMember } from '../types';
 import { toast } from 'sonner';
@@ -50,14 +51,19 @@ export default function Tasks() {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'tasks');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'tasks');
+      }
+      setLoading(false);
     });
 
     // Subscribe to team members
     const unsubMembers = onSnapshot(query(collection(db, 'users'), where('active', '==', true)), (snapshot) => {
       setTeamMembers(snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as any as TeamMember)));
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'users');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'users');
+      }
     });
 
     return () => {
@@ -157,6 +163,26 @@ export default function Tasks() {
     return matchesSearch && matchesStatus;
   });
 
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const newStatus = destination.droppableId as Task['status'];
+    
+    try {
+      await updateDoc(doc(db, 'tasks', draggableId), {
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      });
+      toast.success(`Task moved to ${newStatus.replace('_', ' ')}`);
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      toast.error('Failed to update task status');
+    }
+  };
+
   const PriorityBadge = ({ priority }: { priority: string }) => {
     const colors = {
       low: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -188,37 +214,48 @@ export default function Tasks() {
     );
   };
 
-  const TaskCard = ({ task }: { task: Task, key?: string }) => (
-    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-      <div className="flex justify-between items-start mb-3">
-        <PriorityBadge priority={task.priority} />
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => handleOpenEditModal(task)} className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-[#00AEEF] transition-colors">
-            <Edit size={14} />
-          </button>
-          <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500 transition-colors">
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
-      <h4 className="text-sm font-bold text-gray-900 mb-2">{task.title}</h4>
-      <p className="text-xs text-gray-500 line-clamp-2 mb-4">{task.description}</p>
-      
-      <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-[#00AEEF] text-white flex items-center justify-center text-[10px] font-bold">
-            {task.assignedToName?.[0] || 'U'}
+  const TaskCard = ({ task, index }: any) => (
+    <Draggable draggableId={task.id} index={index}>
+      {(provided, snapshot) => (
+        <div 
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={`bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group ${
+            snapshot.isDragging ? 'shadow-2xl ring-2 ring-[#00AEEF]/20 rotate-2' : ''
+          }`}
+        >
+          <div className="flex justify-between items-start mb-3">
+            <PriorityBadge priority={task.priority} />
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={() => handleOpenEditModal(task)} className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-[#00AEEF] transition-colors">
+                <Edit size={14} />
+              </button>
+              <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500 transition-colors">
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
-          <span className="text-[10px] font-bold text-gray-500">{task.assignedToName}</span>
-        </div>
-        {task.dueDate && (
-          <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
-            <Calendar size={12} />
-            {task.dueDate?.toDate ? task.dueDate.toDate().toLocaleDateString() : (task.dueDate?.seconds ? new Date(task.dueDate.seconds * 1000).toLocaleDateString() : 'No date')}
+          <h4 className="text-sm font-bold text-gray-900 mb-2">{task.title}</h4>
+          <p className="text-xs text-gray-500 line-clamp-2 mb-4">{task.description}</p>
+          
+          <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-[#00AEEF] text-white flex items-center justify-center text-[10px] font-bold">
+                {task.assignedToName?.[0] || 'U'}
+              </div>
+              <span className="text-[10px] font-bold text-gray-500">{task.assignedToName}</span>
+            </div>
+            {task.dueDate && (
+              <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
+                <Calendar size={12} />
+                {task.dueDate?.toDate ? task.dueDate.toDate().toLocaleDateString() : (task.dueDate?.seconds ? new Date(task.dueDate.seconds * 1000).toLocaleDateString() : 'No date')}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </Draggable>
   );
 
   return (
@@ -279,30 +316,43 @@ export default function Tasks() {
           <Loader2 className="animate-spin text-[#00AEEF]" size={40} />
         </div>
       ) : viewMode === 'kanban' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {(['todo', 'in_progress', 'on_hold', 'completed'] as const).map(status => (
-            <div key={status} className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    status === 'todo' ? 'bg-gray-300' :
-                    status === 'in_progress' ? 'bg-blue-400' :
-                    status === 'on_hold' ? 'bg-orange-400' : 'bg-green-400'
-                  }`} />
-                  {status.replace('_', ' ')}
-                  <span className="ml-2 bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px]">
-                    {filteredTasks.filter(t => t.status === status).length}
-                  </span>
-                </h3>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {(['todo', 'in_progress', 'on_hold', 'completed'] as const).map(status => (
+              <div key={status} className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      status === 'todo' ? 'bg-gray-300' :
+                      status === 'in_progress' ? 'bg-blue-400' :
+                      status === 'on_hold' ? 'bg-orange-400' : 'bg-green-400'
+                    }`} />
+                    {status.replace('_', ' ')}
+                    <span className="ml-2 bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px]">
+                      {filteredTasks.filter(t => t.status === status).length}
+                    </span>
+                  </h3>
+                </div>
+                <Droppable droppableId={status}>
+                  {(provided, snapshot) => (
+                    <div 
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-4 min-h-[500px] p-2 rounded-2xl border border-dashed transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-[#00AEEF]/5 border-[#00AEEF]/20' : 'bg-gray-50/50 border-gray-200'
+                      }`}
+                    >
+                      {filteredTasks.filter(t => t.status === status).map((task, index) => (
+                        <TaskCard key={task.id} task={task} index={index} />
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
               </div>
-              <div className="space-y-4 min-h-[500px] p-2 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-                {filteredTasks.filter(t => t.status === status).map(task => (
-                  <TaskCard key={task.id} task={task} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </DragDropContext>
       ) : (
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-left border-collapse">

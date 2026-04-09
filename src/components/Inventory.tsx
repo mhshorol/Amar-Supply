@@ -28,6 +28,7 @@ import { useReactToPrint } from 'react-to-print';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
+import StockTransfers from './StockTransfers';
 import { useSettings } from '../contexts/SettingsContext';
 
 const StockBadge = ({ stock }: { stock: number }) => {
@@ -54,7 +55,7 @@ const StockBadge = ({ stock }: { stock: number }) => {
 
 export default function Inventory() {
   const { currencySymbol } = useSettings();
-  const [activeTab, setActiveTab] = useState<'products' | 'warehouses' | 'stock' | 'purchases' | 'suppliers' | 'returns' | 'logs' | 'reports'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'warehouses' | 'stock' | 'purchases' | 'suppliers' | 'returns' | 'logs' | 'reports' | 'transfers'>('products');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   
@@ -185,6 +186,7 @@ export default function Inventory() {
       case 'returns': return <ReturnsTab products={products} variants={variants} warehouses={warehouses} />;
       case 'logs': return <LogsTab logs={logs} products={products} variants={variants} warehouses={warehouses} />;
       case 'reports': return <ReportsTab products={products} inventory={inventory} logs={logs} />;
+      case 'transfers': return <StockTransfers />;
       default: return null;
     }
   };
@@ -242,7 +244,7 @@ export default function Inventory() {
 
       {/* Tabs Navigation */}
       <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit overflow-x-auto max-w-full">
-        {(['products', 'warehouses', 'stock', 'purchases', 'suppliers', 'returns', 'logs', 'reports'] as const).map((tab) => (
+        {(['products', 'warehouses', 'stock', 'transfers', 'purchases', 'suppliers', 'returns', 'logs', 'reports'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}

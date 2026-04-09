@@ -21,7 +21,9 @@ import {
   Activity,
   ClipboardList,
   Quote,
-  Calculator
+  Calculator,
+  BarChart3,
+  RotateCcw
 } from 'lucide-react';
 import { auth, signOut } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,10 +34,27 @@ interface LayoutProps {
   user: any;
 }
 
-const navItems: { name: string; path: string; icon: any; permission: keyof UserPermissions }[] = [
+const navItems: { 
+  name: string; 
+  path: string; 
+  icon: any; 
+  permission: keyof UserPermissions;
+  subItems?: { name: string; path: string; permission: keyof UserPermissions }[]
+}[] = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard, permission: 'dashboard' },
+  { name: 'Reports', path: '/reports', icon: BarChart3, permission: 'dashboard' },
   { name: 'POS', path: '/pos', icon: Calculator, permission: 'pos' },
-  { name: 'Orders', path: '/orders', icon: ShoppingCart, permission: 'orders' },
+  { 
+    name: 'Orders', 
+    path: '/orders', 
+    icon: ShoppingCart, 
+    permission: 'orders',
+    subItems: [
+      { name: 'Order List', path: '/orders', permission: 'orders' },
+      { name: 'New Order', path: '/orders/new', permission: 'orders' },
+      { name: 'Returns', path: '/returns', permission: 'orders' },
+    ]
+  },
   { name: 'Inventory', path: '/inventory', icon: Package, permission: 'inventory' },
   { name: 'CRM', path: '/crm', icon: Users, permission: 'crm' },
   { name: 'Suppliers', path: '/suppliers', icon: UserPlus, permission: 'suppliers' },
@@ -52,6 +71,13 @@ export default function Layout({ children, user }: LayoutProps) {
   const { hasPermission } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = React.useState(false);
+  const [expandedItems, setExpandedItems] = React.useState<string[]>(['Orders']);
+
+  const toggleExpand = (name: string) => {
+    setExpandedItems(prev => 
+      prev.includes(name) ? prev.filter(i => i !== name) : [...prev, name]
+    );
+  };
 
   const handleLogout = () => {
     signOut(auth);
@@ -73,10 +99,54 @@ export default function Layout({ children, user }: LayoutProps) {
           </div>
         </div>
         
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || (item.subItems?.some(sub => location.pathname === sub.path));
+            const isExpanded = expandedItems.includes(item.name);
+            
+            if (item.subItems) {
+              return (
+                <div key={item.name} className="space-y-1">
+                  <button
+                    onClick={() => toggleExpand(item.name)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
+                      isActive 
+                        ? 'bg-[#00AEEF]/5 text-[#00AEEF] font-medium' 
+                        : 'text-gray-500 hover:text-[#00AEEF] hover:bg-[#00AEEF]/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon size={18} className={isActive ? 'text-[#00AEEF]' : 'text-gray-400 group-hover:text-[#00AEEF]'} />
+                      <span className="text-sm">{item.name}</span>
+                    </div>
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {isExpanded && (
+                    <div className="ml-9 space-y-1 border-l-2 border-gray-50 pl-2">
+                      {item.subItems.filter(sub => hasPermission(sub.permission)).map(sub => {
+                        const isSubActive = location.pathname === sub.path;
+                        return (
+                          <Link
+                            key={sub.path}
+                            to={sub.path}
+                            className={`block px-4 py-2 rounded-lg text-xs transition-all ${
+                              isSubActive 
+                                ? 'bg-[#00AEEF] text-white font-bold shadow-md shadow-[#00AEEF]/10' 
+                                : 'text-gray-500 hover:text-[#00AEEF] hover:bg-[#00AEEF]/5'
+                            }`}
+                          >
+                            {sub.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={item.path}
@@ -91,7 +161,6 @@ export default function Layout({ children, user }: LayoutProps) {
                   <Icon size={18} className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#00AEEF]'} />
                   <span className="text-sm">{item.name}</span>
                 </div>
-                {!isActive && <ChevronDown size={14} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />}
               </Link>
             );
           })}
@@ -112,7 +181,7 @@ export default function Layout({ children, user }: LayoutProps) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between gap-4 px-8 sticky top-0 z-20 no-print">
-          <div className="flex items-center gap-4 md:gap-8 flex-1">
+          <div className="flex items-center gap-4 md:gap-6 flex-1">
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
               className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
@@ -130,7 +199,7 @@ export default function Layout({ children, user }: LayoutProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-4">
             {/* POS Button */}
             {hasPermission('pos') && (
               <Link 
@@ -157,7 +226,7 @@ export default function Layout({ children, user }: LayoutProps) {
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50">
                   {hasPermission('orders') && (
                     <Link 
-                      to="/orders?new=true" 
+                      to="/orders/new" 
                       onClick={() => setIsQuickActionOpen(false)}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl text-sm text-gray-700 transition-colors"
                     >
@@ -241,7 +310,47 @@ export default function Layout({ children, user }: LayoutProps) {
             <nav className="space-y-2">
               {filteredNavItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.path;
+                const isActive = location.pathname === item.path || (item.subItems?.some(sub => location.pathname === sub.path));
+                const isExpanded = expandedItems.includes(item.name);
+
+                if (item.subItems) {
+                  return (
+                    <div key={item.name} className="space-y-1">
+                      <button
+                        onClick={() => toggleExpand(item.name)}
+                        className={`w-full flex items-center justify-between px-4 py-4 rounded-xl transition-all ${
+                          isActive ? 'bg-[#00AEEF]/5 text-[#00AEEF]' : 'text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <Icon size={20} />
+                          <span className="font-medium">{item.name}</span>
+                        </div>
+                        <ChevronDown size={16} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {isExpanded && (
+                        <div className="ml-10 space-y-1">
+                          {item.subItems.filter(sub => hasPermission(sub.permission)).map(sub => {
+                            const isSubActive = location.pathname === sub.path;
+                            return (
+                              <Link
+                                key={sub.path}
+                                to={sub.path}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className={`block px-4 py-3 rounded-xl text-sm transition-all ${
+                                  isSubActive ? 'bg-[#00AEEF] text-white' : 'text-gray-500 hover:bg-gray-50'
+                                }`}
+                              >
+                                {sub.name}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.path}

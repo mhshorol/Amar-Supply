@@ -94,8 +94,8 @@ export default function Dashboard() {
       const totalPaid = orders.reduce((acc, o: any) => acc + (o.paidAmount || 0), 0);
       const totalDue = orders.reduce((acc, o: any) => acc + (o.dueAmount || 0), 0);
       const totalInvoice = orders.length;
-      const totalPaidInvoice = orders.filter((o: any) => o.status === 'delivered').length;
-      const totalDueInvoice = orders.filter((o: any) => o.status !== 'delivered' && o.status !== 'cancelled').length;
+      const totalPaidInvoice = orders.filter((o: any) => o.status?.toLowerCase() === 'delivered').length;
+      const totalDueInvoice = orders.filter((o: any) => o.status?.toLowerCase() !== 'delivered' && o.status?.toLowerCase() !== 'cancelled').length;
 
       setStats(prev => ({
         ...prev,
@@ -346,8 +346,8 @@ export default function Dashboard() {
                     <td className="px-6 py-4 text-xs font-bold text-gray-900">{formatCurrency(order.totalAmount)}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-[10px] font-bold rounded-md ${
-                        order.status === 'delivered' ? 'bg-green-500 text-white' : 
-                        order.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-[#00AEEF] text-white'
+                        order.status?.toLowerCase() === 'delivered' ? 'bg-green-500 text-white' : 
+                        order.status?.toLowerCase() === 'cancelled' ? 'bg-red-500 text-white' : 'bg-[#00AEEF] text-white'
                       }`}>{(order.status.charAt(0).toUpperCase() + order.status.slice(1)).replace(/_/g, ' ')}</span>
                     </td>
                   </tr>
