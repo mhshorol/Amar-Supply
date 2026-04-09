@@ -55,7 +55,16 @@ const navItems: {
       { name: 'Returns', path: '/returns', permission: 'orders' },
     ]
   },
-  { name: 'Inventory', path: '/inventory', icon: Package, permission: 'inventory' },
+  { 
+    name: 'Inventory', 
+    path: '/inventory', 
+    icon: Package, 
+    permission: 'inventory',
+    subItems: [
+      { name: 'Product List', path: '/inventory', permission: 'inventory' },
+      { name: 'Add Product', path: '/inventory/new', permission: 'inventory' },
+    ]
+  },
   { name: 'CRM', path: '/crm', icon: Users, permission: 'crm' },
   { name: 'Suppliers', path: '/suppliers', icon: UserPlus, permission: 'suppliers' },
   { name: 'Logistics', path: '/logistics', icon: Truck, permission: 'logistics' },
@@ -178,18 +187,18 @@ export default function Layout({ children, user }: LayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between gap-4 px-8 sticky top-0 z-20 no-print">
-          <div className="flex items-center gap-4 md:gap-6 flex-1">
+        <header className="h-16 sm:h-20 bg-white border-b border-gray-100 flex items-center justify-between gap-4 px-4 sm:px-8 sticky top-0 z-20 no-print">
+          <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+              className="md:hidden p-2 hover:bg-gray-100 rounded-lg shrink-0"
             >
-              <Menu size={24} />
+              <Menu size={20} className="sm:w-6 sm:h-6" />
             </button>
             
-            <div className="relative max-w-md w-full hidden md:block">
+            <div className="relative max-w-md w-full hidden lg:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="text"
@@ -291,7 +300,7 @@ export default function Layout({ children, user }: LayoutProps) {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
-          <div className="p-8 max-w-[1600px] mx-auto">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
             {children}
           </div>
         </main>

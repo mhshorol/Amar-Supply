@@ -236,9 +236,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-4 sm:space-y-8 pb-12">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard title="Total Revenue" value={formatCurrency(stats.totalAmount)} icon={Wallet} color="bg-[#00AEEF]" />
         <StatCard title="Total Paid" value={formatCurrency(stats.totalPaid)} icon={CheckCircle2} color="bg-[#00AEEF]" />
         <StatCard title="Total Due" value={formatCurrency(stats.totalDue)} icon={AlertCircle} color="bg-[#00AEEF]" />
@@ -251,10 +251,10 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
+        <div className="lg:col-span-2 bg-white p-4 sm:p-8 rounded-3xl border border-gray-100 shadow-sm">
           <SectionHeader title="Income & Expense Overview" showSelect />
-          <div className="h-[400px]">
+          <div className="h-[300px] sm:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
@@ -280,9 +280,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="bg-white p-4 sm:p-8 rounded-3xl border border-gray-100 shadow-sm">
           <SectionHeader title="Payment Overview" />
-          <div className="h-[300px] relative">
+          <div className="h-[250px] sm:h-[300px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -314,15 +314,15 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Orders & Best Selling Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
         {/* Recent Orders */}
         <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Recent Orders</h3>
-            <Link to="/orders" className="text-xs font-bold text-[#00AEEF] hover:underline">View All</Link>
+          <div className="p-4 sm:p-6 border-b border-gray-50 flex items-center justify-between">
+            <h3 className="text-xs sm:text-sm font-bold text-gray-800 uppercase tracking-widest">Recent Orders</h3>
+            <Link to="/orders" className="text-[10px] sm:text-xs font-bold text-[#00AEEF] hover:underline">View All</Link>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left min-w-[600px] sm:min-w-0">
               <thead>
                 <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50">
                   <th className="px-6 py-4">Order ID</th>

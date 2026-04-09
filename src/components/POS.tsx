@@ -507,11 +507,11 @@ export default function POS() {
   }
 
   return (
-    <div className="h-[calc(100vh-120px)] flex gap-6 overflow-hidden">
+    <div className="h-auto lg:h-[calc(100vh-120px)] flex flex-col lg:flex-row gap-6 overflow-y-auto lg:overflow-hidden p-4 lg:p-0">
       {/* Left Side: Product Selection */}
       <div className="flex-1 flex flex-col gap-6 min-w-0">
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <form onSubmit={handleBarcodeScan} className="relative w-64 flex gap-2">
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <form onSubmit={handleBarcodeScan} className="relative w-full sm:w-64 flex gap-2">
             <div className="relative flex-1">
               <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
@@ -534,13 +534,13 @@ export default function POS() {
             </button>
           </form>
 
-          <div className="w-px h-8 bg-gray-100" />
+          <div className="hidden sm:block w-px h-8 bg-gray-100" />
 
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
               type="text"
-              placeholder="Search products by name or SKU..."
+              placeholder="Search products..."
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -548,7 +548,7 @@ export default function POS() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 pb-8">
+        <div className="flex-1 overflow-y-auto pr-0 lg:pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 pb-8">
           {filteredProducts.map(product => {
             const productVariants = variants.filter(v => v.productId === product.id);
             const totalStock = getStock(product.id);
@@ -623,9 +623,9 @@ export default function POS() {
       </div>
 
       {/* Right Side: Cart & Checkout */}
-      <div className="w-96 flex flex-col gap-6">
+      <div className="w-full lg:w-96 flex flex-col gap-6">
         {/* Customer Selection */}
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+        <div className="bg-white p-4 sm:p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <User size={18} className="text-[#00AEEF]" />
@@ -642,17 +642,17 @@ export default function POS() {
           {selectedCustomer ? (
             <div className="p-3 rounded-2xl flex items-center justify-between" style={{ backgroundColor: '#eff6ff', border: '1px solid #dbeafe' }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-bold" style={{ color: '#00AEEF' }}>
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-bold shrink-0" style={{ color: '#00AEEF' }}>
                   {selectedCustomer.name[0]}
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-900">{selectedCustomer.name}</p>
-                  <p className="text-xs text-gray-500">{selectedCustomer.phone}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">{selectedCustomer.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{selectedCustomer.phone}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedCustomer(null)}
-                className="p-1.5 text-gray-400 hover:text-red-600 transition-all"
+                className="p-1.5 text-gray-400 hover:text-red-600 transition-all shrink-0"
               >
                 <X size={16} />
               </button>
@@ -679,11 +679,11 @@ export default function POS() {
                         }}
                         className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl transition-all flex items-center justify-between"
                       >
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">{c.name}</p>
-                          <p className="text-xs text-gray-500">{c.phone}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">{c.name}</p>
+                          <p className="text-xs text-gray-500 truncate">{c.phone}</p>
                         </div>
-                        <ChevronRight size={16} className="text-gray-300" />
+                        <ChevronRight size={16} className="text-gray-300 shrink-0" />
                       </button>
                     ))
                   ) : (
@@ -694,9 +694,9 @@ export default function POS() {
                       }}
                       className="w-full text-left px-4 py-3 hover:bg-blue-50 rounded-xl transition-all flex items-center gap-3 text-[#00AEEF]"
                     >
-                      <UserPlus size={18} />
-                      <div className="flex-1">
-                        <p className="text-sm font-bold">Add "{customerSearch}"</p>
+                      <UserPlus size={18} className="shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">Add "{customerSearch}"</p>
                         <p className="text-[10px] uppercase font-bold tracking-wider opacity-70">New Customer</p>
                       </div>
                     </button>
@@ -708,8 +708,8 @@ export default function POS() {
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
-          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+        <div className="flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
+          <div className="p-4 sm:p-6 border-b border-gray-50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <ShoppingCart size={18} className="text-[#00AEEF]" />
               Cart Items
@@ -730,14 +730,14 @@ export default function POS() {
 
           <div className="flex-1 overflow-y-auto px-4 py-2">
             {cart.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-2">
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-2 py-12">
                 <ShoppingCart size={48} className="opacity-20" />
                 <p className="text-xs font-medium">Your cart is empty</p>
               </div>
             ) : (
               <div className="divide-y" style={{ borderColor: '#f9fafb' }}>
                 {cart.map(item => (
-                  <div key={item.id} className="py-2 flex items-center gap-3 group">
+                  <div key={item.id} className="py-3 flex items-center gap-3 group">
                     <div className="flex-1 min-w-0">
                       <h4 className="text-[11px] font-bold text-gray-900 truncate">
                         {item.name}
@@ -746,28 +746,40 @@ export default function POS() {
                       <p className="text-[10px] font-bold" style={{ color: '#00AEEF' }}>{currencySymbol}{item.price.toLocaleString()}</p>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <div className="flex items-center gap-1.5 rounded-lg p-0.5 border" style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6' }}>
                         <button 
                           onClick={() => updateQuantity(item.id, -1)}
-                          className="p-0.5 hover:bg-white hover:shadow-sm rounded transition-all text-gray-500"
+                          className="p-1 hover:bg-white hover:shadow-sm rounded transition-all text-gray-500"
                         >
-                          <Minus size={10} />
+                          <Minus size={12} />
                         </button>
-                        <span className="text-[11px] font-bold w-4 text-center">{item.quantity}</span>
+                        <input 
+                          type="number"
+                          className="text-[11px] font-bold w-8 text-center bg-transparent outline-none"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            if (val > item.stock) {
+                              toast.error('Cannot exceed available stock');
+                              return;
+                            }
+                            setCart(cart.map(i => i.id === item.id ? { ...i, quantity: val } : i).filter(i => i.quantity > 0));
+                          }}
+                        />
                         <button 
                           onClick={() => updateQuantity(item.id, 1)}
-                          className="p-0.5 hover:bg-white hover:shadow-sm rounded transition-all text-gray-500"
+                          className="p-1 hover:bg-white hover:shadow-sm rounded transition-all text-gray-500"
                         >
-                          <Plus size={10} />
+                          <Plus size={12} />
                         </button>
                       </div>
                       
                       <button 
                         onClick={() => removeFromCart(item.id)}
-                        className="p-1 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                        className="p-1.5 text-gray-300 hover:text-red-500 transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -777,7 +789,7 @@ export default function POS() {
           </div>
 
           {/* Summary & Checkout */}
-          <div className="p-6 bg-gray-50 border-t border-gray-100 space-y-4">
+          <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-100 space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-gray-500">
                 <span>Subtotal</span>

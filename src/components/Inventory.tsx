@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Plus, 
@@ -54,6 +55,7 @@ const StockBadge = ({ stock }: { stock: number }) => {
 };
 
 export default function Inventory() {
+  const navigate = useNavigate();
   const { currencySymbol } = useSettings();
   const [activeTab, setActiveTab] = useState<'products' | 'warehouses' | 'stock' | 'purchases' | 'suppliers' | 'returns' | 'logs' | 'reports' | 'transfers'>('products');
   const [searchTerm, setSearchTerm] = useState('');
@@ -72,7 +74,6 @@ export default function Inventory() {
   const [stockLogs, setStockLogs] = useState<any[]>([]);
 
   // Modal States
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -178,7 +179,7 @@ export default function Inventory() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'products': return <ProductsTab products={products} variants={variants} categories={categories} brands={brands} onEdit={(p: any) => { setEditingItem(p); setIsProductModalOpen(true); }} onDelete={handleDeleteProduct} onAddCategory={() => setIsCategoryModalOpen(true)} onAddBrand={() => setIsBrandModalOpen(true)} />;
+      case 'products': return <ProductsTab products={products} variants={variants} categories={categories} brands={brands} onEdit={(p: any) => navigate(`/inventory/edit/${p.id}`)} onDelete={handleDeleteProduct} onAddCategory={() => setIsCategoryModalOpen(true)} onAddBrand={() => setIsBrandModalOpen(true)} />;
       case 'warehouses': return <WarehousesTab warehouses={warehouses} onEdit={(w: any) => { setEditingItem(w); setIsWarehouseModalOpen(true); }} onDelete={handleDeleteWarehouse} />;
       case 'stock': return <StockTab inventory={inventory} products={products} variants={variants} warehouses={warehouses} onAdjust={() => setIsAdjustmentModalOpen(true)} onTransfer={() => setIsTransferModalOpen(true)} />;
       case 'purchases': return <PurchasesTab pos={purchaseOrders} suppliers={suppliers} products={products} variants={variants} onAdd={() => setIsPOModalOpen(true)} />;
@@ -213,15 +214,15 @@ export default function Inventory() {
         </div>
       )}
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-[#141414] tracking-tight">Inventory Management</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#141414] tracking-tight">Inventory Management</h2>
           <p className="text-sm text-gray-500 mt-1">Full-stack control over products, variants, warehouses, and stock movements.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
           >
             <Download size={16} />
             Export CSV
@@ -229,12 +230,12 @@ export default function Inventory() {
           <button 
             onClick={() => {
               setEditingItem(null);
-              if (activeTab === 'products') setIsProductModalOpen(true);
+              if (activeTab === 'products') navigate('/inventory/new');
               if (activeTab === 'warehouses') setIsWarehouseModalOpen(true);
               if (activeTab === 'purchases') setIsPOModalOpen(true);
               if (activeTab === 'stock') setIsAdjustmentModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
           >
             <Plus size={16} />
             Add {activeTab.slice(0, -1)}
@@ -272,7 +273,6 @@ export default function Inventory() {
       </div>
 
       {/* Modals Placeholder - Will implement detailed modals next */}
-      {isProductModalOpen && <ProductModal isOpen={isProductModalOpen} onClose={() => { setIsProductModalOpen(false); setEditingItem(null); }} editingItem={editingItem} categories={categories} brands={brands} products={products} />}
       {isWarehouseModalOpen && <WarehouseModal isOpen={isWarehouseModalOpen} onClose={() => { setIsWarehouseModalOpen(false); setEditingItem(null); }} editingItem={editingItem} />}
       {isAdjustmentModalOpen && <AdjustmentModal isOpen={isAdjustmentModalOpen} onClose={() => setIsAdjustmentModalOpen(false)} products={products} variants={variants} warehouses={warehouses} />}
       {isTransferModalOpen && <TransferModal isOpen={isTransferModalOpen} onClose={() => setIsTransferModalOpen(false)} products={products} variants={variants} warehouses={warehouses} />}
@@ -340,17 +340,18 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onDelete,
           <button onClick={onAddBrand} className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-gray-200 rounded-lg hover:bg-white transition-all">Brands</button>
         </div>
       </div>
-      <table className="w-full text-left">
-        <thead>
-          <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
-            <th className="px-6 py-4 font-semibold">Product</th>
-            <th className="px-6 py-4 font-semibold">Type</th>
-            <th className="px-6 py-4 font-semibold">SKU</th>
-            <th className="px-6 py-4 font-semibold">Category/Brand</th>
-            <th className="px-6 py-4 font-semibold">Price</th>
-            <th className="px-6 py-4 font-semibold text-right">Actions</th>
-          </tr>
-        </thead>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[800px]">
+          <thead>
+            <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <th className="px-6 py-4 font-semibold">Product</th>
+              <th className="px-6 py-4 font-semibold">Type</th>
+              <th className="px-6 py-4 font-semibold">SKU</th>
+              <th className="px-6 py-4 font-semibold">Category/Brand</th>
+              <th className="px-6 py-4 font-semibold">Price</th>
+              <th className="px-6 py-4 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
         <tbody className="divide-y divide-gray-100">
           {products.map((p: any) => (
             <tr key={p.id} className="hover:bg-gray-50 transition-colors group">
@@ -407,6 +408,7 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onDelete,
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -560,18 +562,19 @@ function PurchasesTab({ pos, suppliers, products, variants, onAdd }: any) {
         <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Purchase Orders</h3>
         <button onClick={onAdd} className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest bg-[#141414] text-white rounded-lg hover:bg-black transition-all">New PO</button>
       </div>
-      <table className="w-full text-left">
-        <thead>
-          <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
-            <th className="px-6 py-4 font-semibold">PO ID</th>
-            <th className="px-6 py-4 font-semibold">Supplier</th>
-            <th className="px-6 py-4 font-semibold">Status</th>
-            <th className="px-6 py-4 font-semibold">Total Cost</th>
-            <th className="px-6 py-4 font-semibold">Created</th>
-            <th className="px-6 py-4 font-semibold text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[800px]">
+          <thead>
+            <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <th className="px-6 py-4 font-semibold">PO ID</th>
+              <th className="px-6 py-4 font-semibold">Supplier</th>
+              <th className="px-6 py-4 font-semibold">Status</th>
+              <th className="px-6 py-4 font-semibold">Total Cost</th>
+              <th className="px-6 py-4 font-semibold">Created</th>
+              <th className="px-6 py-4 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
           {pos.map((po: any) => (
             <tr key={po.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 font-mono text-xs uppercase">{po.id.slice(0, 8)}</td>
@@ -596,6 +599,7 @@ function PurchasesTab({ pos, suppliers, products, variants, onAdd }: any) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -603,17 +607,18 @@ function PurchasesTab({ pos, suppliers, products, variants, onAdd }: any) {
 function SuppliersTab({ suppliers, onEdit }: any) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
-            <th className="px-6 py-4 font-semibold">Supplier Name</th>
-            <th className="px-6 py-4 font-semibold">Contact Person</th>
-            <th className="px-6 py-4 font-semibold">Phone</th>
-            <th className="px-6 py-4 font-semibold">Email</th>
-            <th className="px-6 py-4 font-semibold text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[800px]">
+          <thead>
+            <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <th className="px-6 py-4 font-semibold">Supplier Name</th>
+              <th className="px-6 py-4 font-semibold">Contact Person</th>
+              <th className="px-6 py-4 font-semibold">Phone</th>
+              <th className="px-6 py-4 font-semibold">Email</th>
+              <th className="px-6 py-4 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
           {suppliers.map((s: any) => (
             <tr key={s.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 text-sm font-bold">{s.name}</td>
@@ -629,6 +634,7 @@ function SuppliersTab({ suppliers, onEdit }: any) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -698,17 +704,18 @@ function ReturnsTab({ products, variants, warehouses }: any) {
       <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
         <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Return & Exchange Requests</h3>
       </div>
-      <table className="w-full text-left">
-        <thead>
-          <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
-            <th className="px-6 py-4 font-semibold">Order ID</th>
-            <th className="px-6 py-4 font-semibold">Product</th>
-            <th className="px-6 py-4 font-semibold">Reason</th>
-            <th className="px-6 py-4 font-semibold">Status</th>
-            <th className="px-6 py-4 font-semibold text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[800px]">
+          <thead>
+            <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <th className="px-6 py-4 font-semibold">Order ID</th>
+              <th className="px-6 py-4 font-semibold">Product</th>
+              <th className="px-6 py-4 font-semibold">Reason</th>
+              <th className="px-6 py-4 font-semibold">Status</th>
+              <th className="px-6 py-4 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
           {returns.map((ret: any) => {
             const product = products.find((p: any) => p.id === ret.productId);
             return (
@@ -735,6 +742,7 @@ function ReturnsTab({ products, variants, warehouses }: any) {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -742,18 +750,19 @@ function ReturnsTab({ products, variants, warehouses }: any) {
 function LogsTab({ logs, products, variants, warehouses }: any) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
-            <th className="px-6 py-4 font-semibold">Time</th>
-            <th className="px-6 py-4 font-semibold">Action</th>
-            <th className="px-6 py-4 font-semibold">Item</th>
-            <th className="px-6 py-4 font-semibold">Warehouse</th>
-            <th className="px-6 py-4 font-semibold">Change</th>
-            <th className="px-6 py-4 font-semibold">New Stock</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[800px]">
+          <thead>
+            <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <th className="px-6 py-4 font-semibold">Time</th>
+              <th className="px-6 py-4 font-semibold">Action</th>
+              <th className="px-6 py-4 font-semibold">Item</th>
+              <th className="px-6 py-4 font-semibold">Warehouse</th>
+              <th className="px-6 py-4 font-semibold">Change</th>
+              <th className="px-6 py-4 font-semibold">New Stock</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
           {logs.map((log: any) => {
             const product = products.find((p: any) => p.id === log.productId);
             const warehouse = warehouses.find((w: any) => w.id === log.warehouseId);
@@ -774,6 +783,7 @@ function LogsTab({ logs, products, variants, warehouses }: any) {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -862,381 +872,6 @@ function ReportsTab({ products, inventory, logs }: any) {
 }
 
 // --- Modals (Simplified for now, will expand in next turn) ---
-
-function ProductModal({ isOpen, onClose, editingItem, categories, brands, products }: any) {
-  const { currencySymbol } = useSettings();
-  const [form, setForm] = useState(editingItem || {
-    name: '', sku: '', type: 'simple', price: 0, costPrice: 0, categoryId: '', brandId: '', barcode: '', minStock: 10, description: '', images: []
-  });
-  const [productVariants, setProductVariants] = useState<any[]>([]);
-  const [newVariant, setNewVariant] = useState({ size: '', color: '', fabric: '', sku: '', barcode: '', price: 0, costPrice: 0 });
-  const [uploading, setUploading] = useState(false);
-  const barcodeRef = useRef<HTMLDivElement>(null);
-
-  const handlePrintBarcode = useReactToPrint({
-    contentRef: barcodeRef,
-    suppressErrors: true,
-    onBeforePrint: () => {
-      return new Promise((resolve) => {
-        setTimeout(resolve, 500);
-      });
-    },
-    onPrintError: (errorLocation, error) => {
-      console.error("Print error:", errorLocation, error);
-      toast.error("Printing failed. Please try again or use the download option.");
-    }
-  });
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setForm({ ...form, images: [...(form.images || []), url] });
-      toast.success('Image uploaded successfully');
-    } catch (e) {
-      toast.error('Failed to upload image');
-      console.error(e);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const downloadBarcode = () => {
-    const svg = barcodeRef.current?.querySelector('svg');
-    if (!svg) return;
-
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = img.width + 40;
-      canvas.height = img.height + 80;
-      if (ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 20, 40);
-        ctx.fillStyle = 'black';
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(form.name, canvas.width / 2, 25);
-        ctx.font = '14px Arial';
-        ctx.fillText(`${currencySymbol}${form.price}`, canvas.width / 2, canvas.height - 15);
-        
-        const pngUrl = canvas.toDataURL('image/png');
-        const downloadLink = document.createElement('a');
-        downloadLink.href = pngUrl;
-        downloadLink.download = `barcode-${form.sku || 'product'}.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-      }
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
-  };
-
-  useEffect(() => {
-    if (editingItem) {
-      const q = query(collection(db, 'variants'), where('productId', '==', editingItem.id));
-      const unsub = onSnapshot(q, (snap) => {
-        setProductVariants(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
-      return () => unsub();
-    }
-  }, [editingItem]);
-
-  const handleSave = async () => {
-    try {
-      const batch = writeBatch(db);
-      const productRef = editingItem ? doc(db, 'products', editingItem.id) : doc(collection(db, 'products'));
-      
-      const productData = {
-        ...form,
-        uid: auth.currentUser?.uid,
-        updatedAt: serverTimestamp(),
-        createdAt: editingItem ? editingItem.createdAt : serverTimestamp()
-      };
-
-      if (editingItem) {
-        batch.update(productRef, productData);
-      } else {
-        batch.set(productRef, productData);
-      }
-
-      await batch.commit();
-      await logActivity(
-        editingItem ? 'Updated Product' : 'Created Product',
-        'Inventory',
-        `Product ${form.name} ${editingItem ? 'updated' : 'created'}`
-      );
-      onClose();
-    } catch (e) { 
-      handleFirestoreError(e, editingItem ? OperationType.UPDATE : OperationType.CREATE, 'products');
-    }
-  };
-
-  const addVariant = async () => {
-    if (!editingItem) {
-      toast.error("Please save the product first before adding variants.");
-      return;
-    }
-    try {
-      await addDoc(collection(db, 'variants'), {
-        ...newVariant,
-        productId: editingItem.id,
-        uid: auth.currentUser?.uid,
-        createdAt: serverTimestamp()
-      });
-      setNewVariant({ size: '', color: '', fabric: '', sku: '', barcode: '', price: 0, costPrice: 0 });
-    } catch (e) {
-      handleFirestoreError(e, OperationType.CREATE, 'variants');
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl p-8 space-y-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center">
-          <h3 className="text-2xl font-bold">{editingItem ? 'Edit Product' : 'New Product'}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X /></button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400 border-b pb-2">Basic Information</h4>
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Product Name</label>
-                <input className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">SKU</label>
-                  <input className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Type</label>
-                  <select className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
-                    <option value="simple">Simple</option>
-                    <option value="variable">Variable</option>
-                    <option value="bundle">Bundle</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Category</label>
-                  <select className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.categoryId} onChange={e => setForm({...form, categoryId: e.target.value})}>
-                    <option value="">Select Category</option>
-                    {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Brand</label>
-                  <select className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.brandId} onChange={e => setForm({...form, brandId: e.target.value})}>
-                    <option value="">Select Brand</option>
-                    {brands.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Description</label>
-                <textarea className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200 h-24" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400 border-b pb-2">Pricing & Media</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Retail Price ({currencySymbol})</label>
-                <input type="number" className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.price || 0} onChange={e => setForm({...form, price: parseFloat(e.target.value) || 0})} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Cost Price ({currencySymbol})</label>
-                <input type="number" className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.costPrice || 0} onChange={e => setForm({...form, costPrice: parseFloat(e.target.value) || 0})} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Min Stock Alert</label>
-                <input type="number" className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.minStock || 0} onChange={e => setForm({...form, minStock: parseInt(e.target.value) || 0})} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Barcode</label>
-                <div className="flex gap-2">
-                  <input className="flex-1 p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200" value={form.barcode} onChange={e => setForm({...form, barcode: e.target.value})} />
-                  <button 
-                    onClick={() => setForm({...form, barcode: form.sku || Math.random().toString(36).substring(2, 10).toUpperCase()})}
-                    className="px-3 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-bold hover:bg-gray-200 transition-colors"
-                  >
-                    Generate
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase">Product Images</label>
-              <div className="grid grid-cols-4 gap-2">
-                {form.images?.map((url: string, i: number) => (
-                  <div key={i} className="relative group aspect-square bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                    <img src={url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    <button 
-                      onClick={() => setForm({...form, images: form.images.filter((_: any, idx: number) => idx !== i)})}
-                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ))}
-                <label className="aspect-square bg-gray-50 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
-                  {uploading ? <Loader2 size={20} className="animate-spin text-gray-400" /> : <Plus size={20} className="text-gray-400" />}
-                  <span className="text-[8px] font-bold text-gray-400 uppercase mt-1">Upload</span>
-                  <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-                </label>
-              </div>
-              <textarea 
-                className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-gray-200 h-20 mt-2 text-xs" 
-                value={form.images?.join('\n')} 
-                onChange={e => setForm({...form, images: e.target.value.split('\n').filter(url => url.trim())})} 
-                placeholder="Or paste image URLs here (one per line)"
-              />
-            </div>
-
-            <div className="space-y-4 pt-6 border-t">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Barcode Preview</h4>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={downloadBarcode}
-                    className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold hover:bg-gray-200 transition-colors"
-                  >
-                    <Download size={12} />
-                    Download
-                  </button>
-                  <button 
-                    onClick={() => handlePrintBarcode()}
-                    className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold hover:bg-gray-200 transition-colors"
-                  >
-                    <Printer size={12} />
-                    Print
-                  </button>
-                </div>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-2xl flex items-center justify-center border border-gray-100">
-                <div ref={barcodeRef} className="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2">
-                  <p className="text-xs font-bold text-center max-w-[200px] truncate">{form.name || 'Product Name'}</p>
-                  <Barcode 
-                    value={form.barcode || form.sku || 'NO-BARCODE'} 
-                    width={1.5}
-                    height={50}
-                    fontSize={12}
-                    background="#ffffff"
-                  />
-                  <p className="text-xs font-bold">{currencySymbol}{form.price || 0}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {form.type === 'variable' && (
-          <div className="space-y-4 pt-6 border-t">
-            <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Variants Management</h4>
-            <div className="bg-gray-50 p-4 rounded-2xl space-y-4">
-              <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
-                <input placeholder="Size" className="p-2 rounded-lg text-xs" value={newVariant.size} onChange={e => setNewVariant({...newVariant, size: e.target.value})} />
-                <input placeholder="Color" className="p-2 rounded-lg text-xs" value={newVariant.color} onChange={e => setNewVariant({...newVariant, color: e.target.value})} />
-                <input placeholder="Fabric" className="p-2 rounded-lg text-xs" value={newVariant.fabric} onChange={e => setNewVariant({...newVariant, fabric: e.target.value})} />
-                <input placeholder="SKU" className="p-2 rounded-lg text-xs" value={newVariant.sku} onChange={e => setNewVariant({...newVariant, sku: e.target.value})} />
-                <input placeholder="Barcode" className="p-2 rounded-lg text-xs" value={newVariant.barcode} onChange={e => setNewVariant({...newVariant, barcode: e.target.value})} />
-                <input type="number" placeholder="Price" className="p-2 rounded-lg text-xs" value={newVariant.price || 0} onChange={e => setNewVariant({...newVariant, price: parseFloat(e.target.value) || 0})} />
-                <button onClick={addVariant} className="bg-[#141414] text-white rounded-lg text-xs font-bold">Add</button>
-              </div>
-              <div className="space-y-2">
-                {productVariants.map((v: any) => (
-                  <div key={v.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 text-xs">
-                    <div className="flex flex-col">
-                      <span className="font-bold">{v.sku}</span>
-                      <span className="text-[10px] text-gray-400">{v.barcode || 'No Barcode'}</span>
-                    </div>
-                    <span className="text-gray-400">{v.size} / {v.color} / {v.fabric}</span>
-                    <span className="font-mono">{currencySymbol}{v.price}</span>
-                    <button onClick={() => deleteDoc(doc(db, 'variants', v.id))} className="text-red-500"><Trash2 size={14} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {form.type === 'bundle' && (
-          <div className="space-y-4 pt-6 border-t">
-            <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Bundle Components</h4>
-            <div className="bg-purple-50 p-4 rounded-2xl space-y-4 border border-purple-100">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <select 
-                  className="p-2 bg-white border border-gray-100 rounded-lg text-xs"
-                  value={newVariant.sku} // Reusing newVariant state for temporary storage
-                  onChange={e => setNewVariant({...newVariant, sku: e.target.value})}
-                >
-                  <option value="">Select Product</option>
-                  {products.filter((p: any) => p.id !== editingItem?.id && p.type !== 'bundle').map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <input 
-                  type="number" 
-                  placeholder="Qty" 
-                  className="p-2 bg-white border border-gray-100 rounded-lg text-xs"
-                  value={newVariant.price || 0}
-                  onChange={e => setNewVariant({...newVariant, price: parseFloat(e.target.value) || 0})}
-                />
-                <button 
-                  type="button"
-                  onClick={() => {
-                    if (!newVariant.sku) return;
-                    setForm({...form, bundleItems: [...(form.bundleItems || []), { productId: newVariant.sku, quantity: newVariant.price || 1 }]});
-                    setNewVariant({ size: '', color: '', fabric: '', sku: '', price: 0, costPrice: 0 });
-                  }}
-                  className="bg-purple-600 text-white rounded-lg text-xs font-bold"
-                >
-                  Add to Bundle
-                </button>
-              </div>
-              <div className="space-y-2">
-                {(form.bundleItems || []).map((item: any, idx: number) => {
-                  const p = products.find((prod: any) => prod.id === item.productId);
-                  return (
-                    <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-xl border border-purple-100 text-xs">
-                      <span>{p?.name} x {item.quantity}</span>
-                      <button onClick={() => setForm({...form, bundleItems: form.bundleItems.filter((_: any, i: number) => i !== idx)})} className="text-red-500"><Trash2 size={14} /></button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-4 pt-6">
-          <button onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all">Cancel</button>
-          <button onClick={handleSave} className="flex-[2] py-4 bg-[#141414] text-white rounded-xl font-bold shadow-xl hover:bg-black transition-all">
-            {editingItem ? 'Update Product' : 'Create Product'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function WarehouseModal({ isOpen, onClose, editingItem }: any) {
   const [form, setForm] = useState(editingItem || { name: '', location: '', description: '' });

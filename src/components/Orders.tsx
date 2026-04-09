@@ -223,7 +223,7 @@ export default function Orders() {
     area: '',
     landmark: '',
     subtotal: 0,
-    deliveryCharge: 60,
+    deliveryCharge: 80,
     discount: 0,
     totalAmount: 0,
     paidAmount: 0,
@@ -304,9 +304,9 @@ export default function Orders() {
   }, []);
 
   const handleZoneChange = (zone: string) => {
-    let charge = 60;
-    if (zone === 'Outside Dhaka') charge = 120;
-    if (zone === 'Sub Dhaka') charge = 100;
+    let charge = 80;
+    if (zone === 'Outside Dhaka') charge = 150;
+    if (zone === 'Sub Area') charge = 130;
     setOrderForm({ ...orderForm, customerZone: zone, deliveryCharge: charge });
   };
   const handlePhoneChange = async (phone: string) => {
@@ -350,7 +350,7 @@ export default function Orders() {
       area: '',
       landmark: '',
       subtotal: 0,
-      deliveryCharge: 60,
+      deliveryCharge: 80,
       discount: 0,
       totalAmount: 0,
       paidAmount: 0,
@@ -905,15 +905,15 @@ export default function Orders() {
   });
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto no-print">
-      <div className="flex justify-between items-start">
-        <div className="space-y-4 flex-1">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-8 max-w-7xl mx-auto no-print">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-6">
+        <div className="space-y-4 flex-1 w-full">
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-[#141414] tracking-tight">Order Management</h2>
-            <p className="text-sm text-[#6b7280]">Manage your F-Commerce and website orders seamlessly.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#141414] tracking-tight">Order Management</h2>
+            <p className="text-xs sm:text-sm text-[#6b7280]">Manage your F-Commerce and website orders seamlessly.</p>
           </div>
           
-          <div className="max-w-md relative">
+          <div className="max-w-md relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" size={16} />
             <input 
               type="text"
@@ -924,76 +924,66 @@ export default function Orders() {
             />
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-sm font-bold hover:bg-[#f9fafb] transition-all shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-xs sm:text-sm font-bold hover:bg-[#f9fafb] transition-all shadow-sm"
           >
-            <Download size={18} />
-            Export CSV
+            <Download size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="whitespace-nowrap">Export CSV</span>
           </button>
           <button 
             onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
-            className="flex items-center gap-2 px-4 py-2 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-sm font-bold hover:bg-[#f9fafb] transition-all shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-[#ffffff] border border-[#f3f4f6] rounded-xl text-xs sm:text-sm font-bold hover:bg-[#f9fafb] transition-all shadow-sm"
           >
-            {viewMode === 'table' ? <LayoutGrid size={18} /> : <List size={18} />}
-            {viewMode === 'table' ? 'Grid View' : 'Table View'}
+            {viewMode === 'table' ? <LayoutGrid size={16} className="sm:w-[18px] sm:h-[18px]" /> : <List size={16} className="sm:w-[18px] sm:h-[18px]" />}
+            <span className="whitespace-nowrap">{viewMode === 'table' ? 'Grid View' : 'Table View'}</span>
           </button>
           <Link 
             to="/orders/new"
-            className="flex items-center gap-2 px-6 py-2 bg-[#141414] text-white rounded-xl text-sm font-bold hover:bg-black transition-all shadow-lg hover:shadow-xl"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-[#141414] text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-black transition-all shadow-lg hover:shadow-xl"
           >
-            <Plus size={18} />
-            New Order
+            <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="whitespace-nowrap">New Order</span>
           </Link>
         </div>
       </div>
 
       {/* Bulk Actions Bar */}
       {selectedOrders.length > 0 && (
-        <div className="bg-[#141414] text-white p-4 rounded-2xl flex items-center justify-between shadow-2xl animate-in slide-in-from-top-4">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-bold">{selectedOrders.length} Orders Selected</span>
-            <div className="h-4 w-px bg-[#ffffff33]" />
+        <div className="bg-[#141414] text-white p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl animate-in slide-in-from-top-4 sticky top-20 z-40">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4">
+            <span className="text-xs sm:text-sm font-bold shrink-0">{selectedOrders.length} Selected</span>
+            <div className="hidden sm:block h-4 w-px bg-[#ffffff33]" />
             <select 
               onChange={(e) => handleBulkStatusUpdate(e.target.value)}
-              className="bg-[#ffffff1a] border border-[#ffffff33] rounded-lg px-3 py-1 text-xs font-bold outline-none"
+              className="bg-[#ffffff1a] border border-[#ffffff33] rounded-lg px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold outline-none"
             >
               <option value="" className="text-black">Update Status</option>
               {statuses.map(s => <option key={s} value={s} className="text-black">{s.replace(/_/g, ' ').charAt(0).toUpperCase() + s.replace(/_/g, ' ').slice(1)}</option>)}
             </select>
             <button 
               onClick={handleBulkSendToCourier}
-              className="flex items-center gap-2 px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-xl text-[10px] sm:text-xs font-bold transition-all"
             >
-              <Truck size={14} /> Send to Courier
+              <Truck size={12} className="sm:w-[14px] sm:h-[14px]" /> <span className="hidden xs:inline">Courier</span>
             </button>
             <button 
               onClick={handleBulkDownloadPDF}
-              className="flex items-center gap-2 px-3 py-1 bg-[#00AEEF] hover:bg-[#0096ce] rounded-lg text-xs font-bold transition-all"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-[#00AEEF] hover:bg-[#0096ce] rounded-lg text-[10px] sm:text-xs font-bold transition-all"
             >
-              <Download size={14} /> Download Invoices
+              <Download size={12} className="sm:w-[14px] sm:h-[14px]" /> <span className="hidden xs:inline">Invoices</span>
             </button>
             <button 
               onClick={handleBulkPrint}
-              className="flex items-center gap-2 px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-lg text-xs font-bold transition-all"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-lg text-[10px] sm:text-xs font-bold transition-all"
             >
-              <Printer size={14} /> Print Invoices
-            </button>
-            <button 
-              onClick={() => {
-                toast.info("Opening system print dialog for bulk invoices...");
-                setTimeout(() => window.print(), 500);
-              }}
-              className="flex items-center gap-2 px-3 py-1 bg-[#ffffff1a] hover:bg-[#ffffff33] rounded-lg text-xs font-bold transition-all"
-              title="Use this if the standard print button fails"
-            >
-              <Printer size={14} /> Manual Bulk
+              <Printer size={12} className="sm:w-[14px] sm:h-[14px]" /> <span className="hidden xs:inline">Print</span>
             </button>
           </div>
           <button 
             onClick={() => setSelectedOrders([])}
-            className="p-2 hover:bg-[#ffffff1a] rounded-full transition-all"
+            className="p-2 hover:bg-[#ffffff1a] rounded-full transition-all shrink-0"
           >
             <X size={18} />
           </button>
@@ -1430,13 +1420,29 @@ export default function Orders() {
                       </select>
                     )}
                     <div className="flex gap-2">
-                      <input 
-                        type="number" 
-                        placeholder="Qty" 
-                        className="w-16 p-2 bg-[#ffffff] border border-[#f3f4f6] rounded-lg text-xs"
-                        value={newItem.quantity || 0}
-                        onChange={e => setNewItem({...newItem, quantity: parseInt(e.target.value) || 0})}
-                      />
+                      <div className="flex items-center bg-[#ffffff] border border-[#f3f4f6] rounded-lg overflow-hidden">
+                        <button 
+                          type="button"
+                          onClick={() => setNewItem(prev => ({...prev, quantity: Math.max(1, prev.quantity - 1)}))}
+                          className="px-2 py-1 hover:bg-gray-50 text-gray-500 transition-colors border-r border-[#f3f4f6]"
+                        >
+                          -
+                        </button>
+                        <input 
+                          type="number" 
+                          placeholder="Qty" 
+                          className="w-12 text-center py-1 text-xs outline-none"
+                          value={newItem.quantity || 0}
+                          onChange={e => setNewItem({...newItem, quantity: parseInt(e.target.value) || 0})}
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => setNewItem(prev => ({...prev, quantity: prev.quantity + 1}))}
+                          className="px-2 py-1 hover:bg-gray-50 text-gray-500 transition-colors border-l border-[#f3f4f6]"
+                        >
+                          +
+                        </button>
+                      </div>
                       <button 
                         type="button"
                         onClick={() => {
@@ -1451,7 +1457,7 @@ export default function Orders() {
                           setOrderForm({...orderForm, items: [...orderForm.items, itemWithInfo]});
                           setNewItem({ productId: '', variantId: '', quantity: 1, price: 0 });
                         }}
-                        className="flex-1 bg-[#141414] text-white rounded-lg text-xs font-bold"
+                        className="flex-1 bg-[#141414] text-white rounded-lg text-xs font-bold px-4 py-2"
                       >
                         Add
                       </button>
@@ -1468,7 +1474,41 @@ export default function Orders() {
                             {v && <span className="text-[10px] text-[#9ca3af]">{v.size} / {v.color}</span>}
                           </div>
                           <div className="flex items-center gap-4">
-                            <span>x{item.quantity}</span>
+                            <div className="flex items-center bg-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newItems = [...orderForm.items];
+                                  newItems[idx].quantity = Math.max(1, newItems[idx].quantity - 1);
+                                  setOrderForm({...orderForm, items: newItems});
+                                }}
+                                className="px-2 py-1 hover:bg-white text-gray-500 transition-colors"
+                              >
+                                -
+                              </button>
+                              <input 
+                                type="number"
+                                className="w-8 text-center bg-transparent text-[10px] font-bold outline-none"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  const newItems = [...orderForm.items];
+                                  newItems[idx].quantity = val;
+                                  setOrderForm({...orderForm, items: newItems});
+                                }}
+                              />
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newItems = [...orderForm.items];
+                                  newItems[idx].quantity = newItems[idx].quantity + 1;
+                                  setOrderForm({...orderForm, items: newItems});
+                                }}
+                                className="px-2 py-1 hover:bg-white text-gray-500 transition-colors"
+                              >
+                                +
+                              </button>
+                            </div>
                             <span className="font-bold">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</span>
                             <button 
                               type="button"
@@ -1499,7 +1539,7 @@ export default function Orders() {
                       onChange={e => handleZoneChange(e.target.value)}
                     >
                       <option value="Inside Dhaka">Inside Dhaka</option>
-                      <option value="Sub Dhaka">Sub Dhaka (Savar, Gazipur, etc.)</option>
+                      <option value="Sub Area">Sub Area</option>
                       <option value="Outside Dhaka">Outside Dhaka</option>
                     </select>
                   </div>

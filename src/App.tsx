@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import Orders from './components/Orders';
 import NewOrder from './components/NewOrder';
 import Inventory from './components/Inventory';
+import NewProduct from './components/NewProduct';
 import CRM from './components/CRM';
 import Logistics from './components/Logistics';
 import POS from './components/POS';
@@ -244,6 +245,8 @@ function AppContent() {
           <Route path="/orders" element={hasPermission('orders') ? <Orders /> : <Navigate to="/" replace />} />
           <Route path="/orders/new" element={hasPermission('orders') ? <NewOrder /> : <Navigate to="/" replace />} />
           <Route path="/inventory" element={hasPermission('inventory') ? <Inventory /> : <Navigate to="/" replace />} />
+          <Route path="/inventory/new" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/" replace />} />
+          <Route path="/inventory/edit/:id" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/" replace />} />
           <Route path="/crm" element={hasPermission('crm') ? <CRM /> : <Navigate to="/" replace />} />
           <Route path="/returns" element={hasPermission('orders') ? <Returns /> : <Navigate to="/" replace />} />
           <Route path="/suppliers" element={hasPermission('suppliers') ? <Suppliers /> : <Navigate to="/" replace />} />

@@ -24,7 +24,7 @@ const MOCK_ORDERS: Order[] = [
     customerAddress: 'Dhanmondi, Dhaka', 
     items: [{ productId: 'PROD-001', sku: 'TS-BLK-L', name: 'Premium Black T-Shirt', quantity: 1, price: 1250 }], 
     subtotal: 1250,
-    deliveryCharge: 60,
+    deliveryCharge: 80,
     discount: 0,
     totalAmount: 1310, 
     paidAmount: 0,

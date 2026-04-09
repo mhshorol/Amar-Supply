@@ -41,7 +41,7 @@ export default function NewOrder() {
     area: '',
     landmark: '',
     subtotal: 0,
-    deliveryCharge: 60,
+    deliveryCharge: 80,
     discount: 0,
     totalAmount: 0,
     paidAmount: 0,
@@ -92,9 +92,9 @@ export default function NewOrder() {
   }, []);
 
   const handleZoneChange = (zone: string) => {
-    let charge = 60;
-    if (zone === 'Outside Dhaka') charge = 120;
-    if (zone === 'Sub Dhaka') charge = 100;
+    let charge = 80;
+    if (zone === 'Outside Dhaka') charge = 150;
+    if (zone === 'Sub Area') charge = 130;
     setOrderForm({ ...orderForm, customerZone: zone, deliveryCharge: charge });
   };
 
@@ -289,24 +289,24 @@ export default function NewOrder() {
   );
 
   return (
-    <div className="p-8 space-y-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button 
             onClick={() => navigate('/orders')}
-            className="p-2 hover:bg-gray-100 rounded-xl transition-all"
+            className="p-2 hover:bg-gray-100 rounded-xl transition-all shrink-0"
           >
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h2 className="text-3xl font-bold text-[#141414] tracking-tight">Create New Order</h2>
-            <p className="text-sm text-[#6b7280]">Fill in the details to create a new customer order.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#141414] tracking-tight">Create Order</h2>
+            <p className="text-xs sm:text-sm text-[#6b7280]">Fill in the details for a new order.</p>
           </div>
         </div>
         <button 
           onClick={handleSubmit}
           disabled={loading}
-          className="flex items-center gap-2 px-6 py-3 bg-[#00AEEF] text-white rounded-xl text-sm font-bold hover:bg-[#0095cc] transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-[#00AEEF] text-white rounded-xl text-sm font-bold hover:bg-[#0095cc] transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
         >
           {loading ? 'Saving...' : (
             <>
@@ -317,19 +317,19 @@ export default function NewOrder() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div className="lg:col-span-2 space-y-6 sm:space-y-8">
           {/* Customer Section */}
-          <div className="bg-white p-8 rounded-3xl border border-[#f3f4f6] shadow-sm space-y-6">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
+          <div className="bg-white p-4 sm:p-8 rounded-3xl border border-[#f3f4f6] shadow-sm space-y-6">
+            <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
               <UserCheck size={14} /> Customer Information
             </h4>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Customer Name *</label>
                 <input 
                   required
-                  className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
+                  className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
                   value={orderForm.customerName}
                   onChange={e => setOrderForm({...orderForm, customerName: e.target.value})}
                 />
@@ -338,7 +338,7 @@ export default function NewOrder() {
                 <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Phone Number *</label>
                 <input 
                   required
-                  className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
+                  className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
                   value={orderForm.customerPhone}
                   onChange={e => handlePhoneChange(e.target.value)}
                 />
@@ -347,17 +347,17 @@ export default function NewOrder() {
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Full Address</label>
               <textarea 
-                className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all resize-none"
-                rows={3}
+                className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all resize-none"
+                rows={2}
                 value={orderForm.customerAddress}
                 onChange={e => setOrderForm({...orderForm, customerAddress: e.target.value})}
               />
             </div>
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">District</label>
                 <input 
-                  className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
+                  className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
                   value={orderForm.district}
                   onChange={e => setOrderForm({...orderForm, district: e.target.value})}
                 />
@@ -365,15 +365,15 @@ export default function NewOrder() {
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Area</label>
                 <input 
-                  className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
+                  className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
                   value={orderForm.area}
                   onChange={e => setOrderForm({...orderForm, area: e.target.value})}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="col-span-2 sm:col-span-1 space-y-2">
                 <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Landmark</label>
                 <input 
-                  className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
+                  className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
                   value={orderForm.landmark}
                   onChange={e => setOrderForm({...orderForm, landmark: e.target.value})}
                 />
@@ -382,8 +382,8 @@ export default function NewOrder() {
           </div>
 
           {/* Items Section */}
-          <div className="bg-white p-8 rounded-3xl border border-[#f3f4f6] shadow-sm space-y-6">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
+          <div className="bg-white p-4 sm:p-8 rounded-3xl border border-[#f3f4f6] shadow-sm space-y-6">
+            <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
               <Truck size={14} /> Order Items & Fulfillment
             </h4>
             
@@ -391,7 +391,7 @@ export default function NewOrder() {
               <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Fulfillment Warehouse</label>
               <select 
                 required
-                className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
+                className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
                 value={orderForm.warehouseId}
                 onChange={e => setOrderForm({...orderForm, warehouseId: e.target.value})}
               >
@@ -400,10 +400,10 @@ export default function NewOrder() {
               </select>
             </div>
 
-            <div className="bg-[#f9fafb] p-6 rounded-2xl space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            <div className="bg-[#f9fafb] p-4 sm:p-6 rounded-2xl space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
                 {/* Searchable Product Select */}
-                <div className="md:col-span-5 space-y-1 relative" ref={dropdownRef}>
+                <div className="sm:col-span-5 space-y-1 relative" ref={dropdownRef}>
                   <label className="text-[8px] font-bold text-[#9ca3af] uppercase">Search Product</label>
                   <div className="relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -412,7 +412,7 @@ export default function NewOrder() {
                     <input
                       type="text"
                       placeholder="Search by name or SKU..."
-                      className="w-full pl-9 pr-4 py-3 bg-white border border-[#f3f4f6] rounded-xl text-xs outline-none focus:border-[#00AEEF]/20 focus:ring-4 focus:ring-[#00AEEF]/5 transition-all"
+                      className="w-full pl-9 pr-4 py-2.5 sm:py-3 bg-white border border-[#f3f4f6] rounded-xl text-xs outline-none focus:border-[#00AEEF]/20 focus:ring-4 focus:ring-[#00AEEF]/5 transition-all"
                       value={productSearch}
                       onFocus={() => setShowProductDropdown(true)}
                       onChange={(e) => {
@@ -452,11 +452,11 @@ export default function NewOrder() {
                 </div>
 
                 {/* Variant Select */}
-                <div className="md:col-span-3 space-y-1">
+                <div className="sm:col-span-3 space-y-1">
                   <label className="text-[8px] font-bold text-[#9ca3af] uppercase">Variant</label>
                   <select 
                     disabled={!newItem.productId || products.find(p => p.id === newItem.productId)?.type !== 'variable'}
-                    className="w-full p-3 bg-white border border-[#f3f4f6] rounded-xl text-xs outline-none focus:border-[#00AEEF]/20 disabled:opacity-50 disabled:bg-gray-50 transition-all"
+                    className="w-full p-2.5 sm:p-3 bg-white border border-[#f3f4f6] rounded-xl text-xs outline-none focus:border-[#00AEEF]/20 disabled:opacity-50 disabled:bg-gray-50 transition-all"
                     value={newItem.variantId}
                     onChange={e => {
                       const v = variants.find(varnt => varnt.id === e.target.value);
@@ -471,26 +471,26 @@ export default function NewOrder() {
                 </div>
 
                 {/* Quantity */}
-                <div className="md:col-span-2 space-y-1">
+                <div className="sm:col-span-2 space-y-1">
                   <label className="text-[8px] font-bold text-[#9ca3af] uppercase">Qty</label>
                   <div className="flex items-center bg-white border border-[#f3f4f6] rounded-xl overflow-hidden">
                     <button 
                       type="button"
                       onClick={() => setNewItem(prev => ({...prev, quantity: Math.max(1, prev.quantity - 1)}))}
-                      className="px-3 py-3 hover:bg-gray-50 text-gray-500 transition-colors"
+                      className="px-3 py-2.5 sm:py-3 hover:bg-gray-50 text-gray-500 transition-colors"
                     >
                       -
                     </button>
                     <input 
                       type="number" 
-                      className="w-full text-center py-3 text-xs outline-none"
+                      className="w-full text-center py-2.5 sm:py-3 text-xs outline-none"
                       value={newItem.quantity || 0}
                       onChange={e => setNewItem({...newItem, quantity: parseInt(e.target.value) || 0})}
                     />
                     <button 
                       type="button"
                       onClick={() => setNewItem(prev => ({...prev, quantity: prev.quantity + 1}))}
-                      className="px-3 py-3 hover:bg-gray-50 text-gray-500 transition-colors"
+                      className="px-3 py-2.5 sm:py-3 hover:bg-gray-50 text-gray-500 transition-colors"
                     >
                       +
                     </button>
@@ -498,7 +498,7 @@ export default function NewOrder() {
                 </div>
 
                 {/* Add Button */}
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <button 
                     type="button"
                     onClick={() => {
@@ -528,25 +528,59 @@ export default function NewOrder() {
 
               <div className="space-y-3">
                 {orderForm.items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-[#f3f4f6] shadow-sm hover:border-[#00AEEF]/20 transition-all group">
-                    <div className="flex items-center gap-4">
+                  <div key={idx} className="flex justify-between items-center bg-white p-3 sm:p-4 rounded-xl border border-[#f3f4f6] shadow-sm hover:border-[#00AEEF]/20 transition-all group">
+                    <div className="flex items-center gap-3 sm:gap-4">
                       {item.image && (
-                        <img src={item.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-50" referrerPolicy="no-referrer" />
+                        <img src={item.image} alt="" className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover bg-gray-50" referrerPolicy="no-referrer" />
                       )}
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-[#141414]">{item.name}</span>
+                        <span className="text-xs sm:text-sm font-bold text-[#141414]">{item.name}</span>
                         {item.variant && <span className="text-[10px] text-[#9ca3af] font-medium">{item.variant}</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-4 sm:gap-8">
+                      <div className="flex items-center bg-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const newItems = [...orderForm.items];
+                            newItems[idx].quantity = Math.max(1, newItems[idx].quantity - 1);
+                            setOrderForm({...orderForm, items: newItems});
+                          }}
+                          className="px-2 py-1 hover:bg-white text-gray-500 transition-colors"
+                        >
+                          -
+                        </button>
+                        <input 
+                          type="number"
+                          className="w-8 text-center bg-transparent text-[10px] font-bold outline-none"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            const newItems = [...orderForm.items];
+                            newItems[idx].quantity = val;
+                            setOrderForm({...orderForm, items: newItems});
+                          }}
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const newItems = [...orderForm.items];
+                            newItems[idx].quantity = newItems[idx].quantity + 1;
+                            setOrderForm({...orderForm, items: newItems});
+                          }}
+                          className="px-2 py-1 hover:bg-white text-gray-500 transition-colors"
+                        >
+                          +
+                        </button>
+                      </div>
                       <div className="text-right">
-                        <div className="text-xs text-gray-400 font-medium">Qty: {item.quantity}</div>
-                        <div className="text-sm font-bold text-[#141414]">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</div>
+                        <div className="text-xs sm:text-sm font-bold text-[#141414]">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</div>
                       </div>
                       <button 
                         type="button"
                         onClick={() => setOrderForm({...orderForm, items: orderForm.items.filter((_, i) => i !== idx)})}
-                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -563,10 +597,10 @@ export default function NewOrder() {
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Summary Section */}
-          <div className="bg-white p-8 rounded-3xl border border-[#f3f4f6] shadow-sm space-y-6 sticky top-24">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
+          <div className="bg-white p-4 sm:p-8 rounded-3xl border border-[#f3f4f6] shadow-sm space-y-6 lg:sticky lg:top-24">
+            <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#9ca3af] flex items-center gap-2">
               <CreditCard size={14} /> Order Summary
             </h4>
             
@@ -580,12 +614,12 @@ export default function NewOrder() {
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Delivery Zone</label>
                   <select 
-                    className="text-xs font-bold bg-gray-50 px-2 py-1 rounded-lg outline-none"
+                    className="text-[10px] sm:text-xs font-bold bg-gray-50 px-2 py-1 rounded-lg outline-none"
                     value={orderForm.customerZone}
                     onChange={e => handleZoneChange(e.target.value)}
                   >
                     <option value="Inside Dhaka">Inside Dhaka</option>
-                    <option value="Sub Dhaka">Sub Dhaka</option>
+                    <option value="Sub Area">Sub Area</option>
                     <option value="Outside Dhaka">Outside Dhaka</option>
                   </select>
                 </div>
@@ -612,8 +646,8 @@ export default function NewOrder() {
 
               <div className="pt-4 border-t border-gray-100">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold">Total</span>
-                  <span className="text-2xl font-bold text-[#00AEEF]">{currencySymbol}{totalAmount.toLocaleString()}</span>
+                  <span className="text-base sm:text-lg font-bold">Total</span>
+                  <span className="text-xl sm:text-2xl font-bold text-[#00AEEF]">{currencySymbol}{totalAmount.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -622,7 +656,7 @@ export default function NewOrder() {
                   <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Advance Paid</label>
                   <input 
                     type="number"
-                    className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm font-bold text-green-600 focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                    className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm font-bold text-green-600 focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
                     value={orderForm.paidAmount}
                     onChange={e => setOrderForm({...orderForm, paidAmount: parseFloat(e.target.value) || 0})}
                   />
@@ -636,7 +670,7 @@ export default function NewOrder() {
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Payment Method</label>
                   <select 
-                    className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                    className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
                     value={orderForm.paymentMethod}
                     onChange={e => setOrderForm({...orderForm, paymentMethod: e.target.value})}
                   >
@@ -651,7 +685,7 @@ export default function NewOrder() {
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Order Source</label>
                   <select 
-                    className="w-full px-4 py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                    className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
                     value={orderForm.channel}
                     onChange={e => setOrderForm({...orderForm, channel: e.target.value})}
                   >
