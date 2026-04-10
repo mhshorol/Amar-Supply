@@ -46,6 +46,7 @@ import {
 } from '../types';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import ConfirmModal from './ConfirmModal';
 
 type HRTab = 'designations' | 'employees' | 'attendance' | 'salary';
 
@@ -95,6 +96,18 @@ const HR: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -172,13 +185,20 @@ const HR: React.FC = () => {
   };
 
   const deleteDesignation = async (id: string) => {
-    if (!window.confirm('Are you sure?')) return;
-    try {
-      await deleteDoc(doc(db, 'designations', id));
-      toast.success('Designation deleted');
-    } catch (error) {
-      toast.error('Error deleting designation');
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Designation',
+      message: 'Are you sure you want to delete this designation? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'designations', id));
+          toast.success('Designation deleted');
+        } catch (error) {
+          toast.error('Error deleting designation');
+        }
+      }
+    });
   };
 
   // Employee Actions
@@ -215,13 +235,20 @@ const HR: React.FC = () => {
   };
 
   const deleteEmployee = async (id: string) => {
-    if (!window.confirm('Are you sure?')) return;
-    try {
-      await deleteDoc(doc(db, 'employees', id));
-      toast.success('Employee deleted');
-    } catch (error) {
-      toast.error('Error deleting employee');
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Employee',
+      message: 'Are you sure you want to delete this employee? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'employees', id));
+          toast.success('Employee deleted');
+        } catch (error) {
+          toast.error('Error deleting employee');
+        }
+      }
+    });
   };
 
   // Attendance Actions
@@ -1247,6 +1274,15 @@ const HR: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

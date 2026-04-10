@@ -297,44 +297,67 @@ async function startServer() {
 
   app.get('/api/couriers/check-fraud/:phone', async (req, res) => {
     try {
-      if (!db) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      if (!db) {
+        console.error('Fraud Check: Firebase Admin not initialized');
+        return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      }
+      
       const { phone } = req.params;
+      console.log(`Fraud check requested for: ${phone}`);
 
       let snapshot;
       try {
         // Find first active courier with checkFraud capability
         snapshot = await db.collection('courier_configs').where('isActive', '==', true).get();
       } catch (dbError: any) {
+        console.error('Fraud Check DB Error:', dbError.message);
         // If the collection or database is not found, treat it as no active couriers
         if (dbError.code === 5 || dbError.message?.includes('NOT_FOUND')) {
-          console.warn('Courier configs collection or database not found, skipping fraud check.');
-          return res.json({ message: 'No active courier found (collection missing)' });
+          return res.json({ 
+            message: 'No active courier found (collection or database missing)',
+            data: { total_delivered: 0, total_cancelled: 0, courier: 'None' }
+          });
         }
         throw dbError;
       }
       
       if (!snapshot || snapshot.empty) {
-        return res.json({ message: 'No active courier found' });
+        console.log('No active couriers found in DB');
+        return res.json({ 
+          message: 'No active courier found',
+          data: { total_delivered: 0, total_cancelled: 0, courier: 'None' }
+        });
       }
 
       for (const doc of snapshot.docs) {
         const config = doc.data();
         const courierName = doc.id;
-        const adapter = CourierFactory.getAdapter(courierName, config);
+        console.log(`Checking fraud with courier: ${courierName}`);
+        
+        try {
+          const adapter = CourierFactory.getAdapter(courierName, config);
 
-        if (adapter.checkFraud) {
-          const result = await adapter.checkFraud(phone);
-          return res.json({
-            courier: courierName,
-            data: result
-          });
+          if (adapter.checkFraud) {
+            const result = await adapter.checkFraud(phone);
+            console.log(`Fraud check result from ${courierName}:`, result);
+            return res.json({
+              courier: courierName,
+              data: result
+            });
+          }
+        } catch (adapterError: any) {
+          console.error(`Error with adapter ${courierName}:`, adapterError.message);
+          // Continue to next courier if one fails
         }
       }
 
       res.status(400).json({ error: 'No active courier supports fraud check' });
     } catch (error: any) {
-      console.error('Fraud Check Error:', error.message);
-      res.status(500).json({ error: error.message });
+      console.error('Fraud Check Final Error:', error.message);
+      res.status(500).json({ 
+        error: error.message,
+        data: { total_delivered: 0, total_cancelled: 0, courier: 'Error' }
+      });
     }
   });
 

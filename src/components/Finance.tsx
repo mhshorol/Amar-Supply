@@ -60,6 +60,7 @@ import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { useSettings } from '../contexts/SettingsContext';
 import PettyCash from './PettyCash';
 import { Supplier, SupplierPayment } from '../types';
+import ConfirmModal from './ConfirmModal';
 
 interface Transaction {
   id: string;
@@ -120,6 +121,18 @@ function Finance() {
   });
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const [transactionForm, setTransactionForm] = useState({
     orderId: '-',
     type: 'income' as 'income' | 'expense' | 'transfer',
@@ -363,22 +376,37 @@ function Finance() {
   };
 
   const handleDeleteSupplierPayment = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this supplier payment?')) return;
-    try {
-      await deleteDoc(doc(db, 'supplierPayments', id));
-      toast.success('Supplier payment deleted');
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `supplierPayments/${id}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Supplier Payment',
+      message: 'Are you sure you want to delete this supplier payment? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'supplierPayments', id));
+          toast.success('Supplier payment deleted');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `supplierPayments/${id}`);
+        }
+      }
+    });
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this transaction?')) return;
-    try {
-      await deleteDoc(doc(db, 'transactions', id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `transactions/${id}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Transaction',
+      message: 'Are you sure you want to delete this transaction? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'transactions', id));
+          toast.success('Transaction deleted');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `transactions/${id}`);
+        }
+      }
+    });
   };
 
   const handleExportCSV = () => {
@@ -1879,6 +1907,15 @@ function Finance() {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

@@ -31,6 +31,7 @@ import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 import StockTransfers from './StockTransfers';
 import { useSettings } from '../contexts/SettingsContext';
+import ConfirmModal from './ConfirmModal';
 
 const StockBadge = ({ stock }: { stock: number }) => {
   let status = 'In Stock';
@@ -82,6 +83,18 @@ export default function Inventory() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -118,25 +131,39 @@ export default function Inventory() {
   }, []);
 
   const handleDeleteProduct = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this product? This will not delete its inventory records but will remove it from the catalog.')) return;
-    try {
-      await deleteDoc(doc(db, 'products', id));
-      await logActivity('Deleted Product', 'Inventory', `Product ID: ${id} deleted`);
-      toast.success('Product deleted successfully');
-    } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `products/${id}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Product',
+      message: 'Are you sure you want to delete this product? This will not delete its inventory records but will remove it from the catalog.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'products', id));
+          await logActivity('Deleted Product', 'Inventory', `Product ID: ${id} deleted`);
+          toast.success('Product deleted successfully');
+        } catch (e) {
+          handleFirestoreError(e, OperationType.DELETE, `products/${id}`);
+        }
+      }
+    });
   };
 
   const handleDeleteWarehouse = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this warehouse?')) return;
-    try {
-      await deleteDoc(doc(db, 'warehouses', id));
-      await logActivity('Deleted Warehouse', 'Inventory', `Warehouse ID: ${id} deleted`);
-      toast.success('Warehouse deleted successfully');
-    } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `warehouses/${id}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Warehouse',
+      message: 'Are you sure you want to delete this warehouse?',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'warehouses', id));
+          await logActivity('Deleted Warehouse', 'Inventory', `Warehouse ID: ${id} deleted`);
+          toast.success('Warehouse deleted successfully');
+        } catch (e) {
+          handleFirestoreError(e, OperationType.DELETE, `warehouses/${id}`);
+        }
+      }
+    });
   };
 
   const handleExportCSV = () => {
@@ -182,9 +209,9 @@ export default function Inventory() {
       case 'products': return <ProductsTab products={products} variants={variants} categories={categories} brands={brands} onEdit={(p: any) => navigate(`/inventory/edit/${p.id}`)} onDelete={handleDeleteProduct} onAddCategory={() => setIsCategoryModalOpen(true)} onAddBrand={() => setIsBrandModalOpen(true)} />;
       case 'warehouses': return <WarehousesTab warehouses={warehouses} onEdit={(w: any) => { setEditingItem(w); setIsWarehouseModalOpen(true); }} onDelete={handleDeleteWarehouse} />;
       case 'stock': return <StockTab inventory={inventory} products={products} variants={variants} warehouses={warehouses} onAdjust={() => setIsAdjustmentModalOpen(true)} onTransfer={() => setIsTransferModalOpen(true)} />;
-      case 'purchases': return <PurchasesTab pos={purchaseOrders} suppliers={suppliers} products={products} variants={variants} onAdd={() => setIsPOModalOpen(true)} />;
-      case 'suppliers': return <SuppliersTab suppliers={suppliers} onEdit={(s: any) => { setEditingItem(s); setIsSupplierModalOpen(true); }} />;
-      case 'returns': return <ReturnsTab products={products} variants={variants} warehouses={warehouses} />;
+      case 'purchases': return <PurchasesTab pos={purchaseOrders} suppliers={suppliers} products={products} variants={variants} onAdd={() => setIsPOModalOpen(true)} setConfirmConfig={setConfirmConfig} />;
+      case 'suppliers': return <SuppliersTab suppliers={suppliers} onEdit={(s: any) => { setEditingItem(s); setIsSupplierModalOpen(true); }} setConfirmConfig={setConfirmConfig} />;
+      case 'returns': return <ReturnsTab products={products} variants={variants} warehouses={warehouses} setConfirmConfig={setConfirmConfig} />;
       case 'logs': return <LogsTab logs={logs} products={products} variants={variants} warehouses={warehouses} />;
       case 'reports': return <ReportsTab products={products} inventory={inventory} logs={logs} />;
       case 'transfers': return <StockTransfers />;
@@ -280,6 +307,15 @@ export default function Inventory() {
       {isSupplierModalOpen && <SupplierModal isOpen={isSupplierModalOpen} onClose={() => { setIsSupplierModalOpen(false); setEditingItem(null); }} editingItem={editingItem} />}
       {isCategoryModalOpen && <CategoryModal isOpen={isCategoryModalOpen} onClose={() => { setIsCategoryModalOpen(false); setEditingItem(null); }} editingItem={editingItem} />}
       {isBrandModalOpen && <BrandModal isOpen={isBrandModalOpen} onClose={() => { setIsBrandModalOpen(false); setEditingItem(null); }} editingItem={editingItem} />}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
@@ -498,62 +534,72 @@ function StockTab({ inventory, products, variants, warehouses, onAdjust, onTrans
   );
 }
 
-function PurchasesTab({ pos, suppliers, products, variants, onAdd }: any) {
+function PurchasesTab({ pos, suppliers, products, variants, onAdd, setConfirmConfig }: any) {
   const { currencySymbol } = useSettings();
   const handleReceive = async (po: any) => {
-    if (!window.confirm('Mark this PO as received? This will update inventory.')) return;
-    try {
-      const batch = writeBatch(db);
-      const warehouseId = prompt('Enter Warehouse ID to receive into (default: first warehouse):', '');
-      const targetWarehouseId = warehouseId || (await getDocs(collection(db, 'warehouses'))).docs[0]?.id;
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Receive Purchase Order',
+      message: 'Mark this PO as received? This will update inventory.',
+      variant: 'info',
+      onConfirm: async () => {
+        try {
+          const batch = writeBatch(db);
+          const warehousesSnap = await getDocs(collection(db, 'warehouses'));
+          const targetWarehouseId = warehousesSnap.docs[0]?.id;
 
-      if (!targetWarehouseId) {
-        toast.error('No warehouse found. Please create a warehouse first.');
-        return;
-      }
+          if (!targetWarehouseId) {
+            toast.error('No warehouse found. Please create a warehouse first.');
+            return;
+          }
 
-      for (const item of po.items) {
-        const inventoryId = `${targetWarehouseId}_${item.productId}_${item.variantId || 'none'}`;
-        const inventoryRef = doc(db, 'inventory', inventoryId);
-        const inventorySnap = await getDoc(inventoryRef);
+          toast.info(`Receiving into warehouse: ${warehousesSnap.docs[0]?.data()?.name || targetWarehouseId}`);
 
-        if (inventorySnap.exists()) {
-          batch.update(inventoryRef, {
-            quantity: inventorySnap.data().quantity + item.quantity,
-            updatedAt: serverTimestamp()
-          });
-        } else {
-          batch.set(inventoryRef, {
-            warehouseId: targetWarehouseId,
-            productId: item.productId,
-            variantId: item.variantId || null,
-            quantity: item.quantity,
-            uid: auth.currentUser?.uid,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
+          for (const item of po.items) {
+            const inventoryId = `${targetWarehouseId}_${item.productId}_${item.variantId || 'none'}`;
+            const inventoryRef = doc(db, 'inventory', inventoryId);
+            const inventorySnap = await getDoc(inventoryRef);
+
+            if (inventorySnap.exists()) {
+              batch.update(inventoryRef, {
+                quantity: inventorySnap.data().quantity + item.quantity,
+                updatedAt: serverTimestamp()
+              });
+            } else {
+              batch.set(inventoryRef, {
+                warehouseId: targetWarehouseId,
+                productId: item.productId,
+                variantId: item.variantId || null,
+                quantity: item.quantity,
+                uid: auth.currentUser?.uid,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+              });
+            }
+
+            // Log
+            const logRef = doc(collection(db, 'inventoryLogs'));
+            batch.set(logRef, {
+              productId: item.productId,
+              variantId: item.variantId || null,
+              warehouseId: targetWarehouseId,
+              action: 'purchase',
+              quantityChange: item.quantity,
+              newQuantity: (inventorySnap.exists() ? inventorySnap.data().quantity : 0) + item.quantity,
+              referenceId: po.id,
+              uid: auth.currentUser?.uid,
+              createdAt: serverTimestamp()
+            });
+          }
+
+          batch.update(doc(db, 'purchaseOrders', po.id), { status: 'received', receivedAt: serverTimestamp(), updatedAt: serverTimestamp() });
+          await batch.commit();
+          toast.success('PO received and stock updated');
+        } catch (e) {
+          handleFirestoreError(e, OperationType.UPDATE, `purchaseOrders/${po.id}`);
         }
-
-        // Log
-        const logRef = doc(collection(db, 'inventoryLogs'));
-        batch.set(logRef, {
-          productId: item.productId,
-          variantId: item.variantId || null,
-          warehouseId: targetWarehouseId,
-          action: 'purchase',
-          quantityChange: item.quantity,
-          newQuantity: (inventorySnap.exists() ? inventorySnap.data().quantity : 0) + item.quantity,
-          referenceId: po.id,
-          uid: auth.currentUser?.uid,
-          createdAt: serverTimestamp()
-        });
       }
-
-      batch.update(doc(db, 'purchaseOrders', po.id), { status: 'received', receivedAt: serverTimestamp(), updatedAt: serverTimestamp() });
-      await batch.commit();
-    } catch (e) {
-      handleFirestoreError(e, OperationType.UPDATE, `purchaseOrders/${po.id}`);
-    }
+    });
   };
 
   return (
@@ -604,7 +650,24 @@ function PurchasesTab({ pos, suppliers, products, variants, onAdd }: any) {
   );
 }
 
-function SuppliersTab({ suppliers, onEdit }: any) {
+function SuppliersTab({ suppliers, onEdit, setConfirmConfig }: any) {
+  const handleDeleteSupplier = async (id: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Supplier',
+      message: 'Are you sure you want to delete this supplier? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'suppliers', id));
+          toast.success('Supplier deleted successfully');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `suppliers/${id}`);
+        }
+      }
+    });
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
@@ -626,9 +689,14 @@ function SuppliersTab({ suppliers, onEdit }: any) {
               <td className="px-6 py-4 text-sm">{s.phone}</td>
               <td className="px-6 py-4 text-sm text-gray-500">{s.email}</td>
               <td className="px-6 py-4 text-right">
-                <button onClick={() => onEdit(s)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <Edit size={16} className="text-gray-400" />
-                </button>
+                <div className="flex items-center justify-end gap-2">
+                  <button onClick={() => onEdit(s)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <Edit size={16} className="text-gray-400" />
+                  </button>
+                  <button onClick={() => handleDeleteSupplier(s.id)} className="p-2 hover:bg-red-50 rounded-lg transition-colors group">
+                    <Trash2 size={16} className="text-gray-400 group-hover:text-red-600" />
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
@@ -639,7 +707,7 @@ function SuppliersTab({ suppliers, onEdit }: any) {
   );
 }
 
-function ReturnsTab({ products, variants, warehouses }: any) {
+function ReturnsTab({ products, variants, warehouses, setConfirmConfig }: any) {
   const [returns, setReturns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -658,50 +726,57 @@ function ReturnsTab({ products, variants, warehouses }: any) {
   }, []);
 
   const handleApproveReturn = async (ret: any) => {
-    if (!window.confirm('Approve this return? This will add stock back to the selected warehouse.')) return;
-    try {
-      const batch = writeBatch(db);
-      const inventoryId = `${ret.warehouseId}_${ret.productId}_${ret.variantId || 'none'}`;
-      const inventoryRef = doc(db, 'inventory', inventoryId);
-      const inventorySnap = await getDoc(inventoryRef);
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Approve Return',
+      message: 'Approve this return? This will add stock back to the selected warehouse.',
+      variant: 'info',
+      onConfirm: async () => {
+        try {
+          const batch = writeBatch(db);
+          const inventoryId = `${ret.warehouseId}_${ret.productId}_${ret.variantId || 'none'}`;
+          const inventoryRef = doc(db, 'inventory', inventoryId);
+          const inventorySnap = await getDoc(inventoryRef);
 
-      const currentQty = inventorySnap.exists() ? inventorySnap.data().quantity : 0;
-      const newQty = currentQty + ret.quantity;
+          const currentQty = inventorySnap.exists() ? inventorySnap.data().quantity : 0;
+          const newQty = currentQty + ret.quantity;
 
-      if (inventorySnap.exists()) {
-        batch.update(inventoryRef, { quantity: newQty, updatedAt: serverTimestamp() });
-      } else {
-        batch.set(inventoryRef, {
-          warehouseId: ret.warehouseId,
-          productId: ret.productId,
-          variantId: ret.variantId || null,
-          quantity: ret.quantity,
-          uid: auth.currentUser?.uid,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
+          if (inventorySnap.exists()) {
+            batch.update(inventoryRef, { quantity: newQty, updatedAt: serverTimestamp() });
+          } else {
+            batch.set(inventoryRef, {
+              warehouseId: ret.warehouseId,
+              productId: ret.productId,
+              variantId: ret.variantId || null,
+              quantity: ret.quantity,
+              uid: auth.currentUser?.uid,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          }
+
+          // Log
+          const logRef = doc(collection(db, 'inventoryLogs'));
+          batch.set(logRef, {
+            productId: ret.productId,
+            variantId: ret.variantId || null,
+            warehouseId: ret.warehouseId,
+            action: 'return',
+            quantityChange: ret.quantity,
+            newQuantity: newQty,
+            referenceId: ret.id,
+            uid: auth.currentUser?.uid,
+            createdAt: serverTimestamp()
+          });
+
+          batch.update(doc(db, 'returnRequests', ret.id), { status: 'approved', approvedAt: serverTimestamp() });
+          await batch.commit();
+          toast.success('Return approved and stock updated');
+        } catch (e) {
+          handleFirestoreError(e, OperationType.UPDATE, `returnRequests/${ret.id}`);
+        }
       }
-
-      // Log
-      const logRef = doc(collection(db, 'inventoryLogs'));
-      batch.set(logRef, {
-        productId: ret.productId,
-        variantId: ret.variantId || null,
-        warehouseId: ret.warehouseId,
-        action: 'return',
-        quantityChange: ret.quantity,
-        newQuantity: newQty,
-        referenceId: ret.id,
-        uid: auth.currentUser?.uid,
-        createdAt: serverTimestamp()
-      });
-
-      batch.update(doc(db, 'returnRequests', ret.id), { status: 'approved', approvedAt: serverTimestamp() });
-      await batch.commit();
-      toast.success('Return approved and stock updated');
-    } catch (e) {
-      handleFirestoreError(e, OperationType.UPDATE, `returnRequests/${ret.id}`);
-    }
+    });
   };
 
   return (

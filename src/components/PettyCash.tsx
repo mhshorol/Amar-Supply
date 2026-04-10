@@ -30,6 +30,7 @@ import { db, auth } from '../firebase';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import ConfirmModal from './ConfirmModal';
 
 interface PettyCashRecord {
   id: string;
@@ -51,6 +52,18 @@ export default function PettyCash() {
     description: '',
     category: 'General',
     date: format(new Date(), 'yyyy-MM-dd')
+  });
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
   });
 
   useEffect(() => {
@@ -89,13 +102,20 @@ export default function PettyCash() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this record?")) return;
-    try {
-      await deleteDoc(doc(db, 'petty_cash', id));
-      toast.success("Record deleted");
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `petty_cash/${id}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Petty Cash Record',
+      message: 'Are you sure you want to delete this record? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'petty_cash', id));
+          toast.success("Record deleted");
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `petty_cash/${id}`);
+        }
+      }
+    });
   };
 
   const totalExpense = records.reduce((sum, r) => sum + r.amount, 0);
@@ -214,6 +234,15 @@ export default function PettyCash() {
           </table>
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

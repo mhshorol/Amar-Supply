@@ -38,6 +38,7 @@ import { db, auth } from '../firebase';
 import { useSettings } from '../contexts/SettingsContext';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
+import ConfirmModal from './ConfirmModal';
 
 interface Delivery {
   id: string;
@@ -104,6 +105,18 @@ export default function Logistics() {
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
   const [editingCourier, setEditingCourier] = useState<Courier | null>(null);
   const [editingDelivery, setEditingDelivery] = useState<Delivery | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const [courierForm, setCourierForm] = useState({
     name: '',
     active: true,
@@ -327,21 +340,37 @@ export default function Logistics() {
   };
 
   const handleDeleteDelivery = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this delivery?')) return;
-    try {
-      await deleteDoc(doc(db, 'deliveries', id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `deliveries/${id}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Shipment',
+      message: 'Are you sure you want to delete this delivery? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'deliveries', id));
+          toast.success('Delivery deleted');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `deliveries/${id}`);
+        }
+      }
+    });
   };
 
   const handleDeleteCourier = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this courier?')) return;
-    try {
-      await deleteDoc(doc(db, 'couriers', id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `couriers/${id}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Courier',
+      message: 'Are you sure you want to delete this courier? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'couriers', id));
+          toast.success('Courier deleted');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `couriers/${id}`);
+        }
+      }
+    });
   };
 
   const handleExportCSV = () => {
@@ -1025,6 +1054,15 @@ export default function Logistics() {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

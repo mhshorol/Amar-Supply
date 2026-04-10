@@ -21,6 +21,7 @@ import {
 import { db, auth, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from '../firebase';
 import { Supplier, PurchaseOrder } from '../types';
 import { toast } from 'sonner';
+import ConfirmModal from './ConfirmModal';
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -31,6 +32,18 @@ export default function Suppliers() {
   const [isPOModalOpen, setIsPOModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [activeTab, setActiveTab] = useState<'suppliers' | 'pos'>('suppliers');
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const [supplierForm, setSupplierForm] = useState({
     name: '',
@@ -98,14 +111,20 @@ export default function Suppliers() {
   };
 
   const handleDeleteSupplier = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this supplier?')) {
-      try {
-        await deleteDoc(doc(db, 'suppliers', id));
-        toast.success('Supplier deleted');
-      } catch (error) {
-        toast.error('Failed to delete supplier');
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Supplier',
+      message: 'Are you sure you want to delete this supplier? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'suppliers', id));
+          toast.success('Supplier deleted');
+        } catch (error) {
+          toast.error('Failed to delete supplier');
+        }
       }
-    }
+    });
   };
 
   const filteredSuppliers = suppliers.filter(s => 
@@ -310,6 +329,15 @@ export default function Suppliers() {
           </table>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
 
       {/* Supplier Modal */}
       {isModalOpen && (

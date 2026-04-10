@@ -23,6 +23,7 @@ import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimesta
 import { Task, User as TeamMember } from '../types';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
+import ConfirmModal from './ConfirmModal';
 
 export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -31,6 +32,18 @@ export default function Tasks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const [filterStatus, setFilterStatus] = useState<string>('All');
 
@@ -146,14 +159,21 @@ export default function Tasks() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
-    try {
-      await deleteDoc(doc(db, 'tasks', taskId));
-      toast.success('Task deleted successfully.');
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      toast.error('Failed to delete task.');
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Task',
+      message: 'Are you sure you want to delete this task? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'tasks', taskId));
+          toast.success('Task deleted successfully.');
+        } catch (error) {
+          console.error('Error deleting task:', error);
+          toast.error('Failed to delete task.');
+        }
+      }
+    });
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -518,6 +538,15 @@ export default function Tasks() {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

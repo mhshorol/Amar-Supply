@@ -32,6 +32,7 @@ import { POSInvoice } from './InvoiceTemplates';
 import { logActivity } from '../services/activityService';
 import { checkDuplicateOrder } from '../services/orderService';
 import { sendOrderConfirmationSMS } from '../services/smsService';
+import ConfirmModal from './ConfirmModal';
 
 interface CartItem {
   id: string;
@@ -76,6 +77,18 @@ export default function POS() {
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [companySettings, setCompanySettings] = useState<any>(null);
   const [sendSMS, setSendSMS] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
@@ -294,15 +307,27 @@ export default function POS() {
       });
 
       if (duplicate) {
-        const confirmDuplicate = window.confirm(
-          `Duplicate Order Detected!\n\nAn order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours.\n\nAre you sure you want to complete this duplicate sale?`
-        );
-        if (!confirmDuplicate) {
-          setIsProcessing(false);
-          return;
-        }
+        setConfirmConfig({
+          isOpen: true,
+          title: 'Duplicate Order Detected',
+          message: `An order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours. Are you sure you want to complete this duplicate sale?`,
+          variant: 'warning',
+          onConfirm: () => proceedWithCheckout()
+        });
+        setIsProcessing(false);
+        return;
       }
 
+      await proceedWithCheckout();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'orders');
+      setIsProcessing(false);
+    }
+  };
+
+  const proceedWithCheckout = async () => {
+    setIsProcessing(true);
+    try {
       // 1. PRE-TRANSACTION READS
       const inventorySnaps: { item: any; snap: any }[] = [];
       for (const item of cart) {
@@ -320,7 +345,7 @@ export default function POS() {
         const settingsRef = doc(db, 'settings', 'company');
         const settingsSnap = await transaction.get(settingsRef);
 
-        const customerRef = doc(db, 'customers', selectedCustomer.id);
+        const customerRef = doc(db, 'customers', selectedCustomer!.id);
         const customerSnap = await transaction.get(customerRef);
 
         // 3. CALCULATE NEXT ORDER NUMBER
@@ -333,9 +358,9 @@ export default function POS() {
         const orderRef = doc(collection(db, 'orders'));
         const orderData = {
           orderNumber: nextOrderNumber,
-          customerName: selectedCustomer.name,
-          customerPhone: selectedCustomer.phone,
-          customerAddress: selectedCustomer.address || '',
+          customerName: selectedCustomer!.name,
+          customerPhone: selectedCustomer!.phone,
+          customerAddress: selectedCustomer!.address || '',
           items: cart.map(item => ({
             productId: item.productId,
             variantId: item.variantId || '',
@@ -432,8 +457,8 @@ export default function POS() {
           sendOrderConfirmationSMS({
             ...orderData,
             id: orderRef.id,
-            customerName: selectedCustomer.name,
-            customerPhone: selectedCustomer.phone
+            customerName: selectedCustomer!.name,
+            customerPhone: selectedCustomer!.phone
           });
         }
 
@@ -1022,6 +1047,15 @@ export default function POS() {
           )}
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

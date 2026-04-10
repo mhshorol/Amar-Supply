@@ -37,6 +37,7 @@ import { useReactToPrint } from 'react-to-print';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { useSettings } from '../contexts/SettingsContext';
+import ConfirmModal from './ConfirmModal';
 
 export default function NewProduct() {
   const navigate = useNavigate();
@@ -49,6 +50,18 @@ export default function NewProduct() {
   const [products, setProducts] = useState<any[]>([]);
   const [productVariants, setProductVariants] = useState<any[]>([]);
   const [newVariant, setNewVariant] = useState({ size: '', color: '', fabric: '', sku: '', barcode: '', price: 0, costPrice: 0 });
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const barcodeRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<any>({
@@ -242,14 +255,21 @@ export default function NewProduct() {
   };
 
   const deleteVariant = async (variantId: string) => {
-    if (!window.confirm("Are you sure you want to delete this variant?")) return;
-    try {
-      await deleteDoc(doc(db, 'variants', variantId));
-      setProductVariants(prev => prev.filter(v => v.id !== variantId));
-      toast.success("Variant deleted");
-    } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `variants/${variantId}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Variant',
+      message: 'Are you sure you want to delete this variant? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'variants', variantId));
+          setProductVariants(prev => prev.filter(v => v.id !== variantId));
+          toast.success("Variant deleted");
+        } catch (e) {
+          handleFirestoreError(e, OperationType.DELETE, `variants/${variantId}`);
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -608,6 +628,15 @@ export default function NewProduct() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

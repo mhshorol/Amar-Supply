@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 import { useSettings } from '../contexts/SettingsContext';
+import ConfirmModal from './ConfirmModal';
 
 interface Customer {
   id: string;
@@ -61,6 +62,18 @@ export default function CRM() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const [customerForm, setCustomerForm] = useState({
     name: '',
     phone: '',
@@ -187,12 +200,23 @@ export default function CRM() {
   };
 
   const handleDeleteCustomer = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this customer?')) return;
-    try {
-      await deleteDoc(doc(db, 'customers', id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `customers/${id}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Customer',
+      message: 'Are you sure you want to delete this customer? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'customers', id));
+          toast.success('Customer deleted successfully');
+          if (selectedCustomer?.id === id) {
+            setSelectedCustomer(customers.find(c => c.id !== id) || null);
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `customers/${id}`);
+        }
+      }
+    });
   };
 
   const handleExportCSV = () => {
@@ -422,6 +446,20 @@ export default function CRM() {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Contact</p>
                   <p className="text-sm font-bold text-gray-900">{selectedCustomer.phone}</p>
                   <div className="mt-2 flex items-center gap-2 justify-end">
+                    <button 
+                      onClick={() => handleOpenEditModal(selectedCustomer)}
+                      className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors"
+                      title="Edit Customer"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteCustomer(selectedCustomer.id)}
+                      className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
+                      title="Delete Customer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                     <div className="px-2 py-1 bg-orange-50 text-orange-600 rounded-lg text-[10px] font-bold border border-orange-100 flex items-center gap-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                       {selectedCustomer.points || 0} Points
@@ -689,6 +727,15 @@ export default function CRM() {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

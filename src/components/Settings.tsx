@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { db, auth, doc, getDoc, setDoc, onSnapshot, collection, getDocs, query, where, deleteDoc, writeBatch, updateDoc, addDoc, Timestamp, orderBy, limit } from '../firebase';
 import { User, UserRole, UserPermissions } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmModal from './ConfirmModal';
 
 function ActivityLogsTab() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -121,6 +122,18 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('General');
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   
   // Team Permissions State
   const [users, setUsers] = useState<User[]>([]);
@@ -345,32 +358,39 @@ export default function Settings() {
   };
 
   const handlePurgeLogs = async () => {
-    if (!window.confirm('Are you sure you want to purge old logs? This action cannot be undone.')) return;
-    setSaving(true);
-    try {
-      const retentionDays = parseInt(dataSettings.retentionPeriod) || 30;
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Purge Logs',
+      message: 'Are you sure you want to purge old logs? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        setSaving(true);
+        try {
+          const retentionDays = parseInt(dataSettings.retentionPeriod) || 30;
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-      const q = query(collection(db, 'inventoryLogs'), where('createdAt', '<', cutoffDate));
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) {
-        toast.info('No logs found to purge');
-        return;
+          const q = query(collection(db, 'inventoryLogs'), where('createdAt', '<', cutoffDate));
+          const snapshot = await getDocs(q);
+          
+          if (snapshot.empty) {
+            toast.info('No logs found to purge');
+            return;
+          }
+
+          const batch = writeBatch(db);
+          snapshot.docs.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+          
+          toast.success(`Purged ${snapshot.size} old logs`);
+        } catch (error) {
+          console.error('Purge error:', error);
+          toast.error('Failed to purge logs');
+        } finally {
+          setSaving(false);
+        }
       }
-
-      const batch = writeBatch(db);
-      snapshot.docs.forEach(doc => batch.delete(doc.ref));
-      await batch.commit();
-      
-      toast.success(`Purged ${snapshot.size} old logs`);
-    } catch (error) {
-      console.error('Purge error:', error);
-      toast.error('Failed to purge logs');
-    } finally {
-      setSaving(false);
-    }
+    });
   };
 
   const handleDownloadApp = () => {
@@ -1352,6 +1372,15 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

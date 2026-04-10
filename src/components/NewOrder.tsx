@@ -22,6 +22,7 @@ import { checkDuplicateOrder } from '../services/orderService';
 import { sendOrderConfirmationSMS } from '../services/smsService';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { useSettings } from '../contexts/SettingsContext';
+import ConfirmModal from './ConfirmModal';
 
 export default function NewOrder() {
   const navigate = useNavigate();
@@ -65,6 +66,18 @@ export default function NewOrder() {
   const [sendSMS, setSendSMS] = useState(false);
   const [courierHistory, setCourierHistory] = useState<any>(null);
   const [isFetchingHistory, setIsFetchingHistory] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const [newItem, setNewItem] = useState({ productId: '', variantId: '', quantity: 1, price: 0 });
 
   const statuses = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'partial_delivered', 'cancelled', 'returned'];
@@ -187,17 +200,29 @@ export default function NewOrder() {
       });
 
       if (duplicate) {
-        const confirmDuplicate = window.confirm(
-          `Duplicate Order Detected!\n\nAn order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours.\n\nAre you sure you want to create this duplicate order?`
-        );
-        if (!confirmDuplicate) {
-          setLoading(false);
-          return;
-        }
+        setConfirmConfig({
+          isOpen: true,
+          title: 'Duplicate Order Detected!',
+          message: `An order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours.\n\nAre you sure you want to create this duplicate order?`,
+          variant: 'warning',
+          onConfirm: () => proceedWithSubmit(subtotal, totalAmount, dueAmount)
+        });
+        setLoading(false);
+        return;
       }
 
+      await proceedWithSubmit(subtotal, totalAmount, dueAmount);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'orders');
+      setLoading(false);
+    }
+  };
+
+  const proceedWithSubmit = async (subtotal: number, totalAmount: number, dueAmount: number) => {
+    setLoading(true);
+    try {
       const logEntry = {
-        user: auth.currentUser.email,
+        user: auth.currentUser?.email,
         action: 'Created Order',
         timestamp: Timestamp.now(),
         details: 'Initial creation'
@@ -411,11 +436,9 @@ export default function NewOrder() {
                         <p className="text-sm font-black text-red-700">{courierHistory.total_cancelled || 0}</p>
                       </div>
                       <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50">
-                        <p className="text-[8px] font-bold text-blue-600 uppercase tracking-wider mb-0.5">Success Rate</p>
+                        <p className="text-[8px] font-bold text-blue-600 uppercase tracking-wider mb-0.5">D:C Ratio</p>
                         <p className="text-sm font-black text-blue-700">
-                          {courierHistory.total_delivered + courierHistory.total_cancelled > 0 
-                            ? Math.round((courierHistory.total_delivered / (courierHistory.total_delivered + courierHistory.total_cancelled)) * 100)
-                            : 0}%
+                          {courierHistory.total_delivered}:{courierHistory.total_cancelled}
                         </p>
                       </div>
                     </div>
@@ -800,6 +823,15 @@ export default function NewOrder() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

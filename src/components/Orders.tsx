@@ -44,6 +44,7 @@ import { checkDuplicateOrder } from '../services/orderService';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 import { useSettings } from '../contexts/SettingsContext';
+import ConfirmModal from './ConfirmModal';
 
 const ChannelIcon = ({ channel }: { channel: string }) => {
   switch (channel) {
@@ -91,6 +92,18 @@ export default function Orders() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const [products, setProducts] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -423,13 +436,28 @@ export default function Orders() {
         });
 
         if (duplicate) {
-          const confirmDuplicate = window.confirm(
-            `Duplicate Order Detected!\n\nAn order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours.\n\nAre you sure you want to create this duplicate order?`
-          );
-          if (!confirmDuplicate) return;
+          setConfirmConfig({
+            isOpen: true,
+            title: 'Duplicate Order Detected',
+            message: `An order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours. Are you sure you want to create this duplicate order?`,
+            variant: 'warning',
+            onConfirm: () => proceedWithSubmit(totalAmount)
+          });
+          return;
         }
       }
 
+      await proceedWithSubmit(totalAmount);
+    } catch (error) {
+      handleFirestoreError(error, editingOrder ? OperationType.UPDATE : OperationType.CREATE, 'orders');
+    }
+  };
+
+  const proceedWithSubmit = async (totalAmount: number) => {
+    if (!auth.currentUser) return;
+    try {
+      const { subtotal, dueAmount } = calculateTotals(orderForm.items, orderForm.deliveryCharge, orderForm.discount, orderForm.paidAmount);
+      
       const logEntry = {
         user: auth.currentUser.email,
         action: editingOrder ? 'Updated Order' : 'Created Order',
@@ -613,13 +641,21 @@ export default function Orders() {
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (!window.confirm('Are you sure you want to delete this order?')) return;
-    try {
-      await deleteDoc(doc(db, 'orders', orderId));
-      await logActivity('Deleted Order', 'Orders', `Order #${orderId.slice(0, 8)} removed`);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `orders/${orderId}`);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Order',
+      message: 'Are you sure you want to delete this order?',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'orders', orderId));
+          await logActivity('Deleted Order', 'Orders', `Order #${orderId.slice(0, 8)} removed`);
+          toast.success('Order deleted successfully');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `orders/${orderId}`);
+        }
+      }
+    });
   };
 
   const handleBulkStatusUpdate = async (newStatus: string) => {
@@ -771,11 +807,15 @@ export default function Orders() {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to send ${eligibleOrders.length} orders to ${targetCourier}?`)) return;
-
-    setLoading(true);
-    let successCount = 0;
-    let failCount = 0;
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Bulk Send to Courier',
+      message: `Are you sure you want to send ${eligibleOrders.length} orders to ${targetCourier}?`,
+      variant: 'info',
+      onConfirm: async () => {
+        setLoading(true);
+        let successCount = 0;
+        let failCount = 0;
 
     for (const order of eligibleOrders) {
       try {
@@ -846,6 +886,8 @@ export default function Orders() {
     setLoading(false);
     setSelectedOrders([]);
     toast.success(`Bulk process complete. Success: ${successCount}, Failed: ${failCount}`);
+      }
+    });
   };
 
   const handleExportCSV = () => {
@@ -1785,6 +1827,57 @@ export default function Orders() {
           </div>
         </div>
       )}
+
+      {/* Bulk Actions Bar */}
+      {selectedOrders.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#141414] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-3 pr-6 border-r border-white/10">
+            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-xs font-bold">
+              {selectedOrders.length}
+            </div>
+            <span className="text-sm font-medium text-white/80">Orders Selected</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => handleBulkStatusUpdate('confirmed')}
+              className="px-4 py-2 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+            >
+              <CheckCircle size={16} className="text-green-400" />
+              Confirm
+            </button>
+            <button 
+              onClick={handleBulkSendToCourier}
+              className="px-4 py-2 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+            >
+              <Truck size={16} className="text-blue-400" />
+              Send to Courier
+            </button>
+            <button 
+              onClick={handleBulkPrint}
+              className="px-4 py-2 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+            >
+              <Printer size={16} />
+              Print Invoices
+            </button>
+            <button 
+              onClick={() => setSelectedOrders([])}
+              className="px-4 py-2 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
 
       {/* Hidden Print Containers - Moved outside conditional blocks to ensure refs are always attached and accessible */}
       <div className="print-only">
