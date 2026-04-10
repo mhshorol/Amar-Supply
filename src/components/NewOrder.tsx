@@ -401,14 +401,27 @@ export default function NewOrder() {
                   onChange={e => setOrderForm({...orderForm, customerName: e.target.value})}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Phone Number *</label>
-                <input 
-                  required
-                  className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
-                  value={orderForm.customerPhone}
-                  onChange={e => handlePhoneChange(e.target.value)}
-                />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Phone Number *</label>
+                  <div className="flex gap-2">
+                    <input 
+                      required
+                      className="flex-1 px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-[#ffffff] focus:border-[#00AEEF]/20 outline-none transition-all"
+                      value={orderForm.customerPhone}
+                      onChange={e => handlePhoneChange(e.target.value)}
+                    />
+                    {orderForm.customerPhone.length >= 11 && (
+                      <a 
+                        href={`https://wa.me/88${orderForm.customerPhone.replace(/\D/g, '')}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="p-2.5 sm:p-3 bg-[#25D366] text-white rounded-xl hover:bg-[#128C7E] transition-all shadow-md flex items-center justify-center"
+                        title="Chat on WhatsApp"
+                      >
+                        <Smartphone size={20} />
+                      </a>
+                    )}
+                  </div>
                 
                 {isFetchingHistory && (
                   <div className="flex items-center gap-2 mt-1 px-2">

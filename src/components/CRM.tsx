@@ -444,7 +444,18 @@ export default function CRM() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Contact</p>
-                  <p className="text-sm font-bold text-gray-900">{selectedCustomer.phone}</p>
+                  <div className="flex items-center justify-end gap-2">
+                    <p className="text-sm font-bold text-gray-900">{selectedCustomer.phone}</p>
+                    <a 
+                      href={`https://wa.me/88${selectedCustomer.phone.replace(/\D/g, '')}`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="p-1.5 bg-[#25D366] text-white rounded-lg hover:bg-[#128C7E] transition-colors shadow-sm"
+                      title="Chat on WhatsApp"
+                    >
+                      <MessageSquare size={12} />
+                    </a>
+                  </div>
                   <div className="mt-2 flex items-center gap-2 justify-end">
                     <button 
                       onClick={() => handleOpenEditModal(selectedCustomer)}

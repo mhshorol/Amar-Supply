@@ -10,6 +10,7 @@ import {
   Globe, 
   Instagram, 
   MessageCircle,
+  MessageSquare,
   Truck,
   CreditCard,
   Calendar,
@@ -1051,7 +1052,50 @@ export default function Orders() {
           </div>
 
           {viewMode === 'table' ? (
-            <div className="bg-[#ffffff] rounded-3xl border border-[#f3f4f6] shadow-sm overflow-hidden">
+            <div className="relative">
+              {/* Bulk Action Bar */}
+              {selectedOrders.length > 0 && (
+                <div className="sticky top-4 z-40 mb-4 mx-auto w-full max-w-2xl bg-[#141414] text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-top-4 duration-300">
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-bold px-3 py-1 bg-white/10 rounded-lg">{selectedOrders.length} Selected</span>
+                    <div className="h-4 w-px bg-white/20" />
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleBulkStatusUpdate('confirmed')}
+                        className="px-3 py-1.5 hover:bg-white/10 rounded-lg text-[10px] font-bold transition-all"
+                      >
+                        Confirm
+                      </button>
+                      <button 
+                        onClick={() => handleBulkStatusUpdate('shipped')}
+                        className="px-3 py-1.5 hover:bg-white/10 rounded-lg text-[10px] font-bold transition-all"
+                      >
+                        Ship
+                      </button>
+                      <button 
+                        onClick={handleBulkPrint}
+                        className="px-3 py-1.5 hover:bg-white/10 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2"
+                      >
+                        <Printer size={12} /> Print
+                      </button>
+                      <button 
+                        onClick={handleBulkSendToCourier}
+                        className="px-3 py-1.5 hover:bg-white/10 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2"
+                      >
+                        <Truck size={12} /> Send to Courier
+                      </button>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedOrders([])}
+                    className="p-1.5 hover:bg-white/10 rounded-lg transition-all"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+
+              <div className="bg-[#ffffff] rounded-3xl border border-[#f3f4f6] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -1111,7 +1155,18 @@ export default function Orders() {
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span className="text-xs font-bold text-[#141414]">{order.customerName}</span>
-                              <span className="text-[10px] text-[#9ca3af]">{order.customerPhone}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-[#9ca3af]">{order.customerPhone}</span>
+                                <a 
+                                  href={`https://wa.me/88${order.customerPhone.replace(/\D/g, '')}`} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="p-1 bg-[#25D366] text-white rounded hover:bg-[#128C7E] transition-colors"
+                                  title="Chat on WhatsApp"
+                                >
+                                  <MessageSquare size={10} />
+                                </a>
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -1193,7 +1248,8 @@ export default function Orders() {
                 </table>
               </div>
             </div>
-          ) : (
+          </div>
+        ) : (
             <DragDropContext onDragEnd={onDragEnd}>
               <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar min-h-[600px]">
                 {statuses.map(status => (

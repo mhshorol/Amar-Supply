@@ -69,7 +69,7 @@ export default function POS() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [discount, setDiscount] = useState(0);
   const [tax, setTax] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'Mobile Banking'>('Cash');
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'bKash' | 'Nagad' | 'Rocket'>('Cash');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -685,7 +685,18 @@ export default function POS() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-gray-900 truncate">{selectedCustomer.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{selectedCustomer.phone}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gray-500 truncate">{selectedCustomer.phone}</p>
+                    <a 
+                      href={`https://wa.me/88${selectedCustomer.phone.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1 bg-[#25D366] text-white rounded hover:bg-[#128C7E] transition-colors"
+                      title="Chat on WhatsApp"
+                    >
+                      <Smartphone size={10} />
+                    </a>
+                  </div>
                 </div>
               </div>
               <button 
@@ -857,7 +868,7 @@ export default function POS() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button 
                 onClick={() => setPaymentMethod('Cash')}
                 className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${
@@ -877,13 +888,31 @@ export default function POS() {
                 <span className="text-[10px] font-bold">Card</span>
               </button>
               <button 
-                onClick={() => setPaymentMethod('Mobile Banking')}
+                onClick={() => setPaymentMethod('bKash')}
                 className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${
-                  paymentMethod === 'Mobile Banking' ? 'bg-[#00AEEF] text-white border-[#00AEEF]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
+                  paymentMethod === 'bKash' ? 'bg-[#D12053] text-white border-[#D12053]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
                 }`}
               >
                 <Smartphone size={16} />
-                <span className="text-[10px] font-bold">Mobile</span>
+                <span className="text-[10px] font-bold">bKash</span>
+              </button>
+              <button 
+                onClick={() => setPaymentMethod('Nagad')}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${
+                  paymentMethod === 'Nagad' ? 'bg-[#F7941D] text-white border-[#F7941D]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
+                }`}
+              >
+                <Smartphone size={16} />
+                <span className="text-[10px] font-bold">Nagad</span>
+              </button>
+              <button 
+                onClick={() => setPaymentMethod('Rocket')}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${
+                  paymentMethod === 'Rocket' ? 'bg-[#8C3494] text-white border-[#8C3494]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
+                }`}
+              >
+                <Smartphone size={16} />
+                <span className="text-[10px] font-bold">Rocket</span>
               </button>
             </div>
 

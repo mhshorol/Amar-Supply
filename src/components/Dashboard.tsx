@@ -18,7 +18,11 @@ import {
   Plus,
   MoreVertical,
   Calendar,
-  DollarSign
+  DollarSign,
+  MessageSquare,
+  Truck,
+  RotateCcw,
+  Zap
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -85,6 +89,9 @@ export default function Dashboard() {
 
   const [dailyRevenue, setDailyRevenue] = useState<any[]>([]);
   const [bestSellingProducts, setBestSellingProducts] = useState<any[]>([]);
+  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
+  const [returnRate, setReturnRate] = useState(0);
+  const [courierPerformance, setCourierPerformance] = useState<any[]>([]);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -98,6 +105,11 @@ export default function Dashboard() {
       const totalInvoice = orders.length;
       const totalPaidInvoice = orders.filter((o: any) => o.status?.toLowerCase() === 'delivered').length;
       const totalDueInvoice = orders.filter((o: any) => o.status?.toLowerCase() !== 'delivered' && o.status?.toLowerCase() !== 'cancelled').length;
+
+      const cancelledOrders = orders.filter((o: any) => o.status?.toLowerCase() === 'cancelled').length;
+      const returnedOrders = orders.filter((o: any) => o.status?.toLowerCase() === 'returned').length;
+      const totalReturns = cancelledOrders + returnedOrders;
+      setReturnRate(totalInvoice > 0 ? Math.round((totalReturns / totalInvoice) * 100) : 0);
 
       setStats(prev => ({
         ...prev,
@@ -131,6 +143,24 @@ export default function Dashboard() {
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 5);
       setBestSellingProducts(bestSelling);
+
+      // Courier Performance
+      const courierStats: { [key: string]: { name: string, total: number, delivered: number } } = {};
+      orders.forEach((order: any) => {
+        if (order.courier) {
+          if (!courierStats[order.courier]) {
+            courierStats[order.courier] = { name: order.courier, total: 0, delivered: 0 };
+          }
+          courierStats[order.courier].total++;
+          if (order.status?.toLowerCase() === 'delivered') {
+            courierStats[order.courier].delivered++;
+          }
+        }
+      });
+      setCourierPerformance(Object.values(courierStats).map(c => ({
+        ...c,
+        rate: Math.round((c.delivered / c.total) * 100)
+      })));
 
       // Daily Revenue for last 7 days
       const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -167,7 +197,11 @@ export default function Dashboard() {
     });
 
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-      setStats(prev => ({ ...prev, totalProduct: snapshot.size }));
+      const prods = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setStats(prev => ({ ...prev, totalProduct: prods.length }));
+      
+      const lowStock = prods.filter((p: any) => (p.stock || 0) <= (p.minStock || 5));
+      setLowStockProducts(lowStock.slice(0, 5));
     }, (error) => {
       if (error.code !== 'permission-denied') {
         handleFirestoreError(error, OperationType.LIST, 'products');
@@ -239,26 +273,47 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4 sm:space-y-8 pb-12">
+      {/* Quick Actions Bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Link to="/new-order" className="flex items-center gap-2 px-4 py-2.5 bg-[#141414] text-white rounded-xl text-xs font-bold hover:bg-black transition-all shadow-lg shadow-gray-200">
+          <Plus size={16} />
+          New Order
+        </Link>
+        <Link to="/pos" className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-100 text-[#141414] rounded-xl text-xs font-bold hover:bg-gray-50 transition-all shadow-sm">
+          <Zap size={16} className="text-orange-500" />
+          POS Sale
+        </Link>
+        <Link to="/inventory/new" className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-100 text-[#141414] rounded-xl text-xs font-bold hover:bg-gray-50 transition-all shadow-sm">
+          <Package size={16} className="text-blue-500" />
+          Add Product
+        </Link>
+        <a href="https://wa.me/8801700000000" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-bold hover:bg-[#128C7E] transition-all shadow-lg shadow-green-100">
+          <MessageSquare size={16} />
+          WhatsApp Support
+        </a>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard title="Total Revenue" value={formatCurrency(stats.totalAmount)} icon={Wallet} color="bg-[#00AEEF]" />
-        <StatCard title="Total Paid" value={formatCurrency(stats.totalPaid)} icon={CheckCircle2} color="bg-[#00AEEF]" />
-        <StatCard title="Total Due" value={formatCurrency(stats.totalDue)} icon={AlertCircle} color="bg-[#00AEEF]" />
-        <StatCard title="Total Customers" value={stats.totalCustomer} icon={Users} color="bg-[#00AEEF]" />
-        
-        <StatCard title="Total Products" value={stats.totalProduct} icon={Package} color="bg-[#00AEEF]" />
-        <StatCard title="Total Orders" value={stats.totalInvoice} icon={ShoppingCart} color="bg-[#00AEEF]" />
-        <StatCard title="Delivered Orders" value={stats.totalPaidInvoice} icon={Receipt} color="bg-[#00AEEF]" />
-        <StatCard title="Active Orders" value={stats.totalDueInvoice} icon={AlertCircle} color="bg-[#00AEEF]" />
+        <StatCard title="Total Revenue" value={formatCurrency(stats.totalAmount)} icon={Wallet} color="bg-blue-50" iconColor="text-blue-600" />
+        <StatCard title="Total Paid" value={formatCurrency(stats.totalPaid)} icon={CheckCircle2} color="bg-green-50" iconColor="text-green-600" />
+        <StatCard title="Return Rate" value={`${returnRate}%`} icon={RotateCcw} color="bg-red-50" iconColor="text-red-600" />
+        <StatCard title="Total Customers" value={stats.totalCustomer} icon={Users} color="bg-purple-50" iconColor="text-purple-600" />
       </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
         <div className="lg:col-span-2 bg-white p-4 sm:p-8 rounded-3xl border border-gray-100 shadow-sm">
-          <SectionHeader title="Income & Expense Overview" showSelect />
+          <SectionHeader title="Sales Performance" showSelect />
           <div className="h-[300px] sm:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+              <AreaChart data={barData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00AEEF" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#00AEEF" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
                 <XAxis 
                   dataKey="name" 
@@ -276,91 +331,75 @@ export default function Dashboard() {
                   cursor={{ fill: '#F8F9FA' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}
                 />
-                <Bar dataKey="value" fill="#00AEEF" radius={[4, 4, 0, 0]} barSize={30} />
-              </BarChart>
+                <Area type="monotone" dataKey="value" stroke="#00AEEF" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-4 sm:p-8 rounded-3xl border border-gray-100 shadow-sm">
-          <SectionHeader title="Payment Overview" />
-          <div className="h-[250px] sm:h-[300px] relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={110}
-                  paddingAngle={0}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-3 mt-4">
-            {pieData.map((item, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs font-bold text-gray-600">{item.name} ({currencySymbol} {item.value.toLocaleString()})</span>
+        <div className="bg-white p-4 sm:p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+          <SectionHeader title="Courier Performance" />
+          <div className="flex-1 space-y-4">
+            {courierPerformance.length > 0 ? (
+              courierPerformance.map((c, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-700 uppercase">{c.name}</span>
+                    <span className="text-xs font-black text-[#00AEEF]">{c.rate}% Success</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-[#00AEEF] rounded-full transition-all duration-1000" 
+                      style={{ width: `${c.rate}%` }}
+                    />
+                  </div>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{c.delivered} Delivered / {c.total} Total</p>
+                </div>
+              ))
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-2">
+                <Truck size={48} strokeWidth={1} />
+                <p className="text-xs font-medium">No courier data yet</p>
               </div>
-            ))}
+            )}
+          </div>
+          <div className="mt-6 pt-6 border-t border-gray-50">
+            <Link to="/logistics" className="text-xs font-bold text-[#00AEEF] hover:underline flex items-center gap-1">
+              Manage Logistics <ArrowUpRight size={14} />
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Recent Orders & Best Selling Products */}
+      {/* Alerts & Best Selling */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-        {/* Recent Orders */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-4 sm:p-6 border-b border-gray-50 flex items-center justify-between">
-            <h3 className="text-xs sm:text-sm font-bold text-gray-800 uppercase tracking-widest">Recent Orders</h3>
-            <Link to="/orders" className="text-[10px] sm:text-xs font-bold text-[#00AEEF] hover:underline">View All</Link>
+        {/* Low Stock Alerts */}
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Low Stock Alerts</h3>
+            <span className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black rounded-lg uppercase">{lowStockProducts.length} Items</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[600px] sm:min-w-0">
-              <thead>
-                <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50">
-                  <th className="px-6 py-4">Order ID</th>
-                  <th className="px-6 py-4">Customer</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Total</th>
-                  <th className="px-6 py-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-xs font-bold text-gray-900">#{order.orderNumber || order.id.slice(0, 8)}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-gray-900">{order.customerName}</span>
-                        <span className="text-[10px] text-gray-400">{order.customerPhone}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-gray-600">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A')}</td>
-                    <td className="px-6 py-4 text-xs font-bold text-gray-900">{formatCurrency(order.totalAmount)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-[10px] font-bold rounded-md ${
-                        order.status?.toLowerCase() === 'delivered' ? 'bg-green-500 text-white' : 
-                        order.status?.toLowerCase() === 'cancelled' ? 'bg-red-500 text-white' : 'bg-[#00AEEF] text-white'
-                      }`}>{(order.status.charAt(0).toUpperCase() + order.status.slice(1)).replace(/_/g, ' ')}</span>
-                    </td>
-                  </tr>
-                ))}
-                {recentOrders.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-400 text-sm">No orders found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="p-6 space-y-4">
+            {lowStockProducts.map((p, i) => (
+              <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 rounded-2xl border border-transparent hover:border-red-100 transition-all">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <Package size={20} className="text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs font-bold text-gray-900 truncate">{p.name}</h4>
+                  <p className="text-[10px] text-red-500 font-black uppercase tracking-wider">Only {p.stock || 0} left</p>
+                </div>
+                <Link to={`/inventory/edit/${p.id}`} className="p-2 text-gray-400 hover:text-[#00AEEF] transition-colors">
+                  <ArrowUpRight size={16} />
+                </Link>
+              </div>
+            ))}
+            {lowStockProducts.length === 0 && (
+              <div className="text-center py-8 text-gray-400 text-xs">All stock levels are healthy.</div>
+            )}
+          </div>
+          <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
+            <Link to="/inventory" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-[#00AEEF]">View Full Inventory</Link>
           </div>
         </div>
 
@@ -386,6 +425,39 @@ export default function Dashboard() {
             ))}
             {bestSellingProducts.length === 0 && (
               <div className="text-center py-12 text-gray-400 text-xs">No sales data yet.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Orders */}
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Recent Orders</h3>
+            <Link to="/orders" className="text-[10px] font-bold text-[#00AEEF] hover:underline">View All</Link>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {recentOrders.slice(0, 5).map((order) => (
+              <div key={order.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-[#00AEEF]">
+                    <ShoppingCart size={14} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-gray-900 truncate">{order.customerName}</p>
+                    <p className="text-[10px] text-gray-400 font-medium">#{order.orderNumber || order.id.slice(0, 8)}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-black text-gray-900">{formatCurrency(order.totalAmount)}</p>
+                  <span className={`text-[8px] font-black uppercase tracking-widest ${
+                    order.status?.toLowerCase() === 'delivered' ? 'text-green-500' : 
+                    order.status?.toLowerCase() === 'cancelled' ? 'text-red-500' : 'text-[#00AEEF]'
+                  }`}>{order.status}</span>
+                </div>
+              </div>
+            ))}
+            {recentOrders.length === 0 && (
+              <div className="p-12 text-center text-gray-400 text-xs">No orders found.</div>
             )}
           </div>
         </div>

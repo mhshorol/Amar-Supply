@@ -30,6 +30,7 @@ import {
   orderBy, 
   getDocs,
   limit,
+  where,
   serverTimestamp,
   Timestamp,
   updateDoc
@@ -68,7 +69,9 @@ export default function Logistics() {
   const [loading, setLoading] = useState(true);
   const [courierConfigs, setCourierConfigs] = useState<Record<string, any>>({});
   const [courierLogs, setCourierLogs] = useState<any[]>([]);
-  const [activeSubTab, setActiveSubTab] = useState<'shipments' | 'couriers' | 'logs'>('shipments');
+  const [activeSubTab, setActiveSubTab] = useState<'shipments' | 'pending' | 'couriers' | 'logs'>('shipments');
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [selectedPendingOrders, setSelectedPendingOrders] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchCourierData = async () => {
@@ -159,9 +162,28 @@ export default function Logistics() {
       }
     });
 
+    // Fetch pending orders for the new tab
+    const qPending = query(
+      collection(db, 'orders'), 
+      where('status', 'in', ['confirmed', 'processing']),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribePending = onSnapshot(qPending, (snapshot) => {
+      const pendingData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as any)).filter(o => !o.trackingNumber); // Only those without tracking
+      setPendingOrders(pendingData);
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'orders');
+      }
+    });
+
     return () => {
       unsubscribeDeliveries();
       unsubscribeCouriers();
+      unsubscribePending();
     };
   }, []);
 
@@ -194,6 +216,97 @@ export default function Logistics() {
     } finally {
       setFetchingBalance(false);
     }
+  };
+
+  const handleBulkBook = async () => {
+    const activeCouriers = Object.entries(courierConfigs)
+      .filter(([_, config]: [string, any]) => config.isActive)
+      .map(([name]) => name);
+
+    if (activeCouriers.length === 0) {
+      toast.error("No active couriers found. Please configure couriers first.");
+      return;
+    }
+
+    const courierToUse = activeCouriers[0]; // Default to first active courier
+    
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Bulk Book Orders',
+      message: `Are you sure you want to book ${selectedPendingOrders.length} orders with ${courierToUse.toUpperCase()}?`,
+      onConfirm: async () => {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const orderId of selectedPendingOrders) {
+          const order = pendingOrders.find(o => o.id === orderId);
+          if (!order) continue;
+
+          try {
+            const response = await fetch(`/api/couriers/send-order/${courierToUse}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                invoice: order.orderNumber || order.id.slice(0, 8),
+                recipient_name: order.customerName,
+                recipient_phone: order.customerPhone.replace(/\D/g, '').slice(-11),
+                recipient_address: order.customerAddress,
+                cod_amount: order.dueAmount || 0,
+                note: order.notes || '',
+                district: order.district || '',
+                area: order.area || '',
+                weight: 0.5
+              })
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success) {
+                // Update order in Firestore
+                await updateDoc(doc(db, 'orders', order.id), {
+                  courierName: courierToUse,
+                  trackingNumber: result.tracking_code || result.consignment_id || '',
+                  status: 'shipped',
+                  logs: [
+                    ...(order.logs || []),
+                    {
+                      user: auth.currentUser?.email,
+                      action: 'Sent to Courier (Bulk)',
+                      timestamp: Timestamp.now(),
+                      details: `Sent to ${courierToUse} via Logistics Bulk Book`
+                    }
+                  ]
+                });
+
+                // Add to deliveries
+                await addDoc(collection(db, 'deliveries'), {
+                  orderId: order.id,
+                  courier: courierToUse,
+                  status: 'In Transit',
+                  location: 'Pending Pickup',
+                  eta: '2-3 Days',
+                  trackingCode: result.tracking_code || result.consignment_id || '',
+                  uid: auth.currentUser!.uid,
+                  createdAt: serverTimestamp()
+                });
+
+                successCount++;
+              } else {
+                failCount++;
+              }
+            } else {
+              failCount++;
+            }
+          } catch (error) {
+            console.error(`Error booking order ${orderId}:`, error);
+            failCount++;
+          }
+        }
+
+        toast.success(`Bulk booking complete: ${successCount} success, ${failCount} failed.`);
+        setSelectedPendingOrders([]);
+      }
+    });
   };
 
   const handleSyncStatus = async (delivery: Delivery) => {
@@ -455,6 +568,15 @@ export default function Logistics() {
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSubTab === 'shipments' ? 'bg-white text-[#141414] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           Shipments
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('pending')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeSubTab === 'pending' ? 'bg-white text-[#141414] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          Pending
+          {pendingOrders.length > 0 && (
+            <span className="px-1.5 py-0.5 bg-[#00AEEF] text-white text-[10px] rounded-full font-bold">{pendingOrders.length}</span>
+          )}
         </button>
         <button 
           onClick={() => setActiveSubTab('couriers')}
@@ -722,6 +844,106 @@ export default function Logistics() {
                       No logs found.
                     </td>
                   </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'pending' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-[#f3f4f6] shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-50 text-[#00AEEF] rounded-xl">
+                <Truck size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[#141414]">Pending Shipments</h3>
+                <p className="text-xs text-gray-500">Orders ready to be sent to courier partners.</p>
+              </div>
+            </div>
+            {selectedPendingOrders.length > 0 && (
+              <button 
+                onClick={handleBulkBook}
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#00AEEF] text-white rounded-xl text-sm font-bold hover:bg-[#0095cc] transition-all shadow-lg"
+              >
+                <Zap size={16} />
+                Bulk Book ({selectedPendingOrders.length})
+              </button>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#f3f4f6] shadow-sm overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#f9fafb] bg-[#f9fafb]/50">
+                  <th className="px-6 py-4">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-[#d1d5db]"
+                      checked={selectedPendingOrders.length === pendingOrders.length && pendingOrders.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedPendingOrders(pendingOrders.map(o => o.id));
+                        else setSelectedPendingOrders([]);
+                      }}
+                    />
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Order</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Customer</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Address</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f9fafb]">
+                {pendingOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-sm italic">
+                      No pending shipments found.
+                    </td>
+                  </tr>
+                ) : (
+                  pendingOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-[#f9fafb]/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-[#d1d5db]"
+                          checked={selectedPendingOrders.includes(order.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedPendingOrders([...selectedPendingOrders, order.id]);
+                            else setSelectedPendingOrders(selectedPendingOrders.filter(id => id !== order.id));
+                          }}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-[#141414]">#{order.orderNumber || order.id.slice(0, 8)}</span>
+                          <span className="text-[10px] text-[#9ca3af]">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-[#141414]">{order.customerName}</span>
+                          <span className="text-[10px] text-[#9ca3af]">{order.customerPhone}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] text-[#6b7280] line-clamp-1 max-w-[200px]">{order.customerAddress}</span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-bold text-[#141414]">
+                        {settings?.currencySymbol || '৳'}{order.totalAmount?.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          order.status === 'confirmed' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
