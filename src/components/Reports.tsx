@@ -55,6 +55,7 @@ export default function Reports() {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [sourceData, setSourceData] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalSales: 0,
     totalOrders: 0,
@@ -135,6 +136,14 @@ export default function Reports() {
         }
       });
       setCategoryData(Object.entries(categorySales).map(([name, value]) => ({ name, value })));
+
+      // Source Data
+      const sourceCounts: Record<string, number> = {};
+      orders.forEach((order: any) => {
+        const source = order.source || 'Unknown';
+        sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+      });
+      setSourceData(Object.entries(sourceCounts).map(([name, value]) => ({ name, value })));
 
       // Stats
       const totalSales = orders.reduce((sum, o: any) => sum + (o.totalAmount || 0), 0);
@@ -416,6 +425,7 @@ export default function Reports() {
                     ))}
                   </Pie>
                   <Tooltip 
+                    formatter={(value: number) => [`৳${value.toLocaleString()}`, 'Sales']}
                     contentStyle={{ 
                       backgroundColor: '#fff', 
                       border: 'none', 
@@ -425,6 +435,38 @@ export default function Reports() {
                   />
                   <Legend verticalAlign="bottom" height={36}/>
                 </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Order Source Distribution */}
+          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h4 className="font-bold text-gray-900 mb-6">Orders by Source</h4>
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sourceData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <XAxis type="number" hide />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#64748b' }}
+                    width={100}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#f8fafc' }}
+                    formatter={(value: number) => [value, 'Orders']}
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                    }}
+                  />
+                  <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>

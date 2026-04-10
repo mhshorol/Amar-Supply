@@ -11,12 +11,14 @@ import {
   ArrowLeft,
   Save,
   Search,
-  ChevronDown
+  ChevronDown,
+  Smartphone
 } from 'lucide-react';
 import { db, auth, collection, query, serverTimestamp, Timestamp, doc, getDocs, where, runTransaction } from '../firebase';
 import { toast } from 'sonner';
 import { logActivity } from '../services/activityService';
 import { checkDuplicateOrder } from '../services/orderService';
+import { sendOrderConfirmationSMS } from '../services/smsService';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -47,7 +49,7 @@ export default function NewOrder() {
     paidAmount: 0,
     dueAmount: 0,
     advanceAmount: 0,
-    channel: 'Facebook',
+    source: 'Facebook',
     paymentMethod: 'COD',
     status: 'pending',
     items: [] as any[],
@@ -59,6 +61,7 @@ export default function NewOrder() {
     trackingNumber: ''
   });
 
+  const [sendSMS, setSendSMS] = useState(false);
   const [newItem, setNewItem] = useState({ productId: '', variantId: '', quantity: 1, price: 0 });
 
   const statuses = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'partial_delivered', 'cancelled', 'returned'];
@@ -240,6 +243,16 @@ export default function NewOrder() {
           uid: auth.currentUser!.uid,
           createdAt: serverTimestamp()
         });
+
+        // Send SMS if enabled
+        if (sendSMS) {
+          sendOrderConfirmationSMS({
+            ...data,
+            orderNumber: nextOrderNumber,
+            customerName: orderForm.customerName,
+            customerPhone: orderForm.customerPhone
+          });
+        }
 
         // Deduct Inventory
         for (const invData of inventorySnaps) {
@@ -686,8 +699,8 @@ export default function NewOrder() {
                   <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Order Source</label>
                   <select 
                     className="w-full px-4 py-2.5 sm:py-3 bg-[#f9fafb] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
-                    value={orderForm.channel}
-                    onChange={e => setOrderForm({...orderForm, channel: e.target.value})}
+                    value={orderForm.source}
+                    onChange={e => setOrderForm({...orderForm, source: e.target.value})}
                   >
                     <option value="Facebook">Facebook</option>
                     <option value="WhatsApp">WhatsApp</option>
@@ -698,6 +711,23 @@ export default function NewOrder() {
                     <option value="TikTok">TikTok</option>
                     <option value="Others">Others</option>
                   </select>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-2xl border border-blue-100 mt-4">
+                  <div className="flex items-center gap-3">
+                    <Smartphone size={18} className="text-blue-600" />
+                    <div>
+                      <p className="text-xs font-bold text-blue-900">Send Confirmation SMS</p>
+                      <p className="text-[10px] text-blue-600">Notify customer about this order</p>
+                    </div>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setSendSMS(!sendSMS)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${sendSMS ? 'bg-blue-600' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${sendSMS ? 'right-0.5' : 'left-0.5'}`} />
+                  </button>
                 </div>
               </div>
             </div>

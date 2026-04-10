@@ -168,6 +168,14 @@ export default function Settings() {
           if (data.integrations) setIntegrationSettings(prev => ({ ...prev, ...data.integrations }));
           if (data.dataManagement) setDataSettings(prev => ({ ...prev, ...data.dataManagement }));
           if (data.mobile) setMobileSettings(prev => ({ ...prev, ...data.mobile }));
+          if (data.sms) setSmsSettings(prev => ({ ...prev, ...data.sms }));
+        }
+
+        // Fetch courier configs from backend
+        const response = await fetch('/api/couriers/configs');
+        if (response.ok) {
+          const data = await response.json();
+          setCourierConfigs(prev => ({ ...prev, ...data }));
         }
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -278,6 +286,15 @@ export default function Settings() {
     biometricAuth: false
   });
 
+  const [smsSettings, setSmsSettings] = useState({
+    enableOrderConfirmation: false,
+    smsGateway: 'Twilio',
+    twilioSid: '',
+    twilioToken: '',
+    twilioFrom: '',
+    confirmationTemplate: 'Hello {customerName}, your order #{orderNumber} has been received. Total: {totalAmount}. Thank you!'
+  });
+
   const [courierConfigs, setCourierConfigs] = useState<Record<string, any>>({
     steadfast: { apiKey: '', secretKey: '', isActive: false },
     pathao: { clientId: '', clientSecret: '', username: '', password: '', isActive: false },
@@ -285,42 +302,6 @@ export default function Settings() {
     paperfly: { apiKey: '', isActive: false },
     carrybee: { apiKey: '', isActive: false }
   });
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const docRef = doc(db, 'settings', 'company');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setCompanyInfo(prev => ({ ...prev, ...docSnap.data() }));
-        }
-
-        const userDocRef = doc(db, 'settings', `user_${auth.currentUser?.uid}`);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          const data = userDocSnap.data();
-          if (data.account) setAccountSettings(prev => ({ ...prev, ...data.account }));
-          if (data.notifications) setNotificationSettings(prev => ({ ...prev, ...data.notifications }));
-          if (data.security) setSecuritySettings(prev => ({ ...prev, ...data.security }));
-          if (data.integrations) setIntegrationSettings(prev => ({ ...prev, ...data.integrations }));
-          if (data.dataManagement) setDataSettings(prev => ({ ...prev, ...data.dataManagement }));
-          if (data.mobile) setMobileSettings(prev => ({ ...prev, ...data.mobile }));
-        }
-
-        // Fetch courier configs from backend
-        const response = await fetch('/api/couriers/configs');
-        if (response.ok) {
-          const data = await response.json();
-          setCourierConfigs(prev => ({ ...prev, ...data }));
-        }
-      } catch (error) {
-        console.error("Error fetching settings:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSettings();
-  }, []);
 
   const handleExportData = async () => {
     setSaving(true);
@@ -423,6 +404,7 @@ export default function Settings() {
         if (activeTab === 'Notifications') updateData.notifications = notificationSettings;
         if (activeTab === 'Security') updateData.security = securitySettings;
         if (activeTab === 'Integrations') updateData.integrations = integrationSettings;
+        if (activeTab === 'SMS Settings') updateData.sms = smsSettings;
         if (activeTab === 'Data Management') updateData.dataManagement = dataSettings;
         if (activeTab === 'Mobile App') updateData.mobile = mobileSettings;
         
@@ -471,6 +453,7 @@ export default function Settings() {
             { name: 'Company Info', icon: Building2 },
             { name: 'Account', icon: UserIcon },
             { name: 'Notifications', icon: Bell },
+            { name: 'SMS Settings', icon: Smartphone },
             { name: 'Security', icon: Shield },
             { name: 'Integrations', icon: Globe },
             { name: 'Logistics', icon: Truck },
@@ -767,6 +750,81 @@ export default function Settings() {
                       </button>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'SMS Settings' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Smartphone size={20} /> SMS Confirmation Settings
+                </h3>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">Enable Order Confirmation SMS</p>
+                      <p className="text-xs text-gray-500">Automatically send a message to customers when a new order is created.</p>
+                    </div>
+                    <button 
+                      onClick={() => setSmsSettings(prev => ({ ...prev, enableOrderConfirmation: !prev.enableOrderConfirmation }))}
+                      className={`w-12 h-6 rounded-full transition-all relative ${smsSettings.enableOrderConfirmation ? 'bg-black' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${smsSettings.enableOrderConfirmation ? 'right-1' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">SMS Gateway</label>
+                      <select 
+                        value={smsSettings.smsGateway}
+                        onChange={e => setSmsSettings({...smsSettings, smsGateway: e.target.value})}
+                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                      >
+                        <option value="Twilio">Twilio</option>
+                        <option value="BulksmsBD">BulksmsBD</option>
+                        <option value="MimSMS">MimSMS</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Twilio SID / API Key</label>
+                      <input 
+                        type="text" 
+                        value={smsSettings.twilioSid}
+                        onChange={e => setSmsSettings({...smsSettings, twilioSid: e.target.value})}
+                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Twilio Token / Secret</label>
+                      <input 
+                        type="password" 
+                        value={smsSettings.twilioToken}
+                        onChange={e => setSmsSettings({...smsSettings, twilioToken: e.target.value})}
+                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sender ID / Phone Number</label>
+                      <input 
+                        type="text" 
+                        value={smsSettings.twilioFrom}
+                        onChange={e => setSmsSettings({...smsSettings, twilioFrom: e.target.value})}
+                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Message Template</label>
+                    <textarea 
+                      value={smsSettings.confirmationTemplate}
+                      onChange={e => setSmsSettings({...smsSettings, confirmationTemplate: e.target.value})}
+                      rows={4}
+                      className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all resize-none"
+                    />
+                    <p className="text-[10px] text-gray-400">Available placeholders: {'{customerName}'}, {'{orderNumber}'}, {'{totalAmount}'}, {'{companyName}'}</p>
+                  </div>
                 </div>
               </div>
             )}

@@ -31,6 +31,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { POSInvoice } from './InvoiceTemplates';
 import { logActivity } from '../services/activityService';
 import { checkDuplicateOrder } from '../services/orderService';
+import { sendOrderConfirmationSMS } from '../services/smsService';
 
 interface CartItem {
   id: string;
@@ -74,6 +75,7 @@ export default function POS() {
   const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', address: '' });
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [companySettings, setCompanySettings] = useState<any>(null);
+  const [sendSMS, setSendSMS] = useState(false);
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
@@ -352,7 +354,7 @@ export default function POS() {
           dueAmount: 0,
           paymentMethod,
           status: 'delivered',
-          channel: 'POS',
+          source: 'POS',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           uid: auth.currentUser?.uid,
@@ -424,6 +426,17 @@ export default function POS() {
 
         // 4. PREPARE COMPLETED ORDER DATA
         const finalCompletedOrder = { ...orderData, id: orderRef.id };
+
+        // Send SMS if enabled
+        if (sendSMS) {
+          sendOrderConfirmationSMS({
+            ...orderData,
+            id: orderRef.id,
+            customerName: selectedCustomer.name,
+            customerPhone: selectedCustomer.phone
+          });
+        }
+
         return finalCompletedOrder;
       });
 
@@ -846,6 +859,20 @@ export default function POS() {
               >
                 <Smartphone size={16} />
                 <span className="text-[10px] font-bold">Mobile</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="flex items-center gap-2">
+                <Smartphone size={16} className="text-blue-600" />
+                <span className="text-[10px] font-bold text-blue-900">Send Confirmation SMS</span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setSendSMS(!sendSMS)}
+                className={`w-8 h-4 rounded-full transition-all relative ${sendSMS ? 'bg-blue-600' : 'bg-gray-300'}`}
+              >
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${sendSMS ? 'right-0.5' : 'left-0.5'}`} />
               </button>
             </div>
 
