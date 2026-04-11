@@ -545,7 +545,7 @@ export default function POS() {
   }
 
   return (
-    <div className="h-auto lg:h-[calc(100vh-120px)] flex flex-col lg:flex-row gap-6 overflow-y-auto lg:overflow-hidden p-4 lg:p-0">
+    <div className="h-full lg:h-[calc(100vh-120px)] flex flex-col lg:flex-row gap-6 overflow-y-auto lg:overflow-hidden p-4 lg:p-0">
       {/* Left Side: Product Selection */}
       <div className="flex-1 flex flex-col gap-6 min-w-0">
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
@@ -661,9 +661,9 @@ export default function POS() {
       </div>
 
       {/* Right Side: Cart & Checkout */}
-      <div className="w-full lg:w-96 flex flex-col gap-6">
+      <div className="w-full lg:w-[400px] flex flex-col gap-4 h-full">
         {/* Customer Selection */}
-        <div className="bg-white p-4 sm:p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+        <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-3 shrink-0">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <User size={18} className="text-[#00AEEF]" />
@@ -757,8 +757,8 @@ export default function POS() {
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
-          <div className="p-4 sm:p-6 border-b border-gray-50 flex items-center justify-between">
+        <div className="flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col overflow-hidden min-h-[300px]">
+          <div className="p-4 border-b border-gray-50 flex items-center justify-between shrink-0">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <ShoppingCart size={18} className="text-[#00AEEF]" />
               Cart Items
@@ -838,7 +838,7 @@ export default function POS() {
           </div>
 
           {/* Summary & Checkout */}
-          <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-100 space-y-4">
+          <div className="p-4 bg-gray-50 border-t border-gray-100 space-y-4 shrink-0">
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-gray-500">
                 <span>Subtotal</span>
@@ -868,7 +868,7 @@ export default function POS() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button 
                 onClick={() => setPaymentMethod('Cash')}
                 className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${
@@ -916,24 +916,24 @@ export default function POS() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
+            <div className="flex items-center justify-between p-2 bg-blue-50 rounded-xl border border-blue-100">
               <div className="flex items-center gap-2">
-                <Smartphone size={16} className="text-blue-600" />
-                <span className="text-[10px] font-bold text-blue-900">Send Confirmation SMS</span>
+                <Smartphone size={14} className="text-blue-600" />
+                <span className="text-[9px] font-bold text-blue-900">Send SMS</span>
               </div>
               <button 
                 type="button"
                 onClick={() => setSendSMS(!sendSMS)}
-                className={`w-8 h-4 rounded-full transition-all relative ${sendSMS ? 'bg-blue-600' : 'bg-gray-300'}`}
+                className={`w-7 h-3.5 rounded-full transition-all relative ${sendSMS ? 'bg-blue-600' : 'bg-gray-300'}`}
               >
-                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${sendSMS ? 'right-0.5' : 'left-0.5'}`} />
+                <div className={`absolute top-0.5 w-2.5 h-2.5 bg-white rounded-full transition-all ${sendSMS ? 'right-0.5' : 'left-0.5'}`} />
               </button>
             </div>
 
             <button 
               onClick={handleCheckout}
               disabled={isProcessing || cart.length === 0}
-              className="w-full py-4 bg-[#141414] text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-4 bg-[#00AEEF] text-white rounded-2xl font-bold hover:bg-[#0095cc] transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-gray-400"
             >
               {isProcessing ? (
                 <Loader2 className="animate-spin" size={20} />

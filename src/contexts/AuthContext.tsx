@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp } from '../firebase';
+import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp, getDocFromServer } from '../firebase';
 import { User, UserRole, UserPermissions } from '../types';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -51,6 +52,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check connection on mount
+    const checkConnection = async () => {
+      try {
+        await getDocFromServer(doc(db, 'health_check', 'connection_test'));
+      } catch (error: any) {
+        if (error.message?.includes('offline')) {
+          toast.error("Database is offline. Please check your connection or Firebase setup.");
+        }
+      }
+    };
+    checkConnection();
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {

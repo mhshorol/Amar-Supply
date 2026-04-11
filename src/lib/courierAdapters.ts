@@ -25,7 +25,7 @@ export interface CourierInterface {
 export class SteadfastAdapter implements CourierInterface {
   private apiKey: string;
   private secretKey: string;
-  private baseUrl = 'https://portal.steadfast.com.bd/api/v1';
+  private baseUrl = 'https://portal.packzy.com/api/v1';
 
   constructor(config: any) {
     this.apiKey = config.apiKey;
@@ -42,19 +42,29 @@ export class SteadfastAdapter implements CourierInterface {
       note: data.note
     }, {
       headers: {
-        'api-key': this.apiKey,
-        'secret-key': this.secretKey,
+        'Api-Key': this.apiKey,
+        'Secret-Key': this.secretKey,
         'Content-Type': 'application/json'
       }
     });
+    
+    // Steadfast returns { status: 200, consignment: { ... } }
+    if (response.data.status === 200 && response.data.consignment) {
+      return {
+        ...response.data.consignment,
+        success: true,
+        tracking_id: response.data.consignment.tracking_code,
+        original_response: response.data
+      };
+    }
     return response.data;
   }
 
   async trackOrder(trackingId: string): Promise<any> {
-    const response = await axios.get(`${this.baseUrl}/status_by_tracking/${trackingId}`, {
+    const response = await axios.get(`${this.baseUrl}/status_by_trackingcode/${trackingId}`, {
       headers: {
-        'api-key': this.apiKey,
-        'secret-key': this.secretKey
+        'Api-Key': this.apiKey,
+        'Secret-Key': this.secretKey
       }
     });
     return response.data;
@@ -63,8 +73,8 @@ export class SteadfastAdapter implements CourierInterface {
   async getBalance(): Promise<any> {
     const response = await axios.get(`${this.baseUrl}/get_balance`, {
       headers: {
-        'api-key': this.apiKey,
-        'secret-key': this.secretKey
+        'Api-Key': this.apiKey,
+        'Secret-Key': this.secretKey
       }
     });
     return response.data;
@@ -74,8 +84,8 @@ export class SteadfastAdapter implements CourierInterface {
     try {
       const response = await axios.get(`${this.baseUrl}/check_fraud/${phone}`, {
         headers: {
-          'api-key': this.apiKey,
-          'secret-key': this.secretKey
+          'Api-Key': this.apiKey,
+          'Secret-Key': this.secretKey
         }
       });
       return response.data;
@@ -107,45 +117,122 @@ export class PathaoAdapter implements CourierInterface {
   private clientSecret: string;
   private username?: string;
   private password?: string;
+  private storeId?: string;
   private baseUrl = 'https://api-hermes.pathao.com'; // Production URL
+  private static accessToken: string | null = null;
+  private static tokenExpiry: number | null = null;
 
   constructor(config: any) {
     this.clientId = config.clientId;
     this.clientSecret = config.clientSecret;
     this.username = config.username;
     this.password = config.password;
+    this.storeId = config.storeId;
+    if (config.isSandbox) {
+      this.baseUrl = 'https://courier-api-sandbox.pathao.com';
+    }
   }
 
   private async getAccessToken(): Promise<string> {
-    // Pathao token logic would go here
-    return 'mock-token';
+    const now = Math.floor(Date.now() / 1000);
+    if (PathaoAdapter.accessToken && PathaoAdapter.tokenExpiry && now < PathaoAdapter.tokenExpiry - 60) {
+      return PathaoAdapter.accessToken;
+    }
+
+    try {
+      const response = await axios.post(`${this.baseUrl}/aladdin/api/v1/issue-token`, {
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        grant_type: 'password',
+        username: this.username,
+        password: this.password
+      });
+
+      if (response.data.access_token) {
+        PathaoAdapter.accessToken = response.data.access_token;
+        PathaoAdapter.tokenExpiry = now + response.data.expires_in;
+        return PathaoAdapter.accessToken!;
+      }
+      throw new Error('Failed to obtain Pathao access token');
+    } catch (error: any) {
+      console.error('Pathao Auth Error:', error.response?.data || error.message);
+      throw new Error(`Pathao Authentication failed: ${error.response?.data?.message || error.message}`);
+    }
   }
 
   async createOrder(data: CourierOrderData): Promise<any> {
     const token = await this.getAccessToken();
-    // Pathao specific payload
-    return { status: 'success', tracking_id: 'PATHAO-MOCK' };
+    try {
+      const response = await axios.post(`${this.baseUrl}/aladdin/api/v1/orders`, {
+        store_id: parseInt(this.storeId || '0'),
+        merchant_order_id: data.invoice,
+        recipient_name: data.customer_name,
+        recipient_phone: data.customer_phone,
+        recipient_address: data.customer_address,
+        recipient_city: parseInt((data as any).recipient_city || '0'),
+        recipient_zone: parseInt((data as any).recipient_zone || '0'),
+        recipient_area: parseInt((data as any).recipient_area || '0'),
+        delivery_type: 48, // Normal Delivery
+        item_type: 2, // Parcel
+        special_instruction: data.note || '',
+        item_quantity: 1,
+        item_weight: data.weight || 0.5,
+        amount_to_collect: data.cod_amount
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Pathao Order Error:', error.response?.data || error.message);
+      throw new Error(`Pathao Order Creation failed: ${error.response?.data?.message || JSON.stringify(error.response?.data) || error.message}`);
+    }
   }
 
   async trackOrder(trackingId: string): Promise<any> {
-    return { status: 'success', data: { status: 'Pending' } };
+    const token = await this.getAccessToken();
+    const response = await axios.get(`${this.baseUrl}/aladdin/api/v1/orders/${trackingId}/info`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
   }
 
   async cancelOrder(orderId: string): Promise<any> {
-    return { status: 'success' };
+    // Pathao documentation for cancel not in screenshots, but usually it's a POST to /info with status change or separate endpoint
+    throw new Error('Cancel order not implemented for Pathao');
   }
 
   async getCities(): Promise<any> {
-    return [];
+    const token = await this.getAccessToken();
+    const response = await axios.get(`${this.baseUrl}/aladdin/api/v1/city-list`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
   }
 
   async getZones(cityId: string): Promise<any> {
-    return [];
+    const token = await this.getAccessToken();
+    const response = await axios.get(`${this.baseUrl}/aladdin/api/v1/cities/${cityId}/zone-list`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  }
+
+  async getAreas(zoneId: string): Promise<any> {
+    const token = await this.getAccessToken();
+    const response = await axios.get(`${this.baseUrl}/aladdin/api/v1/zones/${zoneId}/area-list`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
   }
 
   async getBalance(): Promise<any> {
-    // Pathao balance logic
-    return { balance: 0, status: 200 };
+    // Pathao doesn't have a direct balance API in the screenshots, 
+    // but they have merchant info or stores info.
+    return { balance: 0, status: 200, message: 'Balance check not supported via API' };
   }
 }
 

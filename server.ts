@@ -44,13 +44,23 @@ async function startServer() {
         console.log(`Successfully connected to database: ${dbId}`);
       } catch (e: any) {
         console.warn(`Connection to database ${dbId} failed: ${e.message}`);
-        if (e.code === 5 || e.message.includes('NOT_FOUND')) {
-          console.error(`CRITICAL: Database ${dbId} NOT FOUND. Please check your firebase-applet-config.json and ensure the database exists in project ${firebaseConfig.projectId}.`);
-        } else if (e.code === 7 || e.message.includes('permission')) {
-          console.error('CRITICAL: Permission denied for named database. This usually means the service account lacks access.');
+        if (e.code === 5 || e.message?.includes('NOT_FOUND') || e.message?.includes('not found')) {
+          console.error(`CRITICAL: Database ${dbId} NOT FOUND. Falling back to (default) database.`);
+          const defaultDb = getFirestore(adminApp);
+          try {
+            // Verify default database
+            await defaultDb.collection('health_check').limit(1).get();
+            db = defaultDb;
+            console.log('Successfully connected to (default) database');
+          } catch (defaultError: any) {
+            console.error('CRITICAL: (default) database also failed:', defaultError.message);
+            // If both fail, we might need to run setup again
+            db = defaultDb; // Fallback to default anyway
+          }
+        } else {
+          console.log('Falling back to (default) database due to other error...');
+          db = getFirestore(adminApp);
         }
-        console.log('Falling back to (default) database...');
-        db = getFirestore(adminApp);
       }
     } else {
       db = getFirestore(adminApp);
@@ -69,8 +79,12 @@ async function startServer() {
         console.log('Successfully wrote to health_check collection');
       } catch (e: any) {
         console.error('Firestore verification failed:', e.message);
-        if (e.code === 5 || e.message.includes('NOT_FOUND')) {
-          console.error('The database was not found. This project might only have named databases or the collection is missing.');
+        if (e.code === 5 || e.message?.includes('NOT_FOUND')) {
+          console.error('The database was not found. Falling back to (default) if not already there.');
+          if (dbId && db !== getFirestore(adminApp)) {
+            db = getFirestore(adminApp);
+            console.log('Now using (default) database.');
+          }
         }
       }
     }
@@ -91,8 +105,31 @@ async function startServer() {
   });
 
   // Health check
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
+  app.get('/api/health', async (req, res) => {
+    const dbStatus = db ? 'Initialized' : 'Not Initialized';
+    let connectionStatus = 'Unknown';
+    let error = null;
+    
+    if (db) {
+      try {
+        await db.collection('health_check').limit(1).get();
+        connectionStatus = 'Connected';
+      } catch (e: any) {
+        connectionStatus = 'Failed';
+        error = e.message;
+      }
+    }
+    
+    res.json({ 
+      status: 'ok', 
+      firebase: {
+        projectId: firebaseConfig.projectId,
+        databaseId: firebaseConfig.firestoreDatabaseId || '(default)',
+        dbStatus,
+        connectionStatus,
+        error
+      }
+    });
   });
 
   // WooCommerce API Proxy
@@ -196,45 +233,48 @@ async function startServer() {
         console.error('Firebase Admin not initialized');
         return res.status(503).json({ error: 'Firebase Admin not initialized' });
       }
-      console.log(`Using project: ${firebaseConfig.projectId}, database: ${firebaseConfig.firestoreDatabaseId || '(default)'}`);
       
-      try {
-        const snapshot = await db.collection('courier_configs').get();
-        const configs: any = {};
-        snapshot.forEach(doc => {
-          configs[doc.id] = doc.data();
-        });
-        console.log('Returning courier configs:', Object.keys(configs));
-        res.json(configs);
-      } catch (innerError: any) {
-        // If the collection or database is not found, return empty config instead of error
-        if (innerError.code === 5 || innerError.message.includes('NOT_FOUND')) {
-          console.warn('Courier configs collection or database not found, returning empty object');
-          return res.json({});
-        }
-        throw innerError;
-      }
-    } catch (error: any) {
-      console.error('Error fetching courier configs:', error);
-      res.status(500).json({ 
-        error: error.message, 
-        code: error.code
+      const snapshot = await db.collection('courier_configs').get();
+      const configs: any = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        // Mask sensitive data in logs
+        const maskedData = { ...data, apiKey: '***', secretKey: '***', clientSecret: '***', password: '***' };
+        console.log(`Found config for ${doc.id}:`, maskedData);
+        configs[doc.id] = data;
       });
+      
+      console.log('Returning all courier configs');
+      res.json(configs);
+    } catch (error: any) {
+      const dbId = firebaseConfig.firestoreDatabaseId;
+      console.error(`Error fetching courier configs (DB: ${dbId || '(default)'}):`, error);
+      res.status(500).json({ error: `Firestore Error (DB: ${dbId || '(default)'}): ${error.message}` });
     }
   });
 
   app.post('/api/couriers/configs/:courier', async (req, res) => {
+    console.log(`POST /api/couriers/configs/${req.params.courier} hit`);
     try {
-      if (!db) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      if (!db) {
+        console.error('Firebase Admin not initialized');
+        return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      }
       const { courier } = req.params;
       const config = req.body;
-      await db.collection('courier_configs').doc(courier).set({
+      console.log(`Saving config for ${courier}:`, { ...config, apiKey: '***', secretKey: '***', clientSecret: '***', password: '***' });
+      
+      await db.collection('courier_configs').doc(courier.toLowerCase()).set({
         ...config,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
+      
+      console.log(`Successfully saved config for ${courier}`);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      const dbId = firebaseConfig.firestoreDatabaseId;
+      console.error(`Error saving config for ${req.params.courier} (DB: ${dbId || '(default)'}):`, error);
+      res.status(500).json({ error: `Firestore Error (DB: ${dbId || '(default)'}): ${error.message}` });
     }
   });
 
@@ -271,6 +311,54 @@ async function startServer() {
     }
   });
 
+  app.post('/api/couriers/send-order/:courier', async (req, res) => {
+    console.log(`POST /api/couriers/send-order/${req.params.courier} hit`);
+    try {
+      if (!db) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      const { courier } = req.params;
+      const orderData = req.body;
+
+      // Get courier config
+      const configDoc = await db.collection('courier_configs').doc(courier.toLowerCase()).get();
+      if (!configDoc.exists || !configDoc.data()?.isActive) {
+        return res.status(400).json({ error: `Courier ${courier} is not active or configured.` });
+      }
+
+      const config = configDoc.data();
+      const adapter = CourierFactory.getAdapter(courier, config);
+      
+      // Map Logistics.tsx fields to CourierOrderData if necessary
+      // Logistics.tsx sends: invoice, recipient_name, recipient_phone, recipient_address, cod_amount, note, district, area, weight
+      const mappedData: CourierOrderData = {
+        customer_name: orderData.recipient_name,
+        customer_phone: orderData.recipient_phone,
+        customer_address: orderData.recipient_address,
+        amount: orderData.cod_amount,
+        cod_amount: orderData.cod_amount,
+        note: orderData.note,
+        weight: orderData.weight,
+        invoice: orderData.invoice
+      };
+
+      const result = await adapter.createOrder(mappedData);
+
+      // Log the request
+      await db.collection('courier_logs').add({
+        courier,
+        orderId: orderData.invoice,
+        request: orderData,
+        response: result,
+        status: 'success',
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error(`Courier Send Order Error (${req.params.courier}):`, error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/couriers/balance/:courier', async (req, res) => {
     try {
       if (!db) return res.status(503).json({ error: 'Firebase Admin not initialized' });
@@ -289,6 +377,52 @@ async function startServer() {
         res.json(result);
       } else {
         res.status(400).json({ error: `Balance check not supported for ${courier}` });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/couriers/cities/:courier', async (req, res) => {
+    try {
+      if (!db) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      const { courier } = req.params;
+      const configDoc = await db.collection('courier_configs').doc(courier.toLowerCase()).get();
+      if (!configDoc.exists || !configDoc.data()?.isActive) {
+        return res.status(400).json({ error: `Courier ${courier} is not active.` });
+      }
+      const adapter = CourierFactory.getAdapter(courier, configDoc.data());
+      const result = await adapter.getCities();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/couriers/zones/:courier/:cityId', async (req, res) => {
+    try {
+      if (!db) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      const { courier, cityId } = req.params;
+      const configDoc = await db.collection('courier_configs').doc(courier.toLowerCase()).get();
+      const adapter = CourierFactory.getAdapter(courier, configDoc.data());
+      const result = await adapter.getZones(cityId);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/couriers/areas/:courier/:zoneId', async (req, res) => {
+    try {
+      if (!db) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      const { courier, zoneId } = req.params;
+      const configDoc = await db.collection('courier_configs').doc(courier.toLowerCase()).get();
+      const adapter = CourierFactory.getAdapter(courier, configDoc.data());
+      if ((adapter as any).getAreas) {
+        const result = await (adapter as any).getAreas(zoneId);
+        res.json(result);
+      } else {
+        res.status(400).json({ error: 'Areas not supported for this courier' });
       }
     } catch (error: any) {
       res.status(500).json({ error: error.message });

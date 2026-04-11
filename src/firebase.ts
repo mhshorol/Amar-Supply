@@ -17,8 +17,8 @@ if (isFirebaseConfigured) {
 
 // Initialize Firestore with long polling for better stability in some environments
 export const db = isFirebaseConfigured 
-  ? initializeFirestore(app, {
-      experimentalForceLongPolling: true,
+  ? initializeFirestore(app, { 
+      experimentalForceLongPolling: true
     }, firebaseConfig.firestoreDatabaseId)
   : null as any;
 
@@ -38,10 +38,13 @@ export const getSecondaryAuth = () => {
 async function testConnection() {
   if (!isFirebaseConfigured) return;
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. The client is offline.");
+    console.log("Testing Firestore connection...");
+    await getDocFromServer(doc(db, 'health_check', 'connection_test'));
+    console.log("Firestore connection test successful.");
+  } catch (error: any) {
+    console.error("Firestore connection test failed:", error.message);
+    if (error.message?.includes('the client is offline')) {
+      console.error("CRITICAL: Firestore client is offline. This usually means the database ID or project configuration is incorrect.");
     }
   }
 }
@@ -66,6 +69,7 @@ export {
   addDoc,
   serverTimestamp,
   Timestamp,
+  getDocFromServer,
   orderBy,
   writeBatch,
   arrayUnion,

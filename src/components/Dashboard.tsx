@@ -46,6 +46,7 @@ import { db, auth } from '../firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 import { useSettings } from '../contexts/SettingsContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const StatCard = ({ title, value, icon: Icon, color, iconColor }: any) => (
   <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md flex items-center justify-between">
@@ -74,6 +75,7 @@ const SectionHeader = ({ title, showSelect = false }: { title: string, showSelec
 
 export default function Dashboard() {
   const { currencySymbol } = useSettings();
+  const { user: authUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalAmount: 0,
@@ -94,7 +96,9 @@ export default function Dashboard() {
   const [courierPerformance, setCourierPerformance] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!authUser) return;
+
+    setLoading(true);
 
     const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
       const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -183,6 +187,7 @@ export default function Dashboard() {
 
       setLoading(false);
     }, (error) => {
+      setLoading(false);
       if (error.code !== 'permission-denied') {
         handleFirestoreError(error, OperationType.LIST, 'orders');
       }
@@ -213,7 +218,7 @@ export default function Dashboard() {
       unsubCustomers();
       unsubProducts();
     };
-  }, []);
+  }, [authUser]);
 
   const barData = dailyRevenue;
 

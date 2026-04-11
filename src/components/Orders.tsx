@@ -43,6 +43,8 @@ import { SteadfastService } from '../services/steadfastService';
 import { logActivity } from '../services/activityService';
 import { checkDuplicateOrder } from '../services/orderService';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
+import { locationService } from '../services/locationService';
+import { LocationNode } from '../data/bangladesh-locations';
 
 import { useSettings } from '../contexts/SettingsContext';
 import ConfirmModal from './ConfirmModal';
@@ -93,6 +95,8 @@ export default function Orders() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationNode[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -227,6 +231,23 @@ export default function Orders() {
     }
   };
 
+  const [courierConfigs, setCourierConfigs] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    const fetchCourierConfigs = async () => {
+      try {
+        const response = await fetch('/api/couriers/configs');
+        if (response.ok) {
+          const data = await response.json();
+          setCourierConfigs(data);
+        }
+      } catch (error) {
+        console.error("Error fetching courier configs:", error);
+      }
+    };
+    fetchCourierConfigs();
+  }, []);
+
   const [orderForm, setOrderForm] = useState({
     customerName: '',
     customerPhone: '',
@@ -234,6 +255,7 @@ export default function Orders() {
     customerCity: 'Dhaka',
     customerZone: 'Inside Dhaka',
     district: '',
+    division: '',
     area: '',
     landmark: '',
     subtotal: 0,
@@ -252,8 +274,70 @@ export default function Orders() {
     tags: '',
     courierId: '',
     courierName: '',
-    trackingNumber: ''
+    trackingNumber: '',
+    pathao_city_id: '',
+    pathao_zone_id: '',
+    pathao_area_id: '',
   });
+
+  const [cities, setCities] = useState<any[]>([]);
+  const [zones, setZones] = useState<any[]>([]);
+  const [areas, setAreas] = useState<any[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
+  const fetchCities = async () => {
+    setLoadingLocations(true);
+    try {
+      const response = await fetch('/api/couriers/cities/pathao');
+      if (response.ok) {
+        const data = await response.json();
+        setCities(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  const fetchZones = async (cityId: string) => {
+    setLoadingLocations(true);
+    setZones([]);
+    setAreas([]);
+    try {
+      const response = await fetch(`/api/couriers/zones/pathao/${cityId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setZones(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching zones:", error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  const fetchAreas = async (zoneId: string) => {
+    setLoadingLocations(true);
+    setAreas([]);
+    try {
+      const response = await fetch(`/api/couriers/areas/pathao/${zoneId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAreas(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching areas:", error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isModalOpen && courierConfigs.pathao?.isActive) {
+      fetchCities();
+    }
+  }, [isModalOpen, courierConfigs.pathao?.isActive]);
   const [newItem, setNewItem] = useState({ productId: '', variantId: '', quantity: 1, price: 0 });
 
   const onDragEnd = async (result: DropResult) => {
@@ -352,6 +436,55 @@ export default function Orders() {
     }
   };
 
+  const handleAddressChange = (address: string) => {
+    setOrderForm(prev => ({ ...prev, customerAddress: address }));
+    
+    // Smart Parsing
+    const parsed = locationService.parseAddress(address);
+    if (parsed.district || parsed.upazila) {
+      const district = parsed.district?.nameEn || orderForm.district;
+      const division = parsed.division?.nameEn || orderForm.division;
+      const charge = locationService.getDeliveryCharge(district, division);
+      
+      setOrderForm(prev => ({
+        ...prev,
+        district,
+        area: parsed.upazila?.nameEn || prev.area,
+        division,
+        deliveryCharge: charge
+      }));
+    }
+
+    // Suggestions based on the last part of the address
+    const parts = address.split(/[,।\s]+/);
+    const lastPart = parts[parts.length - 1];
+    if (lastPart.length > 1) {
+      const suggestions = locationService.searchLocations(lastPart);
+      setLocationSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectLocation = (loc: LocationNode) => {
+    const hierarchy = locationService.getLocationHierarchy(loc.id);
+    if (hierarchy) {
+      const district = hierarchy.district?.nameEn || orderForm.district;
+      const division = hierarchy.division?.nameEn || orderForm.division;
+      const charge = locationService.getDeliveryCharge(district, division);
+
+      setOrderForm(prev => ({
+        ...prev,
+        district,
+        area: hierarchy.upazila?.nameEn || prev.area,
+        division,
+        deliveryCharge: charge
+      }));
+    }
+    setShowSuggestions(false);
+  };
+
   const handleOpenAddModal = () => {
     setEditingOrder(null);
     setOrderForm({
@@ -361,6 +494,7 @@ export default function Orders() {
       customerCity: 'Dhaka',
       customerZone: 'Inside Dhaka',
       district: '',
+      division: '',
       area: '',
       landmark: '',
       subtotal: 0,
@@ -379,8 +513,13 @@ export default function Orders() {
       tags: '',
       courierId: '',
       courierName: '',
-      trackingNumber: ''
+      trackingNumber: '',
+      pathao_city_id: '',
+      pathao_zone_id: '',
+      pathao_area_id: '',
     });
+    setZones([]);
+    setAreas([]);
     setIsModalOpen(true);
   };
 
@@ -391,6 +530,7 @@ export default function Orders() {
       customerPhone: order.customerPhone || '',
       customerAddress: order.customerAddress || '',
       district: order.district || '',
+      division: order.division || '',
       area: order.area || '',
       landmark: order.landmark || '',
       subtotal: order.subtotal || 0,
@@ -408,8 +548,13 @@ export default function Orders() {
       notes: order.notes || '',
       courierId: order.courierId || '',
       courierName: order.courierName || '',
-      trackingNumber: order.trackingNumber || ''
+      trackingNumber: order.trackingNumber || '',
+      pathao_city_id: order.pathao_city_id || '',
+      pathao_zone_id: order.pathao_zone_id || '',
+      pathao_area_id: order.pathao_area_id || '',
     });
+    if (order.pathao_city_id) fetchZones(order.pathao_city_id);
+    if (order.pathao_zone_id) fetchAreas(order.pathao_zone_id);
     setIsModalOpen(true);
   };
 
@@ -682,23 +827,6 @@ export default function Orders() {
     }
   };
 
-  const [courierConfigs, setCourierConfigs] = useState<Record<string, any>>({});
-
-  useEffect(() => {
-    const fetchCourierConfigs = async () => {
-      try {
-        const response = await fetch('/api/couriers/configs');
-        if (response.ok) {
-          const data = await response.json();
-          setCourierConfigs(data);
-        }
-      } catch (error) {
-        console.error("Error fetching courier configs:", error);
-      }
-    };
-    fetchCourierConfigs();
-  }, []);
-
   const handleSendToCourier = async (order: any, courierName?: string) => {
     // Determine which courier to use
     const activeCouriers = Object.entries(courierConfigs).filter(([_, config]: [string, any]) => config.isActive);
@@ -739,7 +867,10 @@ export default function Orders() {
         amount: order.totalAmount,
         cod_amount: Math.round(order.dueAmount || 0),
         note: order.notes || '',
-        weight: 0.5 // Default weight
+        weight: 0.5, // Default weight
+        recipient_city: order.pathao_city_id,
+        recipient_zone: order.pathao_zone_id,
+        recipient_area: order.pathao_area_id,
       };
 
       const response = await fetch('/api/couriers/order', {
@@ -835,7 +966,10 @@ export default function Orders() {
           amount: order.totalAmount,
           cod_amount: Math.round(order.dueAmount || 0),
           note: order.notes || '',
-          weight: 0.5
+          weight: 0.5,
+          recipient_city: order.pathao_city_id,
+          recipient_zone: order.pathao_zone_id,
+          recipient_area: order.pathao_area_id,
         };
 
         const response = await fetch('/api/couriers/order', {
@@ -1434,16 +1568,43 @@ export default function Orders() {
                     />
                   </div>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 relative">
                   <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Full Address</label>
                   <textarea 
                     className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all resize-none"
                     rows={2}
+                    placeholder="Type or paste full address (e.g. House 10, Dhanmondi, Dhaka)"
                     value={orderForm.customerAddress}
-                    onChange={e => setOrderForm({...orderForm, customerAddress: e.target.value})}
+                    onChange={e => handleAddressChange(e.target.value)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   />
+                  {showSuggestions && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                      {locationSuggestions.map((loc) => (
+                        <button
+                          key={loc.id}
+                          type="button"
+                          onClick={() => handleSelectLocation(loc)}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold text-gray-800">{loc.nameEn} / {loc.nameBn}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{loc.type}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Division</label>
+                    <input 
+                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                      value={orderForm.division}
+                      onChange={e => setOrderForm({...orderForm, division: e.target.value})}
+                    />
+                  </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">District</label>
                     <input 
@@ -1452,8 +1613,10 @@ export default function Orders() {
                       onChange={e => setOrderForm({...orderForm, district: e.target.value})}
                     />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Area</label>
+                    <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Area / Thana</label>
                     <input 
                       className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
                       value={orderForm.area}
@@ -1469,6 +1632,63 @@ export default function Orders() {
                     />
                   </div>
                 </div>
+
+                {courierConfigs.pathao?.isActive && (
+                  <div className="space-y-4 pt-2 border-t border-gray-50 bg-orange-50/30 p-4 rounded-xl">
+                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Pathao Courier Selection</p>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">City</label>
+                        <select
+                          className="w-full px-4 py-2 bg-white border border-gray-100 rounded-lg text-sm focus:border-orange-200 outline-none transition-all"
+                          value={orderForm.pathao_city_id}
+                          onChange={(e) => {
+                            setOrderForm({...orderForm, pathao_city_id: e.target.value, pathao_zone_id: '', pathao_area_id: ''});
+                            if (e.target.value) fetchZones(e.target.value);
+                          }}
+                        >
+                          <option value="">Select City</option>
+                          {cities.map(city => (
+                            <option key={city.city_id} value={city.city_id}>{city.city_name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase">Zone</label>
+                          <select
+                            disabled={!orderForm.pathao_city_id || loadingLocations}
+                            className="w-full px-4 py-2 bg-white border border-gray-100 rounded-lg text-sm focus:border-orange-200 outline-none transition-all disabled:opacity-50"
+                            value={orderForm.pathao_zone_id}
+                            onChange={(e) => {
+                              setOrderForm({...orderForm, pathao_zone_id: e.target.value, pathao_area_id: ''});
+                              if (e.target.value) fetchAreas(e.target.value);
+                            }}
+                          >
+                            <option value="">Select Zone</option>
+                            {zones.map(zone => (
+                              <option key={zone.zone_id} value={zone.zone_id}>{zone.zone_name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase">Area</label>
+                          <select
+                            disabled={!orderForm.pathao_zone_id || loadingLocations}
+                            className="w-full px-4 py-2 bg-white border border-gray-100 rounded-lg text-sm focus:border-orange-200 outline-none transition-all disabled:opacity-50"
+                            value={orderForm.pathao_area_id}
+                            onChange={(e) => setOrderForm({...orderForm, pathao_area_id: e.target.value})}
+                          >
+                            <option value="">Select Area</option>
+                            {areas.map(area => (
+                              <option key={area.area_id} value={area.area_id}>{area.area_name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Items Section */}

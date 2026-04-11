@@ -127,10 +127,72 @@ export default function Logistics() {
   const [deliveryForm, setDeliveryForm] = useState({
     orderId: '',
     courier: '',
-    status: 'In Transit',
+    status: 'in_transit',
     location: '',
-    eta: '',
+    eta: '2-3 Days',
+    city_id: '',
+    zone_id: '',
+    area_id: '',
   });
+
+  const [cities, setCities] = useState<any[]>([]);
+  const [zones, setZones] = useState<any[]>([]);
+  const [areas, setAreas] = useState<any[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
+  useEffect(() => {
+    if (isDeliveryModalOpen && deliveryForm.courier === 'Pathao') {
+      fetchCities('Pathao');
+    }
+  }, [isDeliveryModalOpen, deliveryForm.courier]);
+
+  const fetchCities = async (courier: string) => {
+    setLoadingLocations(true);
+    try {
+      const response = await fetch(`/api/couriers/cities/${courier.toLowerCase()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCities(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  const fetchZones = async (cityId: string) => {
+    setLoadingLocations(true);
+    setZones([]);
+    setAreas([]);
+    try {
+      const response = await fetch(`/api/couriers/zones/pathao/${cityId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setZones(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching zones:", error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  const fetchAreas = async (zoneId: string) => {
+    setLoadingLocations(true);
+    setAreas([]);
+    try {
+      const response = await fetch(`/api/couriers/areas/pathao/${zoneId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAreas(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching areas:", error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
 
   useEffect(() => {
     const qDeliveries = query(collection(db, 'deliveries'), orderBy('createdAt', 'desc'));
@@ -255,7 +317,10 @@ export default function Logistics() {
                 note: order.notes || '',
                 district: order.district || '',
                 area: order.area || '',
-                weight: 0.5
+                weight: 0.5,
+                recipient_city: order.pathao_city_id,
+                recipient_zone: order.pathao_zone_id,
+                recipient_area: order.pathao_area_id,
               })
             });
 
@@ -411,7 +476,13 @@ export default function Logistics() {
       status: 'in_transit',
       location: '',
       eta: '2-3 Days',
+      city_id: '',
+      zone_id: '',
+      area_id: '',
     });
+    setCities([]);
+    setZones([]);
+    setAreas([]);
     setIsDeliveryModalOpen(true);
   };
 
@@ -423,6 +494,9 @@ export default function Logistics() {
       status: delivery.status,
       location: delivery.location,
       eta: delivery.eta,
+      city_id: (delivery as any).city_id || '',
+      zone_id: (delivery as any).zone_id || '',
+      area_id: (delivery as any).area_id || '',
     });
     setIsDeliveryModalOpen(true);
   };
@@ -1247,7 +1321,7 @@ export default function Logistics() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Current Location</label>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Current Location / Hub</label>
                 <input
                   required
                   type="text"
@@ -1257,6 +1331,66 @@ export default function Logistics() {
                   onChange={(e) => setDeliveryForm({...deliveryForm, location: e.target.value})}
                 />
               </div>
+
+              {deliveryForm.courier === 'Pathao' && (
+                <div className="space-y-4 pt-2 border-t border-gray-50">
+                  <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Pathao Location Details</p>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">City</label>
+                      <select
+                        required={deliveryForm.courier === 'Pathao'}
+                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                        value={deliveryForm.city_id}
+                        onChange={(e) => {
+                          setDeliveryForm({...deliveryForm, city_id: e.target.value, zone_id: '', area_id: ''});
+                          if (e.target.value) fetchZones(e.target.value);
+                        }}
+                      >
+                        <option value="">Select City</option>
+                        {cities.map(city => (
+                          <option key={city.city_id} value={city.city_id}>{city.city_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">Zone</label>
+                        <select
+                          required={deliveryForm.courier === 'Pathao'}
+                          disabled={!deliveryForm.city_id || loadingLocations}
+                          className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all disabled:opacity-50"
+                          value={deliveryForm.zone_id}
+                          onChange={(e) => {
+                            setDeliveryForm({...deliveryForm, zone_id: e.target.value, area_id: ''});
+                            if (e.target.value) fetchAreas(e.target.value);
+                          }}
+                        >
+                          <option value="">Select Zone</option>
+                          {zones.map(zone => (
+                            <option key={zone.zone_id} value={zone.zone_id}>{zone.zone_name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">Area</label>
+                        <select
+                          required={deliveryForm.courier === 'Pathao'}
+                          disabled={!deliveryForm.zone_id || loadingLocations}
+                          className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all disabled:opacity-50"
+                          value={deliveryForm.area_id}
+                          onChange={(e) => setDeliveryForm({...deliveryForm, area_id: e.target.value})}
+                        >
+                          <option value="">Select Area</option>
+                          {areas.map(area => (
+                            <option key={area.area_id} value={area.area_id}>{area.area_name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="pt-4 flex gap-3">
                 <button
                   type="button"
