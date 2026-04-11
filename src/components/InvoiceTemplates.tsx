@@ -8,170 +8,200 @@ interface InvoiceProps {
 
 export const A5Invoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ order, company, currencySymbol = '৳' }, ref) => {
   return (
-    <div ref={ref} className="p-4 bg-[#ffffff] text-[#000000] font-sans relative" style={{ width: '210mm', minHeight: '148mm', margin: '0 auto' }}>
-      {/* Top Black Bar */}
+    <div ref={ref} className="p-4 bg-[#ffffff] text-[#000000] font-sans relative overflow-hidden" style={{ width: '210mm', height: '148mm', margin: '0 auto', boxSizing: 'border-box' }}>
+      {/* Decorative Background Elements - Subtle Grayscale */}
+      <div className="absolute top-0 right-0 w-48 h-48 rounded-full -mr-24 -mt-24 z-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}></div>
+      <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full -ml-16 -mb-16 z-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}></div>
+
+      {/* Top Accent Bar - Black */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-[#000000]"></div>
 
-      {/* Header Section */}
-      <div className="flex justify-between items-start mt-1 mb-2">
-        <div className="flex-1">
-          {company.companyLogo ? (
-            <img src={company.companyLogo} alt="Logo" className="h-12 object-contain" referrerPolicy="no-referrer" />
-          ) : (
-            <div className="flex items-center gap-1">
-              <div className="grid grid-cols-2 gap-0.5">
-                <div className="w-2 h-2 bg-[#000000]"></div>
-                <div className="w-2 h-2 bg-[#000000]"></div>
-                <div className="w-2 h-2 bg-[#000000]"></div>
-                <div className="w-2 h-2 bg-[#000000]"></div>
-              </div>
-              <span className="text-xl font-bold tracking-tighter">KARUKARJO</span>
-            </div>
-          )}
-        </div>
-        <div className="text-right flex flex-col gap-0">
-          <h2 className="text-lg font-bold text-[#000000] uppercase">{company.companyName || 'KARUKARJO LTD'}</h2>
-          <p className="text-[10px] font-medium text-[#000000] uppercase max-w-[300px] ml-auto">
-            {company.companyAddress || '44 PEACE TOWER, L# 01&06, NEW MODEL TOWN, HAZARIBAG, DHAKA'}
-          </p>
-          <p className="text-[10px] font-medium text-[#000000]">
-            {company.companyMobile || '01932626364'} {company.companyPhone && `| ${company.companyPhone}`}
-          </p>
-          <p className="text-[10px] font-medium text-[#000000]">
-            {company.companyEmail && `Email: ${company.companyEmail}`} {company.companyWebsite && `| ${company.companyWebsite}`}
-          </p>
-          {company.companyVat && (
-            <p className="text-[10px] font-bold text-[#000000]">BIN/VAT: {company.companyVat}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="border-b border-[#000000] mb-2"></div>
-
-      {/* Info Section */}
-      <div className="flex justify-between mb-4">
-        <div className="max-w-[50%]">
-          <h3 className="text-[10px] font-bold text-[#000000] uppercase tracking-wider mb-1">Customer Details</h3>
-          <p className="text-base font-bold text-[#000000] mb-0.5">{order.customerName}</p>
-          <p className="text-[14px] font-bold text-[#000000] mb-0.5">{order.customerPhone}</p>
-          <p className="text-[13px] text-[#000000] leading-tight">
-            {order.customerAddress}
-            {order.area && `, ${order.area}`}
-            {order.district && `, ${order.district}`}
-          </p>
-        </div>
-        <div className="text-right space-y-1">
-          <h3 className="text-[10px] font-bold text-[#000000] uppercase tracking-wider mb-1">Order Information</h3>
-          <div className="flex justify-end gap-2">
-            <span className="text-[11px] font-bold text-[#000000]">INVOICE ID:</span>
-            <span className="text-[11px] font-bold text-[#000000] w-28">#{order.orderNumber || order.id.slice(0, 8)}</span>
-          </div>
-          <div className="flex justify-end gap-2">
-            <span className="text-[11px] font-bold text-[#000000]">DATE:</span>
-            <span className="text-[11px] font-bold text-[#000000] w-28">
-              {order.createdAt?.toDate 
-                ? order.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                : (order.createdAt?.seconds 
-                  ? new Date(order.createdAt.seconds * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                  : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                )
-              }
-            </span>
-          </div>
-          <div className="flex justify-end gap-2">
-            <span className="text-[11px] font-bold text-[#000000]">PAYMENT:</span>
-            <span className="text-[11px] font-bold text-[#000000] w-28 uppercase">{order.paymentMethod || 'COD'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Table Section */}
-      <table className="w-full mb-4 border-collapse">
-        <thead>
-          <tr className="border-b border-[#000000] text-[10px] font-bold text-[#000000] uppercase">
-            <th className="text-left py-1 w-8">SL</th>
-            <th className="text-left py-1">Product Description</th>
-            <th className="text-center py-1 w-16">Qty</th>
-            <th className="text-right py-1 w-28">Unit Price</th>
-            <th className="text-right py-1 w-28">Total</th>
-          </tr>
-        </thead>
-        <tbody className="text-[11px]">
-          {order.items?.map((item: any, idx: number) => (
-            <tr key={idx} className="border-b border-[#f3f4f6]">
-              <td className="py-1 text-left text-[#000000]">{idx + 1}</td>
-              <td className="py-1">
-                <p className="font-bold text-[#000000]">{item.name || item.productName || 'N/A'}</p>
-                {item.variant && <p className="text-[9px] text-[#000000] uppercase">{item.variant}</p>}
-              </td>
-              <td className="text-center py-1 font-medium text-[#000000]">{item.quantity}</td>
-              <td className="text-right py-1 font-medium text-[#000000]">{currencySymbol}{item.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-              <td className="text-right py-1 font-bold text-[#000000]">{currencySymbol}{(item.quantity * item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Footer Section */}
-      <div className="flex justify-between items-end">
-        <div className="flex-1 max-w-[50%]">
-          <div className="mb-4">
-            <h4 className="text-[10px] font-bold text-[#000000] uppercase tracking-wider mb-1">Terms & Notes</h4>
-            <p className="text-[11px] text-[#000000] italic whitespace-pre-line leading-tight">
-              {order.notes || company.invoiceFooterNote || 'Thank you for your purchase. Please visit again!'}
-            </p>
-          </div>
-          <div className="text-[9px] font-bold text-[#000000] uppercase space-y-0.5">
-            <p>Shop Online at {company.companyWebsite || 'WWW.KARUKARJO.COM.BD'}</p>
-            <p>Follow us on Facebook for latest updates</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-end gap-2">
-          <div className="w-56 space-y-1">
-            <div className="flex justify-between text-[12px]">
-              <span className="font-bold text-[#000000]">SUBTOTAL</span>
-              <span className="font-bold text-[#000000]">{currencySymbol}{order.subtotal?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between text-[12px]">
-              <span className="font-bold text-[#000000]">DELIVERY CHARGE</span>
-              <span className="font-bold text-[#000000]">{currencySymbol}{order.deliveryCharge?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
-            {order.discount > 0 && (
-              <div className="flex justify-between text-[12px]">
-                <span className="font-bold text-[#000000]">DISCOUNT</span>
-                <span className="font-bold text-[#000000]">-{currencySymbol}{order.discount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Header Section */}
+        <div className="flex justify-between items-start mb-4">
+          <div className="space-y-2">
+            {company.companyLogo ? (
+              <img src={company.companyLogo} alt="Logo" className="h-10 object-contain grayscale" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-[#000000] rounded-lg flex items-center justify-center text-white font-black text-base shadow-lg">
+                  {company.companyName?.[0] || 'K'}
+                </div>
+                <span className="text-lg font-black tracking-tighter text-[#000000]">
+                  {company.companyName || 'KARUKARJO'}
+                </span>
               </div>
             )}
-            <div className="flex justify-between text-[12px] pt-1">
-              <span className="font-bold text-[#000000]">GRAND TOTAL</span>
-              <span className="font-bold text-[#000000]">{currencySymbol}{order.totalAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between text-[12px]">
-              <span className="font-bold text-[#000000]">PAID AMOUNT</span>
-              <span className="font-bold text-[#000000]">{currencySymbol}{order.paidAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold pt-1">
-              <span className="text-[#000000]">DUE AMOUNT</span>
-              <span className="text-[#000000]">{currencySymbol}{order.dueAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <div className="space-y-0">
+              <h1 className="text-xl font-black text-[#000000] tracking-tight uppercase leading-none">Invoice</h1>
+              <div className="flex items-center gap-2 text-[9px] font-bold text-[#666666] uppercase tracking-widest">
+                <span>No:</span>
+                <span className="text-[#000000]">#{order.orderNumber || order.id.slice(0, 8)}</span>
+              </div>
             </div>
           </div>
 
-          {company.signatureImage && (
-            <div className="flex flex-col items-center mr-4">
-              <img src={company.signatureImage} alt="Signature" className="h-12 object-contain mb-0.5" referrerPolicy="no-referrer" />
-              <div className="w-32 border-t border-[#000000]"></div>
-              <p className="text-[9px] font-bold text-[#000000] uppercase mt-0.5">Authorized Signature</p>
+          <div className="text-right space-y-1">
+            <h2 className="text-xs font-black text-[#000000] uppercase tracking-wide">{company.companyName || 'KARUKARJO LTD'}</h2>
+            <div className="text-[8px] font-medium text-[#444444] space-y-0 max-w-[220px] ml-auto leading-tight">
+              <p>{company.companyAddress || '44 PEACE TOWER, L# 01&06, NEW MODEL TOWN, HAZARIBAG, DHAKA'}</p>
+              <p className="text-[#000000] font-bold">
+                {company.companyMobile || '01932626364'} {company.companyPhone && `| ${company.companyPhone}`}
+              </p>
+              <p>{company.companyEmail && `Email: ${company.companyEmail}`}</p>
+              <p>{company.companyWebsite && `Web: ${company.companyWebsite}`}</p>
+              {company.companyVat && (
+                <p className="text-[#000000] font-black mt-0.5 border-t border-gray-100 pt-0.5">BIN/VAT: {company.companyVat}</p>
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
 
-      {/* Bottom Disclaimer */}
-      <div className="absolute bottom-2 left-4 right-4 text-center border-t border-[#000000] pt-1">
-        <p className="text-[9px] text-[#000000]">
-          Generated on {new Date().toLocaleDateString()}
-        </p>
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-6 mb-4">
+          <div className="space-y-1">
+            <div className="space-y-0.5">
+              <p className="text-base font-black text-[#000000] leading-tight">{order.customerName}</p>
+              <p className="text-xs font-bold text-[#000000]">{order.customerPhone}</p>
+              <p className="text-[10px] text-[#333333] leading-relaxed max-w-[350px]">
+                {order.customerAddress}
+                {order.area && `, ${order.area}`}
+                {order.district && `, ${order.district}`}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-0">
+                <p className="text-[7px] font-black text-[#666666] uppercase tracking-widest">Date Issued</p>
+                <p className="text-[9px] font-bold text-[#000000]">
+                  {order.createdAt?.toDate 
+                    ? order.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                    : (order.createdAt?.seconds 
+                      ? new Date(order.createdAt.seconds * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                      : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                    )
+                  }
+                </p>
+              </div>
+              <div className="space-y-0">
+                <p className="text-[7px] font-black text-[#666666] uppercase tracking-widest">Payment Method</p>
+                <p className="text-[9px] font-bold text-[#000000] uppercase">{order.paymentMethod || 'Cash on Delivery'}</p>
+              </div>
+            </div>
+            <div className="p-1.5 bg-[#f9f9f9] rounded border border-[#eeeeee] flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-[6px] font-black text-[#666666] uppercase tracking-widest">Status</p>
+                <p className="text-[8px] font-black text-[#000000] uppercase">{order.status || 'Pending'}</p>
+              </div>
+              <div className="h-4 w-[1px] bg-[#dddddd]"></div>
+              <div className="text-right space-y-0">
+                <p className="text-[6px] font-black text-[#666666] uppercase tracking-widest">Channel</p>
+                <p className="text-[8px] font-black text-[#000000] uppercase">{order.channel || 'Direct'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Section */}
+        <div className="flex-grow rounded border border-[#eeeeee] overflow-hidden mb-3 shadow-sm">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="text-[8px] font-black text-[#000000] uppercase tracking-wider" style={{ backgroundColor: '#f3f3f3' }}>
+                <th className="text-left py-1.5 px-3 w-8">#</th>
+                <th className="text-left py-1.5 px-2">Item Description</th>
+                <th className="text-center py-1.5 px-2 w-12">Qty</th>
+                <th className="text-right py-1.5 px-2 w-24">Unit Price</th>
+                <th className="text-right py-1.5 px-3 w-24">Total</th>
+              </tr>
+            </thead>
+            <tbody className="text-[9px]">
+              {order.items?.map((item: any, idx: number) => (
+                <tr key={idx} className="border-t border-[#f9f9f9]">
+                  <td className="py-1.5 px-3 text-[#666666] font-bold">{String(idx + 1).padStart(2, '0')}</td>
+                  <td className="py-1.5 px-2">
+                    <p className="font-black text-[#000000] leading-tight">{item.name || item.productName || 'N/A'}</p>
+                    {item.variantName && <p className="text-[7px] font-bold text-[#444444] uppercase">{item.variantName}</p>}
+                  </td>
+                  <td className="text-center py-1.5 px-2 font-bold text-[#000000]">{item.quantity}</td>
+                  <td className="text-right py-1.5 px-2 font-bold text-[#333333]">{currencySymbol}{item.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                  <td className="text-right py-1.5 px-3 font-black text-[#000000]">{currencySymbol}{(item.quantity * item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Summary Section */}
+        <div className="flex justify-between items-end gap-4 mt-auto">
+          <div className="flex-1 space-y-3">
+            <div className="space-y-1">
+              <h4 className="text-[7px] font-black text-[#666666] uppercase tracking-widest">Notes</h4>
+              <p className="text-[8px] text-[#333333] italic leading-tight bg-[#f9f9f9] p-2 rounded border border-[#eeeeee] min-h-[30px]">
+                {order.notes || company.invoiceFooterNote || 'Thank you for your business!'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded border border-[#dddddd]">
+                <div className="w-5 h-5 bg-[#000000] rounded flex items-center justify-center text-white font-bold text-[8px]">QR</div>
+              </div>
+              <div className="space-y-0">
+                <p className="text-[6px] font-black text-[#666666] uppercase tracking-widest">Verify</p>
+                <p className="text-[7px] font-bold text-[#000000] uppercase tracking-tight">{company.companyWebsite || 'WWW.KARUKARJO.COM.BD'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-56 space-y-1.5">
+            <div className="space-y-1 px-2">
+              <div className="flex justify-between text-[9px]">
+                <span className="font-bold text-[#666666] uppercase tracking-wider">Subtotal</span>
+                <span className="font-black text-[#000000]">{currencySymbol}{order.subtotal?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between text-[9px]">
+                <span className="font-bold text-[#666666] uppercase tracking-wider">Delivery</span>
+                <span className="font-black text-[#000000]">{currencySymbol}{order.deliveryCharge?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+              {order.discount > 0 && (
+                <div className="flex justify-between text-[9px]">
+                  <span className="font-bold text-[#666666] uppercase tracking-wider">Discount</span>
+                  <span className="font-black text-[#000000]">-{currencySymbol}{order.discount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-[9px] pt-0.5 border-t border-[#eeeeee]">
+                <span className="font-bold text-[#666666] uppercase tracking-wider">Total Amount</span>
+                <span className="font-black text-[#000000]">{currencySymbol}{order.totalAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between text-[9px]">
+                <span className="font-bold text-[#666666] uppercase tracking-wider">Paid Amount</span>
+                <span className="font-black text-[#000000]">{currencySymbol}{(order.paidAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+            
+            <div className="bg-[#000000] rounded p-2 text-white shadow-md">
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] font-black uppercase tracking-widest opacity-80">Due Amount</span>
+                <span className="text-base font-black">{currencySymbol}{order.dueAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+
+            {company.signatureImage && (
+              <div className="pt-1 flex flex-col items-center">
+                <img src={company.signatureImage} alt="Signature" className="h-8 object-contain grayscale" referrerPolicy="no-referrer" />
+                <div className="w-full border-t border-[#eeeeee]"></div>
+                <p className="text-[6px] font-black text-[#666666] uppercase tracking-widest">Authorized Signature</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer Disclaimer */}
+        <div className="mt-3 pt-1.5 border-t border-[#eeeeee] flex justify-between items-center text-[6px] font-black text-[#999999] uppercase tracking-[0.2em]">
+          <span>Computer generated invoice</span>
+          <span>Date: {new Date().toLocaleDateString()}</span>
+          <span>Page 01 of 01</span>
+        </div>
       </div>
     </div>
   );
