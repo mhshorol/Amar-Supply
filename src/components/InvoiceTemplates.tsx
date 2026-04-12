@@ -125,8 +125,8 @@ export const A5Invoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ order
                     {item.variantName && <p className="text-[7px] font-bold text-[#444444] uppercase">{item.variantName}</p>}
                   </td>
                   <td className="text-center py-1.5 px-2 font-bold text-[#000000]">{item.quantity}</td>
-                  <td className="text-right py-1.5 px-2 font-bold text-[#333333]">{currencySymbol}{item.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                  <td className="text-right py-1.5 px-3 font-black text-[#000000]">{currencySymbol}{(item.quantity * item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                  <td className="text-right py-1.5 px-2 font-bold text-[#333333]">{currencySymbol}{(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                  <td className="text-right py-1.5 px-3 font-black text-[#000000]">{currencySymbol}{(item.quantity * item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                 </tr>
               ))}
             </tbody>
@@ -157,21 +157,21 @@ export const A5Invoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ order
             <div className="space-y-1 px-2">
               <div className="flex justify-between text-[9px]">
                 <span className="font-bold text-[#666666] uppercase tracking-wider">Subtotal</span>
-                <span className="font-black text-[#000000]">{currencySymbol}{order.subtotal?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-black text-[#000000]">{currencySymbol}{(order.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-[9px]">
                 <span className="font-bold text-[#666666] uppercase tracking-wider">Delivery</span>
-                <span className="font-black text-[#000000]">{currencySymbol}{order.deliveryCharge?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-black text-[#000000]">{currencySymbol}{(order.deliveryCharge || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-[9px]">
                   <span className="font-bold text-[#666666] uppercase tracking-wider">Discount</span>
-                  <span className="font-black text-[#000000]">-{currencySymbol}{order.discount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-black text-[#000000]">-{currencySymbol}{(order.discount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
               )}
               <div className="flex justify-between text-[9px] pt-0.5 border-t border-[#eeeeee]">
                 <span className="font-bold text-[#666666] uppercase tracking-wider">Total Amount</span>
-                <span className="font-black text-[#000000]">{currencySymbol}{order.totalAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-black text-[#000000]">{currencySymbol}{(order.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-[9px]">
                 <span className="font-bold text-[#666666] uppercase tracking-wider">Paid Amount</span>
@@ -182,7 +182,7 @@ export const A5Invoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ order
             <div className="bg-[#000000] rounded p-2 text-white shadow-md">
               <div className="flex justify-between items-center">
                 <span className="text-[9px] font-black uppercase tracking-widest opacity-80">Due Amount</span>
-                <span className="text-base font-black">{currencySymbol}{order.dueAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="text-base font-black">{currencySymbol}{(order.dueAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
@@ -254,7 +254,7 @@ export const POSInvoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ orde
               <td className="py-0.5">{idx + 1}</td>
               <td className="py-0.5">{item.name || item.productName || 'N/A'}</td>
               <td className="text-center py-0.5">{item.quantity}</td>
-              <td className="text-right py-0.5">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</td>
+              <td className="text-right py-0.5">{currencySymbol}{(item.quantity * item.price || 0).toLocaleString()}</td>
             </tr>
           ))}
         </tbody>
@@ -263,29 +263,29 @@ export const POSInvoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ orde
       <div className="border-t border-dashed border-[#000000] pt-1 space-y-0.5 text-[9px]">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>{currencySymbol}{order.subtotal?.toLocaleString()}</span>
+          <span>{currencySymbol}{(order.subtotal || 0).toLocaleString()}</span>
         </div>
         <div className="flex justify-between">
           <span>Delivery:</span>
-          <span>{currencySymbol}{order.deliveryCharge?.toLocaleString()}</span>
+          <span>{currencySymbol}{(order.deliveryCharge || 0).toLocaleString()}</span>
         </div>
         {order.discount > 0 && (
           <div className="flex justify-between">
             <span>Discount:</span>
-            <span>-{currencySymbol}{order.discount?.toLocaleString()}</span>
+            <span>-{currencySymbol}{(order.discount || 0).toLocaleString()}</span>
           </div>
         )}
         <div className="flex justify-between">
           <span>Total:</span>
-          <span>{currencySymbol}{order.totalAmount?.toLocaleString()}</span>
+          <span>{currencySymbol}{(order.totalAmount || 0).toLocaleString()}</span>
         </div>
         <div className="flex justify-between">
           <span>Paid:</span>
-          <span>{currencySymbol}{order.paidAmount?.toLocaleString()}</span>
+          <span>{currencySymbol}{(order.paidAmount || 0).toLocaleString()}</span>
         </div>
         <div className="flex justify-between font-bold text-sm">
           <span>Due:</span>
-          <span>{currencySymbol}{order.dueAmount?.toLocaleString()}</span>
+          <span>{currencySymbol}{(order.dueAmount || 0).toLocaleString()}</span>
         </div>
       </div>
 

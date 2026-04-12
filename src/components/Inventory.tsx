@@ -364,7 +364,7 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onDelete,
                 height={80}
                 fontSize={14}
               />
-              <p className="text-sm font-bold">{currencySymbol}{selectedProduct.price}</p>
+              <p className="text-sm font-bold">{currencySymbol}{(selectedProduct.price || 0).toLocaleString()}</p>
             </div>
           )}
         </div>
@@ -422,7 +422,7 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onDelete,
                   <span className="text-[10px] text-gray-400">{brands.find((b: any) => b.id === p.brandId)?.name || 'No Brand'}</span>
                 </div>
               </td>
-              <td className="px-6 py-4 font-bold text-sm">{currencySymbol}{p.price?.toLocaleString()}</td>
+              <td className="px-6 py-4 font-bold text-sm">{currencySymbol}{(p.price || 0).toLocaleString()}</td>
               <td className="px-6 py-4 text-right">
                 <div className="flex items-center justify-end gap-2">
                   <button 
@@ -634,7 +634,7 @@ function PurchasesTab({ pos, suppliers, products, variants, onAdd, setConfirmCon
                   {po.status}
                 </span>
               </td>
-              <td className="px-6 py-4 font-bold text-sm">{currencySymbol}{po.totalCost?.toLocaleString()}</td>
+              <td className="px-6 py-4 font-bold text-sm">{currencySymbol}{(po.totalCost || 0).toLocaleString()}</td>
               <td className="px-6 py-4 text-xs text-gray-400">{po.createdAt?.toDate ? po.createdAt.toDate().toLocaleDateString() : (po.createdAt?.seconds ? new Date(po.createdAt.seconds * 1000).toLocaleDateString() : 'N/A')}</td>
               <td className="px-6 py-4 text-right">
                 {po.status !== 'received' && (
@@ -890,15 +890,15 @@ function ReportsTab({ products, inventory, logs }: any) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-xs font-bold text-gray-400 uppercase mb-1">Inventory Value (Cost)</p>
-          <p className="text-2xl font-bold text-[#141414]">{currencySymbol}{totalCost.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-[#141414]">{currencySymbol}{(totalCost || 0).toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-xs font-bold text-gray-400 uppercase mb-1">Potential Revenue</p>
-          <p className="text-2xl font-bold text-green-600">{currencySymbol}{totalRetail.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-600">{currencySymbol}{(totalRetail || 0).toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-xs font-bold text-gray-400 uppercase mb-1">Potential Profit</p>
-          <p className="text-2xl font-bold text-blue-600">{currencySymbol}{(totalRetail - totalCost).toLocaleString()}</p>
+          <p className="text-2xl font-bold text-blue-600">{currencySymbol}{(totalRetail - totalCost || 0).toLocaleString()}</p>
         </div>
       </div>
 
@@ -1187,7 +1187,7 @@ function POModal({ isOpen, onClose, suppliers, products, variants }: any) {
                 return (
                   <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 text-xs">
                     <span>{p?.name} x {item.quantity}</span>
-                    <span className="font-mono">{currencySymbol}{(item.quantity * item.costPrice).toLocaleString()}</span>
+                    <span className="font-mono">{currencySymbol}{((item.quantity || 0) * (item.costPrice || 0)).toLocaleString()}</span>
                   </div>
                 );
               })}

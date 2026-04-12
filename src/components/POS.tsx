@@ -630,7 +630,7 @@ export default function POS() {
                     {product.name}
                   </h3>
                   <p className="text-xs font-black text-[#00AEEF]">
-                    {currencySymbol}{product.price?.toLocaleString()}
+                    {currencySymbol}{(product.price || 0).toLocaleString()}
                   </p>
                 </div>
 
@@ -792,7 +792,7 @@ export default function POS() {
                         {item.name}
                         {item.variantName && <span className="ml-1 text-[9px] text-gray-400 font-medium">({item.variantName})</span>}
                       </h4>
-                      <p className="text-[10px] font-bold" style={{ color: '#00AEEF' }}>{currencySymbol}{item.price.toLocaleString()}</p>
+                      <p className="text-[10px] font-bold" style={{ color: '#00AEEF' }}>{currencySymbol}{(item.price || 0).toLocaleString()}</p>
                     </div>
                     
                     <div className="flex items-center gap-2 shrink-0">
@@ -842,7 +842,7 @@ export default function POS() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-gray-500">
                 <span>Subtotal</span>
-                <span className="font-bold text-gray-900">{currencySymbol}{subtotal.toLocaleString()}</span>
+                <span className="font-bold text-gray-900">{currencySymbol}{(subtotal || 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center text-xs text-gray-500">
                 <span>Discount</span>
@@ -864,7 +864,7 @@ export default function POS() {
               </div>
               <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
                 <span className="text-sm font-bold text-gray-900">Total</span>
-                <span className="text-lg font-bold text-[#00AEEF]">{currencySymbol}{total.toLocaleString()}</span>
+                <span className="text-lg font-bold text-[#00AEEF]">{currencySymbol}{(total || 0).toLocaleString()}</span>
               </div>
             </div>
 

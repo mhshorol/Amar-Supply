@@ -1342,8 +1342,8 @@ export default function Orders() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
-                              <span className="text-xs font-bold text-[#141414]">{currencySymbol}{order.totalAmount?.toLocaleString()}</span>
-                              {order.dueAmount > 0 && <span className="text-[10px] text-[#f97316] font-bold">Due: {currencySymbol}{order.dueAmount.toLocaleString()}</span>}
+                              <span className="text-xs font-bold text-[#141414]">{currencySymbol}{(order.totalAmount || 0).toLocaleString()}</span>
+                              {order.dueAmount > 0 && <span className="text-[10px] text-[#f97316] font-bold">Due: {currencySymbol}{(order.dueAmount || 0).toLocaleString()}</span>}
                             </div>
                           </td>
                           <td className="px-6 py-4 relative">
@@ -1517,7 +1517,7 @@ export default function Orders() {
                                         >
                                           <Printer size={12} />
                                         </button>
-                                        <span className="text-sm font-bold">{currencySymbol}{order.totalAmount?.toLocaleString()}</span>
+                                        <span className="text-sm font-bold">{currencySymbol}{(order.totalAmount || 0).toLocaleString()}</span>
                                       </div>
                                       <div className="flex -space-x-2">
                                         {order.items?.slice(0, 3).map((_: any, i: number) => (

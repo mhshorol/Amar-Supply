@@ -5,7 +5,7 @@ interface ConfirmModalProps {
   isOpen: boolean;
   title: string;
   message: string;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   onCancel: () => void;
   confirmText?: string;
   cancelText?: string;

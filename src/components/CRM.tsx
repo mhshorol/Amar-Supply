@@ -320,7 +320,7 @@ export default function CRM() {
           </div>
           <div>
             <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Avg. Customer Value</p>
-            <p className="text-xl font-bold">{currencySymbol} {Math.round(avgSpent).toLocaleString()}</p>
+            <p className="text-xl font-bold">{currencySymbol} {(Math.round(avgSpent) || 0).toLocaleString()}</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -483,7 +483,7 @@ export default function CRM() {
               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                 <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Average Order Value</span>
                 <span className="text-lg font-black text-gray-900">
-                  {currencySymbol} {selectedCustomer.orderCount > 0 ? Math.round(selectedCustomer.totalSpent / selectedCustomer.orderCount).toLocaleString() : 0}
+                  {currencySymbol} {selectedCustomer.orderCount > 0 ? (Math.round(selectedCustomer.totalSpent / selectedCustomer.orderCount) || 0).toLocaleString() : 0}
                 </span>
               </div>
 
@@ -527,7 +527,7 @@ export default function CRM() {
                               {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                             </td>
                             <td className="px-6 py-4 text-xs font-black text-gray-900 text-right">
-                              {currencySymbol} {order.totalAmount?.toLocaleString()}
+                              {currencySymbol} {(order.totalAmount || 0).toLocaleString()}
                             </td>
                           </tr>
                         ))
@@ -577,7 +577,7 @@ export default function CRM() {
                             <td className="px-6 py-4 text-xs font-medium text-gray-500">{item.id?.slice(0, 8) || 'N/A'}</td>
                             <td className="px-6 py-4 text-xs font-bold text-gray-900">{item.quantity}</td>
                             <td className="px-6 py-4 text-xs font-black text-gray-900 text-right">
-                              {currencySymbol} {(item.price * item.quantity).toLocaleString()}
+                              {currencySymbol} {((item.price || 0) * (item.quantity || 0)).toLocaleString()}
                             </td>
                           </tr>
                         ))

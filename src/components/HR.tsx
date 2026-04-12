@@ -527,7 +527,7 @@ const HR: React.FC = () => {
                       <p className="text-[10px] text-gray-400">{emp.email}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-[#141414]">৳{emp.baseSalary.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-[#141414]">৳{(emp.baseSalary || 0).toLocaleString()}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
@@ -724,7 +724,7 @@ const HR: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <p className="text-xs text-gray-500">{adv.date}</p>
-                        <p className="text-sm font-bold text-red-600">৳{adv.amount.toLocaleString()}</p>
+                        <p className="text-sm font-bold text-red-600">৳{(adv.amount || 0).toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
@@ -750,7 +750,7 @@ const HR: React.FC = () => {
                         <tr key={rec.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3 text-sm font-bold text-[#141414]">{rec.employeeName}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{rec.month}</td>
-                          <td className="px-4 py-3 text-sm font-bold text-green-600">৳{rec.netSalary.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-sm font-bold text-green-600">৳{(rec.netSalary || 0).toLocaleString()}</td>
                           <td className="px-4 py-3">
                             <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded text-[10px] font-bold uppercase">
                               {rec.status}
@@ -1252,7 +1252,7 @@ const HR: React.FC = () => {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                         <span className="text-xs text-gray-500">Base Salary</span>
-                        <span className="text-sm font-bold text-[#141414]">৳{selectedEmployee.baseSalary.toLocaleString()}</span>
+                        <span className="text-sm font-bold text-[#141414]">৳{(selectedEmployee.baseSalary || 0).toLocaleString()}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                         <span className="text-xs text-gray-500">Joining Date</span>

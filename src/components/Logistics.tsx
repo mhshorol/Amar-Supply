@@ -50,6 +50,7 @@ interface Delivery {
   eta: string;
   createdAt: any;
   uid: string;
+  trackingCode?: string;
 }
 
 interface Courier {
@@ -112,7 +113,7 @@ export default function Logistics() {
     isOpen: boolean;
     title: string;
     message: string;
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
     variant?: 'danger' | 'warning' | 'info';
   }>({
     isOpen: false,
@@ -379,7 +380,7 @@ export default function Logistics() {
 
     toast.loading(`Syncing status with ${delivery.courier}...`, { id: 'sync-status' });
     try {
-      const response = await fetch(`/api/couriers/track/${delivery.courier.toLowerCase()}/${delivery.id}`);
+      const response = await fetch(`/api/couriers/track/${delivery.courier.toLowerCase()}/${delivery.trackingCode || delivery.id}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -690,7 +691,7 @@ export default function Logistics() {
               <div>
                 <p className="text-[10px] uppercase font-bold text-blue-100 tracking-wider">Balance</p>
                 <p className="text-xl font-bold">
-                  {fetchingBalance ? '...' : steadfastBalance !== null ? `৳${steadfastBalance.toLocaleString()}` : 'N/A'}
+                  {fetchingBalance ? '...' : (typeof steadfastBalance === 'number') ? `৳${(steadfastBalance || 0).toLocaleString()}` : 'N/A'}
                 </p>
               </div>
               <div className="text-right">
@@ -722,7 +723,7 @@ export default function Logistics() {
               <div>
                 <p className="text-[10px] uppercase font-bold text-orange-100 tracking-wider">Balance</p>
                 <p className="text-xl font-bold">
-                  {fetchingBalance ? '...' : pathaoBalance !== null ? `৳${pathaoBalance.toLocaleString()}` : 'N/A'}
+                  {fetchingBalance ? '...' : (typeof pathaoBalance === 'number') ? `৳${(pathaoBalance || 0).toLocaleString()}` : 'N/A'}
                 </p>
               </div>
               <div className="text-right">
@@ -754,7 +755,7 @@ export default function Logistics() {
               <div>
                 <p className="text-[10px] uppercase font-bold text-red-100 tracking-wider">Balance</p>
                 <p className="text-xl font-bold">
-                  {fetchingBalance ? '...' : redxBalance !== null ? `৳${redxBalance.toLocaleString()}` : 'N/A'}
+                  {fetchingBalance ? '...' : (typeof redxBalance === 'number') ? `৳${(redxBalance || 0).toLocaleString()}` : 'N/A'}
                 </p>
               </div>
               <div className="text-right">
@@ -786,7 +787,7 @@ export default function Logistics() {
               <div>
                 <p className="text-[10px] uppercase font-bold text-yellow-100 tracking-wider">Balance</p>
                 <p className="text-xl font-bold">
-                  {fetchingBalance ? '...' : carrybeeBalance !== null ? `৳${carrybeeBalance.toLocaleString()}` : 'N/A'}
+                  {fetchingBalance ? '...' : (typeof carrybeeBalance === 'number') ? `৳${(carrybeeBalance || 0).toLocaleString()}` : 'N/A'}
                 </p>
               </div>
               <div className="text-right">
@@ -818,7 +819,7 @@ export default function Logistics() {
               <div>
                 <p className="text-[10px] uppercase font-bold text-indigo-100 tracking-wider">Balance</p>
                 <p className="text-xl font-bold">
-                  {fetchingBalance ? '...' : paperflyBalance !== null ? `৳${paperflyBalance.toLocaleString()}` : 'N/A'}
+                  {fetchingBalance ? '...' : (typeof paperflyBalance === 'number') ? `৳${(paperflyBalance || 0).toLocaleString()}` : 'N/A'}
                 </p>
               </div>
               <div className="text-right">
@@ -830,7 +831,7 @@ export default function Logistics() {
 
           {couriers.filter(c => !['steadfast', 'pathao', 'redx', 'carrybee', 'paperfly'].includes(c.name.toLowerCase())).map((courier) => (
             <div key={courier.id} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative group">
-              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+              <div className="absolute top-2 right-2 flex items-center gap-1 transition-all">
                 <button 
                   onClick={() => handleOpenEditCourierModal(courier)}
                   className="p-1 text-gray-400 hover:text-blue-600"
@@ -1007,7 +1008,7 @@ export default function Logistics() {
                         <span className="text-[10px] text-[#6b7280] line-clamp-1 max-w-[200px]">{order.customerAddress}</span>
                       </td>
                       <td className="px-6 py-4 text-xs font-bold text-[#141414]">
-                        {settings?.currencySymbol || '৳'}{order.totalAmount?.toLocaleString()}
+                        {settings?.currencySymbol || '৳'}{(order.totalAmount || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -1089,7 +1090,7 @@ export default function Logistics() {
                   <tr key={delivery.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="text-sm font-mono font-bold text-[#141414]">{delivery.id}</span>
+                        <span className="text-sm font-mono font-bold text-[#141414]">{delivery.trackingCode || delivery.id}</span>
                         <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-1">
                           <Truck size={10} />
                           Standard Delivery
@@ -1131,7 +1132,7 @@ export default function Logistics() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 transition-opacity">
                           {delivery.id && (
                             <>
                               <button 
@@ -1143,7 +1144,7 @@ export default function Logistics() {
                               </button>
                               {delivery.courier?.toLowerCase() === 'steadfast' && (
                                 <a 
-                                  href={`https://steadfast.com.bd/t/${delivery.id}`}
+                                  href={`https://steadfast.com.bd/t/${delivery.trackingCode || delivery.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all flex items-center justify-center" 
@@ -1154,7 +1155,7 @@ export default function Logistics() {
                               )}
                               {delivery.courier?.toLowerCase() === 'pathao' && (
                                 <a 
-                                  href={`https://pathao.com/courier/tracking/${delivery.id}`}
+                                  href={`https://pathao.com/courier/tracking/${delivery.trackingCode || delivery.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all flex items-center justify-center" 

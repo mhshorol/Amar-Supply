@@ -289,7 +289,7 @@ export default function Suppliers() {
                     <span className="text-sm text-gray-600">{po.supplierName}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-bold text-gray-900">৳{po.totalAmount.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-gray-900">৳{(po.totalAmount || 0).toLocaleString()}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${

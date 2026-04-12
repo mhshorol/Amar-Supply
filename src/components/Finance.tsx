@@ -790,7 +790,7 @@ function Finance() {
                     <p className="text-[10px] text-gray-400">{acc.accountNumber || acc.type}</p>
                   </div>
                 </div>
-                <p className="text-lg font-bold">{currencySymbol} {acc.balance.toLocaleString()}</p>
+                <p className="text-lg font-bold">{currencySymbol} {(acc.balance || 0).toLocaleString()}</p>
                 <button 
                   onClick={() => handleOpenAccountModal(acc)}
                   className="absolute top-2 right-2 p-1 text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -811,7 +811,7 @@ function Finance() {
                 </span>
               </div>
               <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1">Total Revenue</p>
-              <h3 className="text-2xl font-bold text-[#141414]">{currencySymbol} {totalIncome.toLocaleString()}</h3>
+              <h3 className="text-2xl font-bold text-[#141414]">{currencySymbol} {(totalIncome || 0).toLocaleString()}</h3>
             </div>
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
               <div className="flex justify-between items-start mb-4">
@@ -823,7 +823,7 @@ function Finance() {
                 </span>
               </div>
               <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1">Total Expenses</p>
-              <h3 className="text-2xl font-bold text-[#141414]">{currencySymbol} {totalExpense.toLocaleString()}</h3>
+              <h3 className="text-2xl font-bold text-[#141414]">{currencySymbol} {(totalExpense || 0).toLocaleString()}</h3>
             </div>
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
               <div className="flex justify-between items-start mb-4">
@@ -835,7 +835,7 @@ function Finance() {
                 </span>
               </div>
               <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1">Net Profit</p>
-              <h3 className="text-2xl font-bold text-[#141414]">{currencySymbol} {netProfit.toLocaleString()}</h3>
+              <h3 className="text-2xl font-bold text-[#141414]">{currencySymbol} {(netProfit || 0).toLocaleString()}</h3>
             </div>
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
               <div className="flex justify-between items-start mb-4">
@@ -847,7 +847,7 @@ function Finance() {
                 </span>
               </div>
               <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1">Pending COD</p>
-              <h3 className="text-2xl font-bold text-[#141414]">{currencySymbol} {pendingCod.toLocaleString()}</h3>
+              <h3 className="text-2xl font-bold text-[#141414]">{currencySymbol} {(pendingCod || 0).toLocaleString()}</h3>
             </div>
           </div>
 
@@ -1028,14 +1028,14 @@ function Finance() {
                     <div key={sub} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-gray-600">{sub}</span>
-                        <span className="text-xs font-bold text-[#141414]">{currencySymbol} {totalBalance.toLocaleString()}</span>
+                        <span className="text-xs font-bold text-[#141414]">{currencySymbol} {(totalBalance || 0).toLocaleString()}</span>
                       </div>
                       <div className="pl-4 space-y-1">
                         {accounts.filter(acc => acc.category === category && acc.name.includes(sub)).map(acc => (
                           <div key={acc.id} className="flex items-center justify-between text-[10px] text-gray-400 group">
                             <span>{acc.name}</span>
                             <div className="flex items-center gap-2">
-                              <span>{currencySymbol} {acc.balance.toLocaleString()}</span>
+                              <span>{currencySymbol} {(acc.balance || 0).toLocaleString()}</span>
                               <button onClick={() => handleOpenAccountModal(acc)} className="opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Edit size={10} />
                               </button>
@@ -1186,10 +1186,10 @@ function Finance() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{payment.voucherNo}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{currencySymbol} {payment.dueAmount.toLocaleString()}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{currencySymbol} {(payment.dueAmount || 0).toLocaleString()}</td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold text-red-600">
-                          {currencySymbol} {payment.paidAmount.toLocaleString()}
+                          {currencySymbol} {(payment.paidAmount || 0).toLocaleString()}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -1381,28 +1381,28 @@ function Finance() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between border-b-2 border-gray-900 pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest">Assets</h4>
-                  <span className="text-sm font-black">{currencySymbol} {balanceSheet.assets.total.toLocaleString()}</span>
+                  <span className="text-sm font-black">{currencySymbol} {(balanceSheet.assets.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Cash in Hand</span>
-                    <span>{currencySymbol} {balanceSheet.assets.cash.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.assets.cash || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Bank Accounts</span>
-                    <span>{currencySymbol} {balanceSheet.assets.bank.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.assets.bank || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Mobile Wallets</span>
-                    <span>{currencySymbol} {balanceSheet.assets.mobile.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.assets.mobile || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Accounts Receivable</span>
-                    <span>{currencySymbol} {balanceSheet.assets.ar.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.assets.ar || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Inventory Value</span>
-                    <span>{currencySymbol} {balanceSheet.assets.inventory.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.assets.inventory || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </section>
@@ -1411,16 +1411,16 @@ function Finance() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest text-red-600">Liabilities</h4>
-                  <span className="text-sm font-black text-red-600">{currencySymbol} {balanceSheet.liabilities.total.toLocaleString()}</span>
+                  <span className="text-sm font-black text-red-600">{currencySymbol} {(balanceSheet.liabilities.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Accounts Payable</span>
-                    <span>{currencySymbol} {balanceSheet.liabilities.ap.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.liabilities.ap || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Outstanding Loans</span>
-                    <span>{currencySymbol} {balanceSheet.liabilities.loans.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.liabilities.loans || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </section>
@@ -1429,20 +1429,20 @@ function Finance() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest text-blue-600">Equity</h4>
-                  <span className="text-sm font-black text-blue-600">{currencySymbol} {balanceSheet.equity.total.toLocaleString()}</span>
+                  <span className="text-sm font-black text-blue-600">{currencySymbol} {(balanceSheet.equity.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Owner Investment</span>
-                    <span>{currencySymbol} {balanceSheet.equity.investment.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.equity.investment || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Retained Earnings (Net Profit)</span>
-                    <span>{currencySymbol} {balanceSheet.equity.retainedEarnings.toLocaleString()}</span>
+                    <span>{currencySymbol} {(balanceSheet.equity.retainedEarnings || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-red-500 italic">
                     <span>(-) Owner Withdrawals</span>
-                    <span>({currencySymbol} {balanceSheet.equity.withdraw.toLocaleString()})</span>
+                    <span>({currencySymbol} {(balanceSheet.equity.withdraw || 0).toLocaleString()})</span>
                   </div>
                 </div>
               </section>
@@ -1454,12 +1454,12 @@ function Finance() {
                   <p className="text-[10px] opacity-60">Must equal Total Assets</p>
                 </div>
                 <span className="text-3xl font-black">
-                  {currencySymbol} {(balanceSheet.liabilities.total + balanceSheet.equity.total).toLocaleString()}
+                  {currencySymbol} {(balanceSheet.liabilities.total + balanceSheet.equity.total || 0).toLocaleString()}
                 </span>
               </div>
               
               {Math.abs(balanceSheet.assets.total - (balanceSheet.liabilities.total + balanceSheet.equity.total)) > 1 && (
-                <p className="text-center text-xs text-red-500 font-bold">⚠️ Balance Sheet is out of balance by {currencySymbol} {Math.abs(balanceSheet.assets.total - (balanceSheet.liabilities.total + balanceSheet.equity.total)).toLocaleString()}</p>
+                <p className="text-center text-xs text-red-500 font-bold">⚠️ Balance Sheet is out of balance by {currencySymbol} {(Math.abs(balanceSheet.assets.total - (balanceSheet.liabilities.total + balanceSheet.equity.total)) || 0).toLocaleString()}</p>
               )}
             </div>
 
@@ -1517,16 +1517,16 @@ function Finance() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between border-b-2 border-green-600 pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest text-green-600">Cash Inflow</h4>
-                  <span className="text-sm font-black text-green-600">+{currencySymbol} {cashFlow.inflow.total.toLocaleString()}</span>
+                  <span className="text-sm font-black text-green-600">+{currencySymbol} {(cashFlow.inflow.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Sales Receipts</span>
-                    <span>{currencySymbol} {cashFlow.inflow.sales.toLocaleString()}</span>
+                    <span>{currencySymbol} {(cashFlow.inflow.sales || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Other Inflows</span>
-                    <span>{currencySymbol} {cashFlow.inflow.other.toLocaleString()}</span>
+                    <span>{currencySymbol} {(cashFlow.inflow.other || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </section>
@@ -1535,20 +1535,20 @@ function Finance() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between border-b-2 border-red-600 pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest text-red-600">Cash Outflow</h4>
-                  <span className="text-sm font-black text-red-600">-{currencySymbol} {cashFlow.outflow.total.toLocaleString()}</span>
+                  <span className="text-sm font-black text-red-600">-{currencySymbol} {(cashFlow.outflow.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>COGS Payments</span>
-                    <span>{currencySymbol} {cashFlow.outflow.cogs.toLocaleString()}</span>
+                    <span>{currencySymbol} {(cashFlow.outflow.cogs || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Operating Expenses</span>
-                    <span>{currencySymbol} {cashFlow.outflow.expenses.toLocaleString()}</span>
+                    <span>{currencySymbol} {(cashFlow.outflow.expenses || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Other Outflows</span>
-                    <span>{currencySymbol} {cashFlow.outflow.other.toLocaleString()}</span>
+                    <span>{currencySymbol} {(cashFlow.outflow.other || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </section>
@@ -1560,7 +1560,7 @@ function Finance() {
                   <p className="text-[10px] opacity-60">For the selected period</p>
                 </div>
                 <span className="text-3xl font-black">
-                  {currencySymbol} {cashFlow.netCashFlow.toLocaleString()}
+                  {currencySymbol} {(cashFlow.netCashFlow || 0).toLocaleString()}
                 </span>
               </div>
             </div>
@@ -1617,24 +1617,24 @@ function Finance() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between border-b-2 border-gray-900 pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest">Revenue</h4>
-                  <span className="text-sm font-black">{currencySymbol} {pnlReport.revenue.total.toLocaleString()}</span>
+                  <span className="text-sm font-black">{currencySymbol} {(pnlReport.revenue.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Product Sales</span>
-                    <span>{currencySymbol} {pnlReport.revenue.productSales.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.revenue.productSales || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Delivery Charge Income</span>
-                    <span>{currencySymbol} {pnlReport.revenue.deliveryIncome.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.revenue.deliveryIncome || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Other Income</span>
-                    <span>{currencySymbol} {pnlReport.revenue.otherIncome.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.revenue.otherIncome || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-red-500 italic">
                     <span>(-) Discounts & Offers</span>
-                    <span>({currencySymbol} {pnlReport.revenue.discountAdjustment.toLocaleString()})</span>
+                    <span>({currencySymbol} {(pnlReport.revenue.discountAdjustment || 0).toLocaleString()})</span>
                   </div>
                 </div>
               </section>
@@ -1643,20 +1643,20 @@ function Finance() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest">Cost of Goods Sold (COGS)</h4>
-                  <span className="text-sm font-black text-red-600">({currencySymbol} {pnlReport.cogs.total.toLocaleString()})</span>
+                  <span className="text-sm font-black text-red-600">({currencySymbol} {(pnlReport.cogs.total || 0).toLocaleString()})</span>
                 </div>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Product Cost</span>
-                    <span>{currencySymbol} {pnlReport.cogs.productCost.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.cogs.productCost || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Packaging Cost</span>
-                    <span>{currencySymbol} {pnlReport.cogs.packagingCost.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.cogs.packagingCost || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Delivery Cost (Shipping)</span>
-                    <span>{currencySymbol} {pnlReport.cogs.deliveryCost.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.cogs.deliveryCost || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </section>
@@ -1665,7 +1665,7 @@ function Finance() {
               <div className="bg-gray-50 p-4 rounded-xl flex items-center justify-between border border-gray-100">
                 <h4 className="text-sm font-black uppercase tracking-widest">Gross Profit</h4>
                 <span className={`text-lg font-black ${pnlReport.grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {currencySymbol} {pnlReport.grossProfit.toLocaleString()}
+                  {currencySymbol} {(pnlReport.grossProfit || 0).toLocaleString()}
                 </span>
               </div>
 
@@ -1673,32 +1673,32 @@ function Finance() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest">Operating Expenses</h4>
-                  <span className="text-sm font-black text-red-600">({currencySymbol} {pnlReport.expenses.total.toLocaleString()})</span>
+                  <span className="text-sm font-black text-red-600">({currencySymbol} {(pnlReport.expenses.total || 0).toLocaleString()})</span>
                 </div>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Marketing & Ads</span>
-                    <span>{currencySymbol} {pnlReport.expenses.marketing.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.expenses.marketing || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Salaries & Wages</span>
-                    <span>{currencySymbol} {pnlReport.expenses.salary.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.expenses.salary || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Rent & Office</span>
-                    <span>{currencySymbol} {pnlReport.expenses.rent.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.expenses.rent || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Utilities</span>
-                    <span>{currencySymbol} {pnlReport.expenses.utilities.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.expenses.utilities || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Courier Charges</span>
-                    <span>{currencySymbol} {pnlReport.expenses.courierCharge.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.expenses.courierCharge || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Miscellaneous</span>
-                    <span>{currencySymbol} {pnlReport.expenses.miscExpenses.toLocaleString()}</span>
+                    <span>{currencySymbol} {(pnlReport.expenses.miscExpenses || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </section>
@@ -1710,7 +1710,7 @@ function Finance() {
                   <p className="text-[10px] opacity-60">After all costs and expenses</p>
                 </div>
                 <span className="text-3xl font-black">
-                  {currencySymbol} {pnlReport.netProfit.toLocaleString()}
+                  {currencySymbol} {(pnlReport.netProfit || 0).toLocaleString()}
                 </span>
               </div>
             </div>

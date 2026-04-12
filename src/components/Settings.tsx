@@ -80,7 +80,7 @@ function ActivityLogsTab() {
               {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-white transition-colors">
                   <td className="px-6 py-4 text-[10px] text-gray-500 whitespace-nowrap">
-                    {log.timestamp?.toDate().toLocaleString()}
+                    {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
