@@ -305,7 +305,14 @@ async function startServer() {
         return res.status(400).json({ error: 'WooCommerce settings not configured' });
       }
 
-      const { wooUrl, wooConsumerKey, wooConsumerSecret } = settings;
+      const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = settings;
+      
+      // Sanitize URL: remove trailing slash and ensure https
+      let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
+      if (!wooUrl.startsWith('http')) {
+        wooUrl = `https://${wooUrl}`;
+      }
+
       const { page = 1, per_page = 10, status, search } = req.query;
 
       const response = await axios.get(`${wooUrl}/wp-json/wc/v3/orders`, {
@@ -325,8 +332,16 @@ async function startServer() {
         totalOrders: response.headers['x-wp-total']
       });
     } catch (error: any) {
-      console.error('WooCommerce API Error:', error.message);
-      res.status(error.response?.status || 500).json({ error: error.message });
+      const errorData = error.response?.data;
+      console.error('WooCommerce API Error:', {
+        message: error.message,
+        data: errorData,
+        status: error.response?.status
+      });
+      res.status(error.response?.status || 500).json({ 
+        error: error.message,
+        details: errorData?.message || 'No additional details'
+      });
     }
   });
 
@@ -341,7 +356,14 @@ async function startServer() {
         return res.status(400).json({ error: 'WooCommerce settings not configured' });
       }
 
-      const { wooUrl, wooConsumerKey, wooConsumerSecret } = settings;
+      const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = settings;
+      
+      // Sanitize URL: remove trailing slash and ensure https
+      let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
+      if (!wooUrl.startsWith('http')) {
+        wooUrl = `https://${wooUrl}`;
+      }
+
       const { page = 1, per_page = 20, search } = req.query;
 
       const response = await axios.get(`${wooUrl}/wp-json/wc/v3/products`, {
@@ -361,6 +383,44 @@ async function startServer() {
       });
     } catch (error: any) {
       res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.put('/api/woocommerce/orders/:id', async (req, res) => {
+    try {
+      const database = await getDb();
+      if (!database) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      const companySettings = await database.collection('settings').doc('company').get();
+      const settings = companySettings.data();
+
+      if (!settings?.wooUrl || !settings?.wooConsumerKey || !settings?.wooConsumerSecret) {
+        return res.status(400).json({ error: 'WooCommerce settings not configured' });
+      }
+
+      const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = settings;
+      
+      // Sanitize URL: remove trailing slash and ensure https
+      let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
+      if (!wooUrl.startsWith('http')) {
+        wooUrl = `https://${wooUrl}`;
+      }
+
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const response = await axios.put(`${wooUrl}/wp-json/wc/v3/orders/${id}`, {
+        status
+      }, {
+        params: {
+          consumer_key: wooConsumerKey,
+          consumer_secret: wooConsumerSecret
+        }
+      });
+
+      res.json(response.data);
+    } catch (error: any) {
+      console.error('WooCommerce Status Update Error:', error.response?.data || error.message);
+      res.status(error.response?.status || 500).json({ error: error.response?.data?.message || error.message });
     }
   });
 
@@ -676,7 +736,11 @@ async function startServer() {
 
           if (adapter.checkFraud) {
             const result = await adapter.checkFraud(phone);
-            console.log(`Fraud check result from ${courierName}:`, result);
+            const logMsg = `Fraud check result from ${courierName} for ${phone}: ${JSON.stringify(result)}`;
+            console.log(logMsg);
+            try {
+              fs.appendFileSync('courier_debug.txt', logMsg + '\n');
+            } catch (e) {}
             return res.json({
               courier: courierName,
               data: result

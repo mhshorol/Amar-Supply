@@ -449,9 +449,9 @@ export default function NewOrder() {
                         <p className="text-sm font-black text-red-700">{courierHistory.total_cancelled || 0}</p>
                       </div>
                       <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50">
-                        <p className="text-[8px] font-bold text-blue-600 uppercase tracking-wider mb-0.5">D:C Ratio</p>
+                        <p className="text-[8px] font-bold text-blue-600 uppercase tracking-wider mb-0.5">Success Rate</p>
                         <p className="text-sm font-black text-blue-700">
-                          {courierHistory.total_delivered}:{courierHistory.total_cancelled}
+                          {courierHistory.success_rate || '0%'}
                         </p>
                       </div>
                     </div>

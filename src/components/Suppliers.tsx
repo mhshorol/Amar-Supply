@@ -16,20 +16,28 @@ import {
   Calendar,
   Trash2,
   Edit2,
-  ExternalLink
+  ExternalLink,
+  History,
+  X as CloseIcon
 } from 'lucide-react';
-import { db, auth, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from '../firebase';
-import { Supplier, PurchaseOrder } from '../types';
+import { db, auth, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, runTransaction } from '../firebase';
+import { Supplier, PurchaseOrder, SupplierPayment, Account } from '../types';
 import { toast } from 'sonner';
 import ConfirmModal from './ConfirmModal';
+import { useSettings } from '../contexts/SettingsContext';
 
 export default function Suppliers() {
+  const { currencySymbol } = useSettings();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [supplierPayments, setSupplierPayments] = useState<SupplierPayment[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPOModalOpen, setIsPOModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedSupplierForLedger, setSelectedSupplierForLedger] = useState<Supplier | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [activeTab, setActiveTab] = useState<'suppliers' | 'pos'>('suppliers');
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -52,6 +60,14 @@ export default function Suppliers() {
     email: '',
     address: '',
     leadTimeDays: 7
+  });
+
+  const [paymentForm, setPaymentForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    amount: '',
+    accountId: '',
+    voucherNo: '',
+    remark: ''
   });
 
   useEffect(() => {
@@ -82,9 +98,35 @@ export default function Suppliers() {
       }
     );
 
+    const unsubscribePayments = onSnapshot(
+      query(collection(db, 'supplierPayments'), orderBy('date', 'desc')),
+      (snapshot) => {
+        setSupplierPayments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupplierPayment)));
+      },
+      (error) => {
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'supplierPayments');
+        }
+      }
+    );
+
+    const unsubscribeAccounts = onSnapshot(
+      query(collection(db, 'accounts'), orderBy('name')),
+      (snapshot) => {
+        setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
+      },
+      (error) => {
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'accounts');
+        }
+      }
+    );
+
     return () => {
       unsubscribeSuppliers();
       unsubscribePOs();
+      unsubscribePayments();
+      unsubscribeAccounts();
     };
   }, []);
 
@@ -125,6 +167,93 @@ export default function Suppliers() {
         }
       }
     });
+  };
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSupplierForLedger || !auth.currentUser) return;
+
+    const amount = parseFloat(paymentForm.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    if (!paymentForm.accountId) {
+      toast.error('Please select an account');
+      return;
+    }
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        // 1. READ: Get Account Balance first
+        const accountRef = doc(db, 'accounts', paymentForm.accountId);
+        const accountSnap = await transaction.get(accountRef);
+        if (!accountSnap.exists()) throw new Error('Account not found');
+        
+        const currentBalance = accountSnap.data().balance || 0;
+
+        // 2. WRITE: Create Supplier Payment record
+        const paymentRef = doc(collection(db, 'supplierPayments'));
+        transaction.set(paymentRef, {
+          supplierId: selectedSupplierForLedger.id,
+          supplierName: selectedSupplierForLedger.name,
+          date: paymentForm.date,
+          amount: amount,
+          voucherNo: paymentForm.voucherNo,
+          remark: paymentForm.remark,
+          uid: auth.currentUser?.uid,
+          createdAt: serverTimestamp()
+        });
+
+        // 3. WRITE: Create Transaction record (Expense)
+        const txnRef = doc(collection(db, 'transactions'));
+        transaction.set(txnRef, {
+          type: 'expense',
+          category: 'COGS',
+          subCategory: 'Product Cost',
+          amount: amount,
+          method: accounts.find(a => a.id === paymentForm.accountId)?.name || 'N/A',
+          accountId: paymentForm.accountId,
+          date: paymentForm.date,
+          status: 'Completed',
+          notes: `Supplier Payment: ${selectedSupplierForLedger.name} ${paymentForm.voucherNo ? `(Voucher: ${paymentForm.voucherNo})` : ''}`,
+          createdAt: serverTimestamp(),
+          uid: auth.currentUser?.uid
+        });
+
+        // 4. WRITE: Update Account Balance
+        transaction.update(accountRef, {
+          balance: currentBalance - amount,
+          updatedAt: serverTimestamp()
+        });
+      });
+
+      toast.success('Payment recorded successfully');
+      setIsPaymentModalOpen(false);
+      setPaymentForm({
+        date: new Date().toISOString().split('T')[0],
+        amount: '',
+        accountId: '',
+        voucherNo: '',
+        remark: ''
+      });
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      toast.error('Failed to record payment');
+    }
+  };
+
+  const getSupplierBalance = (supplierId: string) => {
+    const totalReceived = purchaseOrders
+      .filter(po => po.supplierId === supplierId && po.status === 'received')
+      .reduce((sum, po) => sum + (po.totalAmount || 0), 0);
+    
+    const totalPaid = supplierPayments
+      .filter(p => p.supplierId === supplierId)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    
+    return totalReceived - totalPaid;
   };
 
   const filteredSuppliers = suppliers.filter(s => 
@@ -234,6 +363,12 @@ export default function Suppliers() {
                   </div>
 
                   <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Balance Due</div>
+                      <div className={`text-sm font-bold ${getSupplierBalance(supplier.id) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {currencySymbol}{getSupplierBalance(supplier.id).toLocaleString()}
+                      </div>
+                    </div>
                     <div className="flex items-center gap-3 text-sm text-gray-600">
                       <Phone size={14} className="text-gray-400" />
                       {supplier.phone}
@@ -257,8 +392,11 @@ export default function Suppliers() {
                       <Clock size={14} />
                       {supplier.leadTimeDays} Days Lead
                     </div>
-                    <button className="text-[#00AEEF] text-xs font-bold hover:underline flex items-center gap-1">
-                      View POs <ChevronRight size={14} />
+                    <button 
+                      onClick={() => setSelectedSupplierForLedger(supplier)}
+                      className="text-[#00AEEF] text-xs font-bold hover:underline flex items-center gap-1"
+                    >
+                      View Ledger <ChevronRight size={14} />
                     </button>
                   </div>
                 </div>
@@ -338,6 +476,237 @@ export default function Suppliers() {
         onConfirm={confirmConfig.onConfirm}
         onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Supplier Ledger Modal */}
+      {selectedSupplierForLedger && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{selectedSupplierForLedger.name}</h2>
+                <div className="flex items-center gap-4 mt-1">
+                  <p className="text-sm text-gray-500">Transaction History & Ledger</p>
+                  <button 
+                    onClick={() => {
+                      setPaymentForm(prev => ({ ...prev, accountId: accounts[0]?.id || '' }));
+                      setIsPaymentModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-all shadow-sm"
+                  >
+                    <DollarSign size={14} />
+                    Record Payment
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Outstanding Balance</p>
+                  <p className={`text-xl font-black ${getSupplierBalance(selectedSupplierForLedger.id) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {currencySymbol}{getSupplierBalance(selectedSupplierForLedger.id).toLocaleString()}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSelectedSupplierForLedger(null)} 
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  <Plus size={24} className="rotate-45 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8">
+              <div className="space-y-8">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Total Purchases</p>
+                    <p className="text-xl font-bold text-blue-700">
+                      {currencySymbol}{purchaseOrders
+                        .filter(po => po.supplierId === selectedSupplierForLedger.id && po.status === 'received')
+                        .reduce((sum, po) => sum + (po.totalAmount || 0), 0)
+                        .toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-2xl border border-green-100">
+                    <p className="text-xs font-bold text-green-400 uppercase tracking-widest mb-1">Total Paid</p>
+                    <p className="text-xl font-bold text-green-700">
+                      {currencySymbol}{supplierPayments
+                        .filter(p => p.supplierId === selectedSupplierForLedger.id)
+                        .reduce((sum, p) => sum + (p.amount || 0), 0)
+                        .toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                    <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-1">Pending Orders</p>
+                    <p className="text-xl font-bold text-orange-700">
+                      {purchaseOrders
+                        .filter(po => po.supplierId === selectedSupplierForLedger.id && po.status === 'ordered')
+                        .length}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Ledger Table */}
+                <div className="space-y-4">
+                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                    <History size={18} className="text-[#00AEEF]" />
+                    Transaction Ledger
+                  </h3>
+                  <div className="border border-gray-100 rounded-2xl overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-100">
+                          <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Type</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reference</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Debit (Purchase)</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Credit (Payment)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {[
+                          ...purchaseOrders
+                            .filter(po => po.supplierId === selectedSupplierForLedger.id && po.status === 'received')
+                            .map(po => ({
+                              date: po.createdAt?.toDate ? po.createdAt.toDate() : (po.createdAt?.seconds ? new Date(po.createdAt.seconds * 1000) : new Date()),
+                              type: 'Purchase',
+                              ref: `#PO-${po.id.slice(0, 6).toUpperCase()}`,
+                              debit: po.totalAmount,
+                              credit: 0
+                            })),
+                          ...supplierPayments
+                            .filter(p => p.supplierId === selectedSupplierForLedger.id)
+                            .map(p => ({
+                              date: p.createdAt?.toDate ? p.createdAt.toDate() : (p.createdAt?.seconds ? new Date(p.createdAt.seconds * 1000) : new Date(p.date)),
+                              type: 'Payment',
+                              ref: p.voucherNo || 'N/A',
+                              debit: 0,
+                              credit: p.amount
+                            }))
+                        ]
+                        .sort((a, b) => b.date.getTime() - a.date.getTime())
+                        .map((item, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {item.date.toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                                item.type === 'Purchase' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
+                              }`}>
+                                {item.type}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                              {item.ref}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right">
+                              {item.debit > 0 ? `${currencySymbol}${item.debit.toLocaleString()}` : '-'}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right">
+                              {item.credit > 0 ? `${currencySymbol}${item.credit.toLocaleString()}` : '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-8 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <button 
+                onClick={() => setSelectedSupplierForLedger(null)}
+                className="px-8 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-100 transition-all"
+              >
+                Close Ledger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Supplier Payment Modal */}
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-gray-900">Record Payment</h3>
+              <button onClick={() => setIsPaymentModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <Plus size={24} className="rotate-45 text-gray-400" />
+              </button>
+            </div>
+            <form onSubmit={handlePaymentSubmit} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Date</label>
+                <input 
+                  required
+                  type="date"
+                  value={paymentForm.date}
+                  onChange={e => setPaymentForm({...paymentForm, date: e.target.value})}
+                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Amount</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">{currencySymbol}</span>
+                  <input 
+                    required
+                    type="number"
+                    step="0.01"
+                    value={paymentForm.amount}
+                    onChange={e => setPaymentForm({...paymentForm, amount: e.target.value})}
+                    className="w-full pl-8 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all font-bold"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Payment Account</label>
+                <select 
+                  required
+                  value={paymentForm.accountId}
+                  onChange={e => setPaymentForm({...paymentForm, accountId: e.target.value})}
+                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                >
+                  <option value="">Select Account</option>
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name} ({currencySymbol}{acc.balance.toLocaleString()})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Voucher No</label>
+                <input 
+                  type="text"
+                  value={paymentForm.voucherNo}
+                  onChange={e => setPaymentForm({...paymentForm, voucherNo: e.target.value})}
+                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                  placeholder="e.g. V-123"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Remark</label>
+                <input 
+                  type="text"
+                  value={paymentForm.remark}
+                  onChange={e => setPaymentForm({...paymentForm, remark: e.target.value})}
+                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                  placeholder="Optional notes"
+                />
+              </div>
+              <button 
+                type="submit"
+                className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-100 mt-4"
+              >
+                Confirm Payment
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Supplier Modal */}
       {isModalOpen && (

@@ -402,10 +402,12 @@ export default function Settings() {
     setSaving(true);
     setMessage(null);
     try {
-      if (activeTab === 'General' || activeTab === 'Company Info') {
+      if (activeTab === 'General' || activeTab === 'Company Info' || activeTab === 'Integrations') {
         console.log('Saving company info:', companyInfo);
         await setDoc(doc(db, 'settings', 'company'), companyInfo, { merge: true });
-      } else if (activeTab === 'Logistics') {
+      }
+      
+      if (activeTab === 'Logistics') {
         console.log('Saving logistics configs:', courierConfigs);
         // Save each courier config to backend
         for (const [courier, config] of Object.entries(courierConfigs)) {

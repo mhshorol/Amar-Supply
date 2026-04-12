@@ -2,7 +2,7 @@
  * Steadfast Courier API Service
  * 
  * This service handles communication with the Steadfast Courier API.
- * Documentation: https://portal.steadfast.com.bd/api/v1/docs
+ * Documentation: https://steadfast.com.bd/api/v1/docs
  */
 
 export interface SteadfastOrder {
@@ -35,7 +35,7 @@ export interface SteadfastResponse {
 export class SteadfastService {
   private apiKey: string;
   private secretKey: string;
-  private baseUrl = 'https://portal.steadfast.com.bd/api/v1';
+  private baseUrl = 'https://steadfast.com.bd/api/v1';
 
   constructor(apiKey: string, secretKey: string) {
     this.apiKey = (apiKey || '').trim();
@@ -120,6 +120,20 @@ export class SteadfastService {
    */
   async getStatusByInvoice(invoiceId: string): Promise<any> {
     return this.request(`/status_by_invoice/${invoiceId}`);
+  }
+
+  /**
+   * Check customer delivery success rate by phone number
+   */
+  async checkClient(phone: string): Promise<{
+    status: number;
+    message: string;
+    delivery_success_rate: string;
+    total_order: number;
+    total_delivery: number;
+    total_return: number;
+  }> {
+    return this.request(`/check_client/${phone}`);
   }
 
   /**

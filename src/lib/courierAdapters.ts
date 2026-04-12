@@ -25,11 +25,11 @@ export interface CourierInterface {
 export class SteadfastAdapter implements CourierInterface {
   private apiKey: string;
   private secretKey: string;
-  private baseUrl = 'https://portal.packzy.com/api/v1';
+  private baseUrl = 'https://steadfast.com.bd/api/v1';
 
   constructor(config: any) {
-    this.apiKey = config.apiKey;
-    this.secretKey = config.secretKey;
+    this.apiKey = (config.apiKey || '').trim();
+    this.secretKey = (config.secretKey || '').trim();
   }
 
   async createOrder(data: CourierOrderData): Promise<any> {
@@ -42,14 +42,13 @@ export class SteadfastAdapter implements CourierInterface {
       note: data.note
     }, {
       headers: {
-        'Api-Key': this.apiKey,
-        'Secret-Key': this.secretKey,
+        'api-key': this.apiKey,
+        'secret-key': this.secretKey,
         'Content-Type': 'application/json'
       }
     });
     
-    // Steadfast returns { status: 200, consignment: { ... } }
-    if (response.data.status === 200 && response.data.consignment) {
+    if (Number(response.data.status) === 200 && response.data.consignment) {
       return {
         ...response.data.consignment,
         success: true,
@@ -61,10 +60,10 @@ export class SteadfastAdapter implements CourierInterface {
   }
 
   async trackOrder(trackingId: string): Promise<any> {
-    const response = await axios.get(`${this.baseUrl}/status_by_trackingcode/${trackingId}`, {
+    const response = await axios.get(`${this.baseUrl}/status_by_tracking/${trackingId}`, {
       headers: {
-        'Api-Key': this.apiKey,
-        'Secret-Key': this.secretKey
+        'api-key': this.apiKey,
+        'secret-key': this.secretKey
       }
     });
     return response.data;
@@ -73,8 +72,8 @@ export class SteadfastAdapter implements CourierInterface {
   async getBalance(): Promise<any> {
     const response = await axios.get(`${this.baseUrl}/get_balance`, {
       headers: {
-        'Api-Key': this.apiKey,
-        'Secret-Key': this.secretKey
+        'api-key': this.apiKey,
+        'secret-key': this.secretKey
       }
     });
     return response.data;
@@ -82,18 +81,35 @@ export class SteadfastAdapter implements CourierInterface {
 
   async checkFraud(phone: string): Promise<any> {
     try {
-      const response = await axios.get(`${this.baseUrl}/check_fraud/${phone}`, {
+      // Sanitize phone number - ensure it's just digits and handle leading zero
+      const sanitizedPhone = phone.replace(/\D/g, '');
+      
+      const response = await axios.get(`${this.baseUrl}/check_client/${sanitizedPhone}`, {
         headers: {
-          'Api-Key': this.apiKey,
-          'Secret-Key': this.secretKey
+          'api-key': this.apiKey,
+          'secret-key': this.secretKey
         }
       });
-      return response.data;
-    } catch (error: any) {
-      if (error.response && error.response.status === 404) {
-        return { total_delivered: 0, total_cancelled: 0, message: 'No history found' };
+      
+      const data = response.data;
+      console.log(`Steadfast check_client response for ${sanitizedPhone}:`, data);
+
+      if (Number(data.status) === 200) {
+        return {
+          ...data,
+          total_delivered: data.total_delivery !== undefined ? data.total_delivery : (data.total_delivered !== undefined ? data.total_delivered : 0),
+          total_cancelled: data.total_return !== undefined ? data.total_return : (data.total_returned !== undefined ? data.total_returned : 0),
+          success_rate: data.delivery_success_rate || data.success_rate || '0%'
+        };
       }
-      throw error;
+      
+      return { total_delivered: 0, total_cancelled: 0, success_rate: '0%', message: data.message || 'Error fetching data' };
+    } catch (error: any) {
+      console.error('Steadfast checkFraud error:', error.response?.data || error.message);
+      if (error.response && error.response.status === 404) {
+        return { total_delivered: 0, total_cancelled: 0, success_rate: '0%', message: 'No history found' };
+      }
+      return { total_delivered: 0, total_cancelled: 0, success_rate: '0%', error: error.message };
     }
   }
 

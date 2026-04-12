@@ -29,7 +29,9 @@ import {
   AlertCircle,
   Edit,
   Printer,
-  ChevronDown
+  ChevronDown,
+  ShieldCheck,
+  Smartphone
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import type { DraggableProvided, DraggableStateSnapshot, DroppableProvided } from '@hello-pangea/dnd';
@@ -91,7 +93,9 @@ export default function Orders() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [wooOrders, setWooOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isWooLoading, setIsWooLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
@@ -116,6 +120,8 @@ export default function Orders() {
   const [companySettings, setCompanySettings] = useState<any>(null);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<any>(null);
   const [printType, setPrintType] = useState<'a5' | 'pos' | null>(null);
+  const [courierHistory, setCourierHistory] = useState<any>(null);
+  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
   const printRef = React.useRef<HTMLDivElement>(null);
   const bulkPrintRef = React.useRef<HTMLDivElement>(null);
 
@@ -357,11 +363,17 @@ export default function Orders() {
     if (!auth.currentUser) return;
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'local' })));
       setLoading(false);
     }, (error) => {
       if (error.code !== 'permission-denied') {
         handleFirestoreError(error, OperationType.LIST, 'orders');
+      }
+    });
+
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'company'), (s) => setCompanySettings(s.data()), (e) => {
+      if (e.code !== 'permission-denied') {
+        handleFirestoreError(e, OperationType.GET, 'settings/company');
       }
     });
 
@@ -385,11 +397,6 @@ export default function Orders() {
         handleFirestoreError(e, OperationType.LIST, 'inventory');
       }
     });
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'company'), (s) => setCompanySettings(s.data()), (e) => {
-      if (e.code !== 'permission-denied') {
-        handleFirestoreError(e, OperationType.GET, 'settings/company');
-      }
-    });
 
     return () => {
       unsubscribe();
@@ -400,6 +407,54 @@ export default function Orders() {
       unsubSettings();
     };
   }, []);
+
+  useEffect(() => {
+    const fetchWooOrders = async () => {
+      if (!companySettings?.wooUrl || !companySettings?.wooConsumerKey || !companySettings?.wooConsumerSecret) return;
+      
+      setIsWooLoading(true);
+      try {
+        const response = await fetch('/api/woocommerce/orders?per_page=50');
+        const data = await response.json();
+        
+        if (response.ok) {
+          const mappedWooOrders = (data.orders || []).map((order: any) => ({
+            id: `woo_${order.id}`,
+            wooId: order.id,
+            source: 'woocommerce',
+            orderNumber: order.number,
+            customerName: `${order.billing.first_name} ${order.billing.last_name}`,
+            customerPhone: order.billing.phone,
+            customerAddress: `${order.billing.address_1}, ${order.billing.city}`,
+            totalAmount: parseFloat(order.total),
+            dueAmount: parseFloat(order.total),
+            status: order.status,
+            createdAt: { toDate: () => new Date(order.date_created) },
+            items: order.line_items.map((item: any) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: parseFloat(item.price)
+            })),
+            notes: order.customer_note,
+            paymentMethod: order.payment_method_title
+          }));
+          setWooOrders(mappedWooOrders);
+        } else {
+          console.error("WooCommerce Fetch Error:", data.error, data.details);
+          // Only show toast if we actually have settings but they failed
+          if (companySettings.wooUrl && companySettings.wooConsumerKey) {
+            toast.error(`WooCommerce Error: ${data.details || data.error}`);
+          }
+        }
+      } catch (error: any) {
+        console.error("Error fetching WooCommerce orders:", error);
+      } finally {
+        setIsWooLoading(false);
+      }
+    };
+
+    fetchWooOrders();
+  }, [companySettings?.wooUrl, companySettings?.wooConsumerKey, companySettings?.wooConsumerSecret]);
 
   const handleZoneChange = (zone: string) => {
     let charge = 80;
@@ -433,6 +488,31 @@ export default function Orders() {
       } catch (error) {
         console.error("Error fetching customer data:", error);
       }
+
+      // Fetch courier history
+      fetchCourierHistory(phone);
+    } else {
+      setCourierHistory(null);
+    }
+  };
+
+  const fetchCourierHistory = async (phone: string) => {
+    setIsFetchingHistory(true);
+    try {
+      const response = await fetch(`/api/couriers/check-fraud/${phone}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.data) {
+          setCourierHistory({
+            courier: result.courier,
+            ...result.data
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching courier history:", error);
+    } finally {
+      setIsFetchingHistory(false);
     }
   };
 
@@ -727,6 +807,58 @@ export default function Orders() {
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    if (!auth.currentUser) return;
+
+    // Handle WooCommerce orders
+    if (orderId.startsWith('woo_')) {
+      const wooId = orderId.replace('woo_', '');
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/woocommerce/orders/${wooId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (response.ok) {
+          toast.success(`WooCommerce order status updated to ${newStatus}`);
+          // Refresh WooCommerce orders
+          const wooResponse = await fetch('/api/woocommerce/orders?per_page=50');
+          if (wooResponse.ok) {
+            const data = await wooResponse.json();
+            const mappedWooOrders = (data.orders || []).map((order: any) => ({
+              id: `woo_${order.id}`,
+              wooId: order.id,
+              source: 'woocommerce',
+              orderNumber: order.number,
+              customerName: `${order.billing.first_name} ${order.billing.last_name}`,
+              customerPhone: order.billing.phone,
+              customerAddress: `${order.billing.address_1}, ${order.billing.city}`,
+              totalAmount: parseFloat(order.total),
+              dueAmount: parseFloat(order.total),
+              status: order.status,
+              createdAt: { toDate: () => new Date(order.date_created) },
+              items: order.line_items.map((item: any) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: parseFloat(item.price)
+              })),
+              notes: order.customer_note,
+              paymentMethod: order.payment_method_title
+            }));
+            setWooOrders(mappedWooOrders);
+          }
+        } else {
+          const err = await response.json();
+          throw new Error(err.error || 'Failed to update WooCommerce order');
+        }
+      } catch (error: any) {
+        toast.error(error.message);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       const orderRef = doc(db, 'orders', orderId);
       
@@ -874,7 +1006,6 @@ export default function Orders() {
       if (activeCouriers.length === 1) {
         targetCourier = activeCouriers[0][0];
       } else {
-        // If multiple active, we could show a selection modal, but for now use the first one
         targetCourier = activeCouriers[0][0];
       }
     }
@@ -901,7 +1032,7 @@ export default function Orders() {
         amount: order.totalAmount,
         cod_amount: Math.round(order.dueAmount || 0),
         note: order.notes || '',
-        weight: 0.5, // Default weight
+        weight: 0.5,
         recipient_city: order.pathao_city_id,
         recipient_zone: order.pathao_zone_id,
         recipient_area: order.pathao_area_id,
@@ -918,30 +1049,51 @@ export default function Orders() {
       if (response.ok) {
         const trackingCode = result.consignment?.tracking_code || result.tracking_id || result.tracking_code;
         
-        await updateDoc(doc(db, 'orders', order.id), {
-          courierName: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
-          trackingNumber: trackingCode,
-          status: 'shipped',
-          updatedAt: serverTimestamp(),
-          logs: arrayUnion({
-            user: auth.currentUser?.email,
-            action: `Sent to ${targetCourier}`,
-            timestamp: Timestamp.now(),
-            details: `Tracking Code: ${trackingCode}`
-          })
-        });
+        if (order.source === 'woocommerce') {
+          // Update WooCommerce order status to processing or shipped
+          await fetch(`/api/woocommerce/orders/${order.wooId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'processing' })
+          });
+          
+          // Also save to local deliveries for tracking
+          await addDoc(collection(db, 'deliveries'), {
+            id: trackingCode,
+            orderId: order.id,
+            wooId: order.wooId,
+            courier: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
+            status: 'Pending Pickup',
+            location: order.customerZone || 'Processing',
+            eta: '2-3 Days',
+            createdAt: serverTimestamp(),
+            uid: auth.currentUser?.uid
+          });
+        } else {
+          await updateDoc(doc(db, 'orders', order.id), {
+            courierName: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
+            trackingNumber: trackingCode,
+            status: 'shipped',
+            updatedAt: serverTimestamp(),
+            logs: arrayUnion({
+              user: auth.currentUser?.email,
+              action: `Sent to ${targetCourier}`,
+              timestamp: Timestamp.now(),
+              details: `Tracking Code: ${trackingCode}`
+            })
+          });
 
-        // Add to deliveries collection for tracking in Logistics
-        await addDoc(collection(db, 'deliveries'), {
-          id: trackingCode,
-          orderId: order.id,
-          courier: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
-          status: 'Pending Pickup',
-          location: order.customerZone || 'Processing',
-          eta: '2-3 Days',
-          createdAt: serverTimestamp(),
-          uid: auth.currentUser?.uid
-        });
+          await addDoc(collection(db, 'deliveries'), {
+            id: trackingCode,
+            orderId: order.id,
+            courier: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
+            status: 'Pending Pickup',
+            location: order.customerZone || 'Processing',
+            eta: '2-3 Days',
+            createdAt: serverTimestamp(),
+            uid: auth.currentUser?.uid
+          });
+        }
 
         toast.success(`Order sent to ${targetCourier}! Tracking: ${trackingCode}`);
       } else {
@@ -1104,15 +1256,20 @@ export default function Orders() {
     toast.success('Orders exported successfully');
   };
 
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = [...orders, ...wooOrders].filter(order => {
     const matchesSearch = 
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerPhone?.includes(searchTerm);
+      order.customerPhone?.includes(searchTerm) ||
+      order.orderNumber?.toString().includes(searchTerm);
     
     const matchesTab = activeTab === 'All' || order.status === activeTab;
     
     return matchesSearch && matchesTab;
+  }).sort((a, b) => {
+    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+    return dateB.getTime() - dateA.getTime();
   });
 
   return (
@@ -1316,7 +1473,12 @@ export default function Orders() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
-                              <span className="text-xs font-bold text-[#141414]">#{order.orderNumber || order.id.slice(0, 8)}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-[#141414]">#{order.orderNumber || order.id.slice(0, 8)}</span>
+                                {order.source === 'woocommerce' && (
+                                  <span className="px-1.5 py-0.5 bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] rounded text-[8px] font-bold uppercase tracking-wider">Woo</span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-[#9ca3af]">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A')}</span>
                             </div>
                           </td>
@@ -1437,7 +1599,7 @@ export default function Orders() {
                             }`} />
                             <h3 className="text-xs font-bold tracking-widest text-[#6b7280]">{status.replace(/_/g, ' ').charAt(0).toUpperCase() + status.replace(/_/g, ' ').slice(1)}</h3>
                             <span className="px-2 py-0.5 bg-[#f3f4f6] rounded-full text-[10px] font-bold text-[#6b7280]">
-                              {orders.filter(o => o.status === status).length}
+                              {filteredOrders.filter(o => o.status === status).length}
                             </span>
                           </div>
                           <Link to="/orders/new" className="p-1 hover:bg-[#f3f4f6] rounded-md transition-colors">
@@ -1446,7 +1608,7 @@ export default function Orders() {
                         </div>
                         
                         <div className="space-y-3 min-h-[100px]">
-                          {orders.filter(o => o.status === status).map((order, index) => {
+                          {filteredOrders.filter(o => o.status === status).map((order, index) => {
                             const DraggableAny = Draggable as any;
                             return (
                               <DraggableAny key={order.id} draggableId={order.id} index={index}>
@@ -1462,9 +1624,14 @@ export default function Orders() {
                                   >
                                     <div className="flex justify-between items-start mb-2">
                                       <div className="flex flex-col gap-1">
-                                        <span className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">
-                                          #ORD-{order.orderNumber || order.id.slice(0, 8)}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">
+                                            #ORD-{order.orderNumber || order.id.slice(0, 8)}
+                                          </span>
+                                          {order.source === 'woocommerce' && (
+                                            <span className="px-1 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded text-[8px] font-bold uppercase tracking-wider">Woo</span>
+                                          )}
+                                        </div>
                                         <div className="relative">
                                           <StatusBadge 
                                             status={order.status} 
@@ -1594,12 +1761,58 @@ export default function Orders() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">Phone Number *</label>
-                    <input 
-                      required
-                      className="w-full px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
-                      value={orderForm.customerPhone}
-                      onChange={e => handlePhoneChange(e.target.value)}
-                    />
+                    <div className="flex gap-2">
+                      <input 
+                        required
+                        className="flex-1 px-4 py-2 bg-[#f9fafb] border border-transparent rounded-lg text-sm focus:bg-[#ffffff] focus:border-[#e5e7eb] outline-none transition-all"
+                        value={orderForm.customerPhone}
+                        onChange={e => handlePhoneChange(e.target.value)}
+                      />
+                      {orderForm.customerPhone.length >= 11 && (
+                        <a 
+                          href={`https://wa.me/88${orderForm.customerPhone.replace(/\D/g, '')}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="p-2 bg-[#25D366] text-white rounded-lg hover:bg-[#128C7E] transition-all shadow-md flex items-center justify-center"
+                          title="Chat on WhatsApp"
+                        >
+                          <Smartphone size={16} />
+                        </a>
+                      )}
+                    </div>
+                    
+                    {isFetchingHistory && (
+                      <div className="flex items-center gap-2 mt-1 px-2">
+                        <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[10px] text-blue-500 font-medium italic">Checking courier history...</span>
+                      </div>
+                    )}
+
+                    {courierHistory && (
+                      <div className="mt-2 p-3 bg-white border border-gray-100 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-1 duration-300">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <ShieldCheck size={14} className="text-green-500" />
+                            <span className="text-[10px] font-bold text-gray-900 uppercase tracking-tight">Courier Trust Score</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase bg-gray-50 px-1.5 py-0.5 rounded-md border border-gray-100">{courierHistory.courier}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-green-50/50 p-2 rounded-lg border border-green-100/50">
+                            <p className="text-[8px] font-bold text-green-600 uppercase tracking-wider mb-0.5">Delivered</p>
+                            <p className="text-sm font-black text-green-700">{courierHistory.total_delivered || 0}</p>
+                          </div>
+                          <div className="bg-red-50/50 p-2 rounded-lg border border-red-100/50">
+                            <p className="text-[8px] font-bold text-red-600 uppercase tracking-wider mb-0.5">Canceled</p>
+                            <p className="text-sm font-black text-red-700">{courierHistory.total_cancelled || 0}</p>
+                          </div>
+                          <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
+                            <p className="text-[8px] font-bold text-blue-600 uppercase tracking-wider mb-0.5">Success Rate</p>
+                            <p className="text-sm font-black text-blue-700">{courierHistory.success_rate || '0%'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-1 relative">
