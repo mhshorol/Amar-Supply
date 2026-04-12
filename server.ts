@@ -15,50 +15,207 @@ const __dirname = path.dirname(__filename);
 // Load Firebase Config
 const firebaseConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'firebase-applet-config.json'), 'utf8'));
 
+import { 
+  initializeApp as initializeClientApp, 
+  getApp as getClientApp, 
+  getApps as getClientApps 
+} from 'firebase/app';
+import { 
+  getFirestore as getClientFirestore, 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  addDoc,
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  serverTimestamp,
+  FieldValue,
+  Timestamp
+} from 'firebase/firestore';
+
 // Initialize Firebase Admin
-let db: admin.firestore.Firestore | null = null;
+let db: any = null;
 let activeDbId: string | null = null;
+
+const logs: string[] = [];
+function log(msg: string) {
+  const timestamp = new Date().toISOString();
+  const formattedMsg = `[${timestamp}] ${msg}`;
+  console.log(formattedMsg);
+  logs.push(formattedMsg);
+  try {
+    fs.appendFileSync('init_logs.txt', formattedMsg + '\n');
+  } catch (e) {}
+}
 
 async function getDb() {
   if (db) return db;
   
-  const adminApp = admin.app();
   const dbId = firebaseConfig.firestoreDatabaseId;
   const projectId = firebaseConfig.projectId;
   
-  if (dbId) {
-    try {
-      console.log(`Attempting to connect to named database: ${dbId} in project: ${projectId}`);
-      const namedDb = getFirestore(adminApp, dbId);
-      // Verify connection with a simple read
-      await namedDb.collection('health_check').limit(1).get();
-      db = namedDb;
-      activeDbId = dbId;
-      console.log(`Successfully connected to database: ${dbId}`);
-      return db;
-    } catch (e: any) {
-      console.error(`Connection to database ${dbId} failed: ${e.message}`);
-      if (e.code === 5 || e.message?.includes('NOT_FOUND') || e.message?.includes('not found')) {
-        console.error(`Database ${dbId} NOT FOUND. Falling back to (default).`);
-      }
-    }
-  }
+  log(`[getDb] Starting initialization. Project: ${projectId}, Database: ${dbId}`);
   
-  console.log(`Connecting to (default) database in project: ${projectId}`);
-  db = getFirestore(adminApp);
-  activeDbId = '(default)';
-  return db;
+  try {
+    log(`[getDb] Initializing Client SDK Firestore for project: ${projectId}, database: ${dbId}`);
+    const clientApp = getClientApps().length > 0 
+      ? getClientApp() 
+      : initializeClientApp(firebaseConfig);
+    const clientDb = getClientFirestore(clientApp, dbId);
+    
+    // Create a shim to mimic Admin SDK API
+    db = {
+      collection: (path: string) => {
+        const colRef = collection(clientDb, path);
+        return {
+          add: (data: any) => addDoc(colRef, data),
+          doc: (id?: string) => {
+            const docRef = id ? doc(clientDb, path, id) : doc(colRef);
+            return {
+              id: docRef.id,
+              set: (data: any, options?: any) => setDoc(docRef, data, options),
+              update: (data: any) => updateDoc(docRef, data),
+              delete: () => deleteDoc(docRef),
+              get: async () => {
+                const snap = await getDoc(docRef);
+                return {
+                  exists: snap.exists(),
+                  id: snap.id,
+                  data: () => snap.data(),
+                  get: (field: string) => snap.get(field)
+                };
+              }
+            };
+          },
+          where: (field: string, op: any, value: any) => {
+            let q = query(colRef, where(field, op, value));
+            const queryWrapper = (currentQ: any) => ({
+              orderBy: (f: string, d: any = 'asc') => queryWrapper(query(currentQ, orderBy(f, d))),
+              limit: (n: number) => queryWrapper(query(currentQ, limit(n))),
+              get: async () => {
+                const snap = await getDocs(currentQ);
+                return {
+                  size: snap.size,
+                  empty: snap.empty,
+                  docs: snap.docs.map(d => ({
+                    id: d.id,
+                    data: () => d.data(),
+                    get: (f: string) => d.get(f)
+                  })),
+                  forEach: (cb: any) => snap.docs.forEach(d => cb({
+                    id: d.id,
+                    data: () => d.data(),
+                    get: (f: string) => d.get(f)
+                  }))
+                };
+              }
+            });
+            return queryWrapper(q);
+          },
+          orderBy: (field: string, dir: any = 'asc') => {
+            let q = query(colRef, orderBy(field, dir));
+            const queryWrapper = (currentQ: any) => ({
+              where: (f: string, o: any, v: any) => queryWrapper(query(currentQ, where(f, o, v))),
+              limit: (n: number) => queryWrapper(query(currentQ, limit(n))),
+              get: async () => {
+                const snap = await getDocs(currentQ);
+                return {
+                  size: snap.size,
+                  empty: snap.empty,
+                  docs: snap.docs.map(d => ({
+                    id: d.id,
+                    data: () => d.data(),
+                    get: (f: string) => d.get(f)
+                  })),
+                  forEach: (cb: any) => snap.docs.forEach(d => cb({
+                    id: d.id,
+                    data: () => d.data(),
+                    get: (f: string) => d.get(f)
+                  }))
+                };
+              }
+            });
+            return queryWrapper(q);
+          },
+          limit: (n: number) => {
+            let q = query(colRef, limit(n));
+            const queryWrapper = (currentQ: any) => ({
+              where: (f: string, o: any, v: any) => queryWrapper(query(currentQ, where(f, o, v))),
+              orderBy: (f: string, d: any = 'asc') => queryWrapper(query(currentQ, orderBy(f, d))),
+              get: async () => {
+                const snap = await getDocs(currentQ);
+                return {
+                  size: snap.size,
+                  empty: snap.empty,
+                  docs: snap.docs.map(d => ({
+                    id: d.id,
+                    data: () => d.data(),
+                    get: (f: string) => d.get(f)
+                  })),
+                  forEach: (cb: any) => snap.docs.forEach(d => cb({
+                    id: d.id,
+                    data: () => d.data(),
+                    get: (f: string) => d.get(f)
+                  }))
+                };
+              }
+            });
+            return queryWrapper(q);
+          },
+          get: async () => {
+            const snap = await getDocs(colRef);
+            return {
+              size: snap.size,
+              empty: snap.empty,
+              docs: snap.docs.map(d => ({
+                id: d.id,
+                data: () => d.data(),
+                get: (f: string) => d.get(f)
+              })),
+              forEach: (cb: any) => snap.docs.forEach(d => cb({
+                id: d.id,
+                data: () => d.data(),
+                get: (f: string) => d.get(f)
+              }))
+            };
+          }
+        };
+      }
+    };
+    
+    activeDbId = dbId;
+    
+    // Health check
+    log(`[getDb] Running health check on ${dbId}...`);
+    const snapshot = await db.collection('health_check').limit(1).get();
+    log(`[getDb] Health check success for ${dbId}. Found ${snapshot.size} docs.`);
+    
+    return db;
+  } catch (e: any) {
+    log(`[getDb] Initialization of Client SDK Firestore failed: ${e.message}`);
+    throw e;
+  }
 }
 
 async function startServer() {
   try {
-    process.env.GOOGLE_CLOUD_PROJECT = firebaseConfig.projectId;
+    log('Environment Check: ' + JSON.stringify({
+      K_SERVICE: process.env.K_SERVICE,
+      GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
+      NODE_ENV: process.env.NODE_ENV
+    }));
+    
+    const originalProject = process.env.GOOGLE_CLOUD_PROJECT;
     
     if (admin.apps.length === 0) {
-      console.log('Initializing Firebase Admin with project ID:', firebaseConfig.projectId);
-      admin.initializeApp({
-        projectId: firebaseConfig.projectId
-      });
+      log('Initializing Firebase Admin with default credentials');
+      admin.initializeApp();
     }
     
     // Initial DB connection
@@ -67,17 +224,28 @@ async function startServer() {
     if (db) {
       try {
         await db.collection('health_check').doc('startup').set({
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          timestamp: Timestamp.now(),
           message: 'Server started'
         }, { merge: true });
-        console.log(`Successfully verified Firestore connection to ${activeDbId} and wrote startup log`);
+        log(`Successfully verified Firestore connection to ${activeDbId} and wrote startup log`);
+        
+        // Write success file
+        fs.writeFileSync('firestore_success.json', JSON.stringify({
+          status: 'success',
+          database: activeDbId,
+          timestamp: new Date().toISOString()
+        }, null, 2));
       } catch (e: any) {
-        console.error(`Initial Firestore verification failed for ${activeDbId}:`, e.message);
-        // If it failed and we were using a named DB, clear it so next request tries fallback
-        if (activeDbId !== '(default)') {
-          db = null;
-          activeDbId = null;
-        }
+        log(`Initial Firestore verification write failed for ${activeDbId}: ${e.message}`);
+        
+        // Write failure file
+        fs.writeFileSync('firestore_success.json', JSON.stringify({
+          status: 'failure',
+          database: activeDbId,
+          error: e.message,
+          code: e.code,
+          timestamp: new Date().toISOString()
+        }, null, 2));
       }
     }
   } catch (error) {
@@ -209,7 +377,7 @@ async function startServer() {
         type: 'webhook',
         orderId: order.id.toString(),
         status: order.status,
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: serverTimestamp()
       });
 
       res.status(200).send('Webhook processed');
@@ -233,10 +401,10 @@ async function startServer() {
       try {
         snapshot = await database.collection('courier_configs').get();
       } catch (e: any) {
-        // If we get a NOT_FOUND error here, it means the database instance we have is invalid
         console.error(`Fetch failed on ${activeDbId}. Code: ${e.code}, Message: ${e.message}`);
-        if (e.code === 5 || e.message?.includes('NOT_FOUND')) {
-          console.error(`Database ${activeDbId} not found during fetch, attempting fallback to (default)`);
+        // Fallback on NOT_FOUND (5) or PERMISSION_DENIED (7)
+        if (e.code === 5 || e.code === 7 || e.message?.includes('NOT_FOUND') || e.message?.includes('PERMISSION_DENIED')) {
+          console.error(`Database ${activeDbId} issue (Code ${e.code}), attempting fallback to (default)`);
           db = getFirestore(admin.app());
           activeDbId = '(default)';
           try {
@@ -282,7 +450,7 @@ async function startServer() {
       try {
         await database.collection('courier_configs').doc(courier.toLowerCase()).set({
           ...config,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          updatedAt: serverTimestamp()
         }, { merge: true });
       } catch (e: any) {
         if (e.code === 5 || e.message?.includes('NOT_FOUND')) {
@@ -291,7 +459,7 @@ async function startServer() {
           activeDbId = '(default)';
           await db.collection('courier_configs').doc(courier.toLowerCase()).set({
             ...config,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            updatedAt: serverTimestamp()
           }, { merge: true });
         } else {
           throw e;
@@ -330,7 +498,7 @@ async function startServer() {
         request: orderData,
         response: result,
         status: 'success',
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: serverTimestamp()
       });
 
       res.json(result);
@@ -379,7 +547,7 @@ async function startServer() {
         request: orderData,
         response: result,
         status: 'success',
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: serverTimestamp()
       });
 
       res.json(result);
