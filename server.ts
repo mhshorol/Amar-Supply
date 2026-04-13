@@ -317,12 +317,14 @@ async function startServer() {
 
       const response = await axios.get(`${wooUrl}/wp-json/wc/v3/orders`, {
         params: {
-          consumer_key: wooConsumerKey,
-          consumer_secret: wooConsumerSecret,
           page,
           per_page,
           status,
           search
+        },
+        auth: {
+          username: wooConsumerKey,
+          password: wooConsumerSecret
         }
       });
 
@@ -368,11 +370,13 @@ async function startServer() {
 
       const response = await axios.get(`${wooUrl}/wp-json/wc/v3/products`, {
         params: {
-          consumer_key: wooConsumerKey,
-          consumer_secret: wooConsumerSecret,
           page,
           per_page,
           search
+        },
+        auth: {
+          username: wooConsumerKey,
+          password: wooConsumerSecret
         }
       });
 
@@ -410,12 +414,13 @@ async function startServer() {
 
       // Try standard REST API first
       try {
-        const response = await axios.put(`${wooUrl}/wp-json/wc/v3/orders/${id}`, {
-          status
+        const response = await axios.post(`${wooUrl}/wp-json/wc/v3/orders/${id}`, {
+          status,
+          _method: 'PUT'
         }, {
-          params: {
-            consumer_key: wooConsumerKey,
-            consumer_secret: wooConsumerSecret
+          auth: {
+            username: wooConsumerKey,
+            password: wooConsumerSecret
           }
         });
         return res.json(response.data);
@@ -423,16 +428,19 @@ async function startServer() {
         // If it's an HTML response, it might be a permalink issue
         const isHtml = typeof error.response?.data === 'string' && error.response.data.includes('<!DOCTYPE html>');
         
-        if (isHtml || error.response?.status === 404) {
+        if (isHtml || error.response?.status === 404 || error.response?.status === 405 || error.response?.status === 401) {
           // Try fallback for non-pretty permalinks
           try {
-            const fallbackResponse = await axios.put(`${wooUrl}/index.php`, {
-              status
+            const fallbackResponse = await axios.post(`${wooUrl}/index.php`, {
+              status,
+              _method: 'PUT'
             }, {
               params: {
-                rest_route: `/wc/v3/orders/${id}`,
-                consumer_key: wooConsumerKey,
-                consumer_secret: wooConsumerSecret
+                rest_route: `/wc/v3/orders/${id}`
+              },
+              auth: {
+                username: wooConsumerKey,
+                password: wooConsumerSecret
               }
             });
             return res.json(fallbackResponse.data);

@@ -75,6 +75,7 @@ export default function POS() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', address: '' });
   const [completedOrder, setCompletedOrder] = useState<any>(null);
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState<{product: any, variants: any[]} | null>(null);
   const [companySettings, setCompanySettings] = useState<any>(null);
   const [sendSMS, setSendSMS] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -595,7 +596,14 @@ export default function POS() {
               <div 
                 key={product.id}
                 className="bg-white border border-gray-100 rounded-2xl overflow-hidden transition-all flex flex-col group cursor-pointer relative hover:shadow-md hover:border-[#00AEEF]/20"
-                onClick={() => productVariants.length === 0 && totalStock > 0 && addToCart(product)}
+                onClick={() => {
+                  if (totalStock <= 0) return;
+                  if (productVariants.length > 0) {
+                    setSelectedProductForVariants({ product, variants: productVariants });
+                  } else {
+                    addToCart(product);
+                  }
+                }}
               >
                 {/* Status Badge */}
                 <div className="absolute top-2 right-2 z-10">
@@ -629,31 +637,17 @@ export default function POS() {
                   <h3 className="text-[11px] font-bold text-gray-900 line-clamp-2 group-hover:text-[#00AEEF] transition-colors uppercase tracking-tight leading-tight mb-1">
                     {product.name}
                   </h3>
-                  <p className="text-xs font-black text-[#00AEEF]">
-                    {currencySymbol}{(product.price || 0).toLocaleString()}
-                  </p>
-                </div>
-
-                {/* Variant Quick Select Overlay (on hover) */}
-                {productVariants.length > 0 && (
-                  <div className="absolute inset-0 bg-white/95 p-2 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-20">
-                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Select Variant</p>
-                    <div className="flex flex-wrap justify-center gap-1">
-                      {productVariants.map(v => (
-                        <button
-                          key={v.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product, v);
-                          }}
-                          className="px-2 py-1 bg-white text-gray-900 text-[9px] font-bold hover:bg-[#00AEEF] hover:text-white transition-all border border-gray-100 rounded-lg"
-                        >
-                          {v.name}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs font-black text-[#00AEEF]">
+                      {currencySymbol}{(product.price || 0).toLocaleString()}
+                    </p>
+                    {productVariants.length > 0 && (
+                      <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                        {productVariants.length} Variants
+                      </span>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
@@ -661,7 +655,7 @@ export default function POS() {
       </div>
 
       {/* Right Side: Cart & Checkout */}
-      <div className="w-full lg:w-[400px] flex flex-col gap-4 h-full">
+      <div className="w-full lg:w-[400px] flex flex-col gap-4 h-full overflow-y-auto lg:pr-1 custom-scrollbar pb-6 lg:pb-0">
         {/* Customer Selection */}
         <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-3 shrink-0">
           <div className="flex items-center justify-between">
@@ -707,17 +701,18 @@ export default function POS() {
               </button>
             </div>
           ) : (
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
-                type="text"
-                placeholder="Search customer..."
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
-                value={customerSearch}
-                onChange={(e) => setCustomerSearch(e.target.value)}
-              />
-              {customerSearch && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-20 max-h-48 overflow-y-auto">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input 
+                  type="text"
+                  placeholder="Search customer..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                />
+                {customerSearch && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-20 max-h-48 overflow-y-auto">
                   {filteredCustomers.length > 0 ? (
                     filteredCustomers.map(c => (
                       <button
@@ -749,15 +744,23 @@ export default function POS() {
                         <p className="text-[10px] uppercase font-bold tracking-wider opacity-70">New Customer</p>
                       </div>
                     </button>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={() => setSelectedCustomer({ id: 'walk-in', name: 'Walk-in Customer', phone: 'N/A' })}
+                className="px-3 py-2.5 bg-gray-50 hover:bg-[#00AEEF] hover:text-white rounded-xl transition-all border border-transparent hover:border-[#00AEEF]/20 text-xs font-bold whitespace-nowrap flex items-center gap-1 shrink-0"
+              >
+                <User size={14} />
+                Walk-in
+              </button>
             </div>
           )}
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col overflow-hidden min-h-[300px]">
+        <div className="flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col overflow-hidden min-h-[300px] shrink-0">
           <div className="p-4 border-b border-gray-50 flex items-center justify-between shrink-0">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <ShoppingCart size={18} className="text-[#00AEEF]" />
@@ -765,7 +768,17 @@ export default function POS() {
             </h3>
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => setCart([])}
+                onClick={() => {
+                  if (cart.length > 0) {
+                    setConfirmConfig({
+                      isOpen: true,
+                      title: 'Clear Cart',
+                      message: 'Are you sure you want to remove all items from the cart?',
+                      variant: 'danger',
+                      onConfirm: () => setCart([])
+                    });
+                  }
+                }}
                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                 title="Clear Cart"
               >
@@ -777,7 +790,7 @@ export default function POS() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-2">
+          <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-2 py-12">
                 <ShoppingCart size={48} className="opacity-20" />
@@ -805,10 +818,11 @@ export default function POS() {
                         </button>
                         <input 
                           type="number"
-                          className="text-[11px] font-bold w-8 text-center bg-transparent outline-none"
+                          className="text-[12px] font-bold w-10 text-center bg-white border border-gray-200 rounded outline-none focus:border-[#00AEEF] py-0.5"
                           value={item.quantity}
                           onChange={(e) => {
-                            const val = parseInt(e.target.value) || 0;
+                            const val = parseInt(e.target.value);
+                            if (isNaN(val)) return;
                             if (val > item.stock) {
                               toast.error('Cannot exceed available stock');
                               return;
@@ -836,31 +850,40 @@ export default function POS() {
               </div>
             )}
           </div>
+        </div>
 
-          {/* Summary & Checkout */}
-          <div className="p-4 bg-gray-50 border-t border-gray-100 space-y-4 shrink-0">
-            <div className="space-y-2">
+        {/* Summary & Checkout */}
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 space-y-4 shrink-0">
+          <div className="space-y-2">
               <div className="flex justify-between text-xs text-gray-500">
                 <span>Subtotal</span>
                 <span className="font-bold text-gray-900">{currencySymbol}{(subtotal || 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center text-xs text-gray-500">
                 <span>Discount</span>
-                <input 
-                  type="number"
-                  className="w-20 text-right bg-transparent border-b border-gray-200 focus:border-[#00AEEF] outline-none font-bold text-gray-900"
-                  value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
-                />
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold">{currencySymbol}</span>
+                  <input 
+                    type="number"
+                    className="w-24 pl-6 pr-2 py-1 text-right bg-white border border-gray-200 rounded-lg focus:border-[#00AEEF] outline-none font-bold text-gray-900 transition-all"
+                    value={discount || ''}
+                    placeholder="0"
+                    onChange={(e) => setDiscount(Number(e.target.value))}
+                  />
+                </div>
               </div>
               <div className="flex justify-between items-center text-xs text-gray-500">
                 <span>Tax</span>
-                <input 
-                  type="number"
-                  className="w-20 text-right bg-transparent border-b border-gray-200 focus:border-[#00AEEF] outline-none font-bold text-gray-900"
-                  value={tax}
-                  onChange={(e) => setTax(Number(e.target.value))}
-                />
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold">{currencySymbol}</span>
+                  <input 
+                    type="number"
+                    className="w-24 pl-6 pr-2 py-1 text-right bg-white border border-gray-200 rounded-lg focus:border-[#00AEEF] outline-none font-bold text-gray-900 transition-all"
+                    value={tax || ''}
+                    placeholder="0"
+                    onChange={(e) => setTax(Number(e.target.value))}
+                  />
+                </div>
               </div>
               <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
                 <span className="text-sm font-bold text-gray-900">Total</span>
@@ -946,7 +969,6 @@ export default function POS() {
             </button>
           </div>
         </div>
-      </div>
 
       {/* Camera Scanner Modal */}
       {isScannerOpen && (
@@ -1076,6 +1098,70 @@ export default function POS() {
           )}
         </div>
       </div>
+
+      {/* Variant Selection Modal */}
+      {selectedProductForVariants && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Select Variant</h3>
+              <button onClick={() => setSelectedProductForVariants(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-all">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
+                  {(selectedProductForVariants.product.images?.[0] || selectedProductForVariants.product.image) ? (
+                    <img 
+                      src={selectedProductForVariants.product.images?.[0] || selectedProductForVariants.product.image} 
+                      alt={selectedProductForVariants.product.name} 
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <Package size={24} className="text-gray-300" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900">{selectedProductForVariants.product.name}</h4>
+                  <p className="text-sm text-[#00AEEF] font-bold">{currencySymbol}{(selectedProductForVariants.product.price || 0).toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {selectedProductForVariants.variants.map(v => {
+                  const stock = getStock(selectedProductForVariants.product.id, v.id);
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        if (stock > 0) {
+                          addToCart(selectedProductForVariants.product, v);
+                          setSelectedProductForVariants(null);
+                        }
+                      }}
+                      disabled={stock <= 0}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        stock > 0 
+                          ? 'bg-white border-gray-200 hover:border-[#00AEEF] hover:bg-blue-50 cursor-pointer' 
+                          : 'bg-gray-50 border-gray-100 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <p className="font-bold text-sm text-gray-900">{v.name}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs font-bold text-[#00AEEF]">{currencySymbol}{(v.price || selectedProductForVariants.product.price || 0).toLocaleString()}</p>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {stock > 0 ? `${stock} in stock` : 'Out of stock'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal 
         isOpen={confirmConfig.isOpen}

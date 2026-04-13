@@ -1115,20 +1115,48 @@ export default function Orders() {
     if (!auth.currentUser || selectedOrders.length === 0) return;
     try {
       const batch = writeBatch(db);
+      const wooOrdersToUpdate: string[] = [];
+      
       selectedOrders.forEach(id => {
-        batch.update(doc(db, 'orders', id), { 
-          status: newStatus, 
-          updatedAt: serverTimestamp(),
-          logs: arrayUnion({
-            user: auth.currentUser?.email,
-            action: 'Bulk Status Update',
-            timestamp: Timestamp.now(),
-            details: `New Status: ${newStatus}`
-          })
-        });
+        if (id.startsWith('woo_')) {
+          wooOrdersToUpdate.push(id);
+        } else {
+          batch.update(doc(db, 'orders', id), { 
+            status: newStatus, 
+            updatedAt: serverTimestamp(),
+            logs: arrayUnion({
+              user: auth.currentUser?.email,
+              action: 'Bulk Status Update',
+              timestamp: Timestamp.now(),
+              details: `New Status: ${newStatus}`
+            })
+          });
+        }
       });
+      
       await batch.commit();
+      
+      // Handle WooCommerce orders sequentially
+      if (wooOrdersToUpdate.length > 0) {
+        setLoading(true);
+        for (const id of wooOrdersToUpdate) {
+          const wooId = id.replace('woo_', '');
+          try {
+            await fetch(`/api/woocommerce/orders/${wooId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus })
+            });
+            setWooOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+          } catch (error) {
+            console.error(`Failed to update WooCommerce order ${wooId}:`, error);
+          }
+        }
+        setLoading(false);
+      }
+      
       setSelectedOrders([]);
+      toast.success(`Status updated to ${newStatus}`);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'orders');
     }
@@ -1219,6 +1247,9 @@ export default function Orders() {
             body: JSON.stringify({ status: 'processing' })
           });
           
+          // Update local state so UI reflects the change immediately
+          setWooOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'processing' } : o));
+          
           // Also save to local deliveries for tracking
           await addDoc(collection(db, 'deliveries'), {
             id: trackingCode,
@@ -1277,7 +1308,8 @@ export default function Orders() {
     }
     const targetCourier = activeCouriers[0][0];
 
-    const eligibleOrders = orders.filter(o => 
+    const allOrders = [...orders, ...wooOrders];
+    const eligibleOrders = allOrders.filter(o => 
       selectedOrders.includes(o.id) && 
       !['shipped', 'delivered', 'cancelled', 'returned'].includes(o.status)
     );
@@ -1338,30 +1370,52 @@ export default function Orders() {
         if (response.ok) {
           const trackingCode = result.consignment?.tracking_code || result.tracking_id || result.tracking_code;
           
-          await updateDoc(doc(db, 'orders', order.id), {
-            courierName: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
-            trackingNumber: trackingCode,
-            status: 'shipped',
-            updatedAt: serverTimestamp(),
-            logs: arrayUnion({
-              user: auth.currentUser?.email,
-              action: `Sent to ${targetCourier} (Bulk)`,
-              timestamp: Timestamp.now(),
-              details: `Tracking Code: ${trackingCode}`
-            })
-          });
+          if (order.source === 'woocommerce') {
+            await fetch(`/api/woocommerce/orders/${order.wooId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'processing' })
+            });
+            
+            setWooOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'processing' } : o));
+            
+            await addDoc(collection(db, 'deliveries'), {
+              id: trackingCode,
+              orderId: order.id,
+              wooId: order.wooId,
+              courier: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
+              status: 'Pending Pickup',
+              location: order.customerZone || 'Processing',
+              eta: '2-3 Days',
+              createdAt: serverTimestamp(),
+              uid: auth.currentUser?.uid
+            });
+          } else {
+            await updateDoc(doc(db, 'orders', order.id), {
+              courierName: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
+              trackingNumber: trackingCode,
+              status: 'shipped',
+              updatedAt: serverTimestamp(),
+              logs: arrayUnion({
+                user: auth.currentUser?.email,
+                action: `Sent to ${targetCourier} (Bulk)`,
+                timestamp: Timestamp.now(),
+                details: `Tracking Code: ${trackingCode}`
+              })
+            });
 
-          // Add to deliveries collection
-          await addDoc(collection(db, 'deliveries'), {
-            id: trackingCode,
-            orderId: order.id,
-            courier: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
-            status: 'Pending Pickup',
-            location: order.customerZone || 'Processing',
-            eta: '2-3 Days',
-            createdAt: serverTimestamp(),
-            uid: auth.currentUser?.uid
-          });
+            // Add to deliveries collection
+            await addDoc(collection(db, 'deliveries'), {
+              id: trackingCode,
+              orderId: order.id,
+              courier: targetCourier.charAt(0).toUpperCase() + targetCourier.slice(1),
+              status: 'Pending Pickup',
+              location: order.customerZone || 'Processing',
+              eta: '2-3 Days',
+              createdAt: serverTimestamp(),
+              uid: auth.currentUser?.uid
+            });
+          }
 
           successCount++;
         } else {
@@ -1381,7 +1435,8 @@ export default function Orders() {
   };
 
   const handleExportCSV = () => {
-    if (orders.length === 0) {
+    const allOrders = [...orders, ...wooOrders];
+    if (allOrders.length === 0) {
       toast.error('No orders to export');
       return;
     }
@@ -1389,7 +1444,7 @@ export default function Orders() {
     const headers = ['Order ID', 'Order Number', 'Customer Name', 'Phone', 'Address', 'City', 'Zone', 'Subtotal', 'Delivery Charge', 'Discount', 'Total Amount', 'Paid Amount', 'Due Amount', 'Status', 'Channel', 'Payment Method', 'Created At'];
     const csvRows = [headers.join(',')];
 
-    orders.forEach(order => {
+    allOrders.forEach(order => {
       const row = [
         order.id,
         order.orderNumber || '',
@@ -1739,18 +1794,22 @@ export default function Orders() {
                               >
                                 <Truck size={14} />
                               </button>
-                              <button 
-                                onClick={() => handleOpenEditModal(order)}
-                                className="p-2 hover:bg-[#ffffff] rounded-lg text-[#9ca3af] hover:text-[#141414] transition-colors shadow-sm border border-transparent hover:border-[#f3f4f6]"
-                              >
-                                <Edit size={14} />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteOrder(order.id)}
-                                className="p-2 hover:bg-[#fef2f2] rounded-lg text-[#9ca3af] hover:text-[#dc2626] transition-colors shadow-sm border border-transparent hover:border-[#fee2e2]"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+                              {order.source !== 'woocommerce' && (
+                                <>
+                                  <button 
+                                    onClick={() => handleOpenEditModal(order)}
+                                    className="p-2 hover:bg-[#ffffff] rounded-lg text-[#9ca3af] hover:text-[#141414] transition-colors shadow-sm border border-transparent hover:border-[#f3f4f6]"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteOrder(order.id)}
+                                    className="p-2 hover:bg-[#fef2f2] rounded-lg text-[#9ca3af] hover:text-[#dc2626] transition-colors shadow-sm border border-transparent hover:border-[#fee2e2]"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1853,7 +1912,13 @@ export default function Orders() {
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
-                                    onClick={() => handleOpenEditModal(order)}
+                                    onClick={() => {
+                                      if (order.source !== 'woocommerce') {
+                                        handleOpenEditModal(order);
+                                      } else {
+                                        toast.info('WooCommerce orders cannot be edited locally.');
+                                      }
+                                    }}
                                     className={`bg-[#ffffff] p-4 rounded-2xl border border-[#f3f4f6] shadow-sm hover:shadow-md transition-all cursor-pointer group ${
                                       snapshot.isDragging ? 'shadow-2xl ring-2 ring-[#00AEEF]/20 rotate-2 scale-105' : ''
                                     }`}
