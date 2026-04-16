@@ -15,7 +15,7 @@ import {
   Smartphone,
   ShieldCheck
 } from 'lucide-react';
-import { db, auth, collection, query, serverTimestamp, Timestamp, doc, getDocs, where, runTransaction } from '../firebase';
+import { db, auth, collection, query, serverTimestamp, Timestamp, doc, getDocs, where, runTransaction, limit } from '../firebase';
 import { toast } from 'sonner';
 import { logActivity } from '../services/activityService';
 import { checkDuplicateOrder } from '../services/orderService';
@@ -501,6 +501,48 @@ export default function NewOrder() {
           uid: auth.currentUser!.uid,
           createdAt: serverTimestamp()
         });
+
+        // Add to Finance if paidAmount > 0
+        if (data.paidAmount > 0) {
+          let accountId = '';
+          const accountsQuery = query(collection(db, 'accounts'), where('name', '==', data.paymentMethod));
+          const accountsSnap = await getDocs(accountsQuery);
+          if (!accountsSnap.empty) {
+            accountId = accountsSnap.docs[0].id;
+          } else {
+            const allAccountsSnap = await getDocs(query(collection(db, 'accounts'), limit(1)));
+            if (!allAccountsSnap.empty) {
+              accountId = allAccountsSnap.docs[0].id;
+            }
+          }
+
+          const transactionRef = doc(collection(db, 'transactions'));
+          transaction.set(transactionRef, {
+            type: 'income',
+            category: 'Sales',
+            amount: data.paidAmount,
+            description: `Order #${nextOrderNumber} Payment`,
+            date: serverTimestamp(),
+            method: data.paymentMethod,
+            accountId: accountId,
+            orderId: orderRef.id,
+            orderNumber: nextOrderNumber,
+            uid: auth.currentUser?.uid,
+            createdAt: serverTimestamp()
+          });
+
+          if (accountId) {
+            const accountRef = doc(db, 'accounts', accountId);
+            const accountSnap = await transaction.get(accountRef);
+            if (accountSnap.exists()) {
+              const currentBalance = accountSnap.data().balance || 0;
+              transaction.update(accountRef, {
+                balance: currentBalance + data.paidAmount,
+                updatedAt: serverTimestamp()
+              });
+            }
+          }
+        }
 
         // Send SMS if enabled
         if (sendSMS) {

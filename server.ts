@@ -6,7 +6,7 @@ import axios from 'axios';
 import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import cors from 'cors';
-import { CourierFactory, CourierOrderData } from './src/lib/courierAdapters';
+import { CourierFactory, CourierOrderData } from './src/lib/courierAdapters.ts';
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -870,6 +870,80 @@ async function startServer() {
       res.json(result);
     } catch (error: any) {
       console.error(`Courier Track Error (${req.params.courier}):`, error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/sms/send', async (req, res) => {
+    try {
+      const { to, message } = req.body;
+      if (!to || !message) {
+        return res.status(400).json({ error: 'Missing "to" or "message" in request body' });
+      }
+
+      const database = await getDb();
+      if (!database) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+
+      const companyDoc = await database.collection('settings').doc('company').get();
+      const settings = companyDoc.data()?.sms;
+
+      if (!settings || !settings.enableOrderConfirmation) {
+        return res.status(400).json({ error: 'SMS is disabled in settings' });
+      }
+
+      // Basic implementation for Twilio
+      if (settings.smsGateway === 'Twilio') {
+        if (!settings.twilioSid || !settings.twilioToken || !settings.twilioFrom) {
+          return res.status(400).json({ error: 'Twilio credentials are not fully configured' });
+        }
+
+        const authHeader = Buffer.from(`${settings.twilioSid}:${settings.twilioToken}`).toString('base64');
+        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${settings.twilioSid}/Messages.json`;
+        
+        const params = new URLSearchParams();
+        params.append('To', to);
+        params.append('From', settings.twilioFrom);
+        params.append('Body', message);
+
+        const twilioResponse = await fetch(twilioUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${authHeader}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: params
+        });
+
+        const twilioData = await twilioResponse.json();
+        if (!twilioResponse.ok) {
+          throw new Error(twilioData.message || 'Failed to send SMS via Twilio');
+        }
+
+        return res.json({ success: true, data: twilioData });
+      } else if (settings.smsGateway === 'BulksmsBD') {
+        // Placeholder for BulksmsBD
+        console.log('Sending via BulksmsBD:', { to, message });
+        return res.json({ success: true, message: 'Simulated sending via BulksmsBD' });
+      } else if (settings.smsGateway === 'MimSMS') {
+        // Placeholder for MimSMS
+        console.log('Sending via MimSMS:', { to, message });
+        return res.json({ success: true, message: 'Simulated sending via MimSMS' });
+      }
+
+      res.status(400).json({ error: 'Unsupported SMS gateway' });
+    } catch (error: any) {
+      console.error('SMS Send Error:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete('/api/users/:uid', async (req, res) => {
+    try {
+      const { uid } = req.params;
+      await admin.auth().deleteUser(uid);
+      res.json({ success: true, message: 'User deleted from Firebase Auth' });
+    } catch (error: any) {
+      console.error('Error deleting user from Auth:', error);
       res.status(500).json({ error: error.message });
     }
   });

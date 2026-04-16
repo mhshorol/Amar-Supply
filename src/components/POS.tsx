@@ -22,7 +22,7 @@ import {
   Barcode,
   Scan
 } from 'lucide-react';
-import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, writeBatch, getDoc, getDocs, where, Timestamp, runTransaction } from '../firebase';
+import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, writeBatch, getDoc, getDocs, where, Timestamp, runTransaction, limit } from '../firebase';
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'sonner';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -341,10 +341,30 @@ export default function POS() {
         inventorySnaps.push({ item, snap: invSnap });
       }
 
+      // Find the account for the payment method before transaction
+      const accountsQuery = query(collection(db, 'accounts'), where('name', '==', paymentMethod));
+      const accountsSnap = await getDocs(accountsQuery);
+      let accountId = '';
+      if (!accountsSnap.empty) {
+        accountId = accountsSnap.docs[0].id;
+      } else {
+        // Fallback to first account if not found by name
+        const allAccountsSnap = await getDocs(query(collection(db, 'accounts'), limit(1)));
+        if (!allAccountsSnap.empty) {
+          accountId = allAccountsSnap.docs[0].id;
+        }
+      }
+
       const result = await runTransaction(db, async (transaction) => {
         // 2. TRANSACTION READS
         const settingsRef = doc(db, 'settings', 'company');
         const settingsSnap = await transaction.get(settingsRef);
+
+        let accountSnap = null;
+        if (accountId) {
+          const accountRef = doc(db, 'accounts', accountId);
+          accountSnap = await transaction.get(accountRef);
+        }
 
         const customerRef = doc(db, 'customers', selectedCustomer!.id);
         const customerSnap = await transaction.get(customerRef);
@@ -443,12 +463,22 @@ export default function POS() {
           amount: total,
           description: `POS Sale #${nextOrderNumber}`,
           date: serverTimestamp(),
-          paymentMethod,
+          method: paymentMethod,
+          accountId: accountId,
           orderId: orderRef.id,
           orderNumber: nextOrderNumber,
           uid: auth.currentUser?.uid,
           createdAt: serverTimestamp()
         });
+
+        // Update Account Balance
+        if (accountId && accountSnap && accountSnap.exists()) {
+          const currentBalance = accountSnap.data().balance || 0;
+          transaction.update(doc(db, 'accounts', accountId), {
+            balance: currentBalance + total,
+            updatedAt: serverTimestamp()
+          });
+        }
 
         // 4. PREPARE COMPLETED ORDER DATA
         const finalCompletedOrder = { ...orderData, id: orderRef.id };

@@ -168,7 +168,9 @@ export default function Settings() {
         const docRef = doc(db, 'settings', 'company');
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setCompanyInfo(prev => ({ ...prev, ...docSnap.data() }));
+          const data = docSnap.data();
+          setCompanyInfo(prev => ({ ...prev, ...data }));
+          if (data.sms) setSmsSettings(prev => ({ ...prev, ...data.sms }));
         }
 
         const userDocRef = doc(db, 'settings', `user_${auth.currentUser?.uid}`);
@@ -181,7 +183,6 @@ export default function Settings() {
           if (data.integrations) setIntegrationSettings(prev => ({ ...prev, ...data.integrations }));
           if (data.dataManagement) setDataSettings(prev => ({ ...prev, ...data.dataManagement }));
           if (data.mobile) setMobileSettings(prev => ({ ...prev, ...data.mobile }));
-          if (data.sms) setSmsSettings(prev => ({ ...prev, ...data.sms }));
         }
 
         // Fetch courier configs from backend
@@ -407,6 +408,10 @@ export default function Settings() {
         await setDoc(doc(db, 'settings', 'company'), companyInfo, { merge: true });
       }
       
+      if (activeTab === 'SMS Settings') {
+        await setDoc(doc(db, 'settings', 'company'), { sms: smsSettings }, { merge: true });
+      }
+      
       if (activeTab === 'Logistics') {
         console.log('Saving logistics configs:', courierConfigs);
         // Save each courier config to backend
@@ -437,7 +442,6 @@ export default function Settings() {
         if (activeTab === 'Notifications') updateData.notifications = notificationSettings;
         if (activeTab === 'Security') updateData.security = securitySettings;
         if (activeTab === 'Integrations') updateData.integrations = integrationSettings;
-        if (activeTab === 'SMS Settings') updateData.sms = smsSettings;
         if (activeTab === 'Data Management') updateData.dataManagement = dataSettings;
         if (activeTab === 'Mobile App') updateData.mobile = mobileSettings;
         
@@ -480,34 +484,76 @@ export default function Settings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Navigation */}
-        <div className="lg:col-span-1 space-y-2">
-          {[
-            { name: 'General', icon: SettingsIcon },
-            { name: 'Company Info', icon: Building2 },
-            { name: 'Account', icon: UserIcon },
-            { name: 'Notifications', icon: Bell },
-            { name: 'SMS Settings', icon: Smartphone },
-            { name: 'Security', icon: Shield },
-            { name: 'Integrations', icon: Globe },
-            { name: 'Logistics', icon: Truck },
-            { name: 'Data Management', icon: Database },
-            { name: 'Mobile App', icon: Smartphone },
-            { name: 'Activity Logs', icon: ClipboardList },
-            ...(currentUserRole === 'admin' ? [{ name: 'Team Permissions', icon: Users }] : []),
-          ].map((item) => (
-            <button
-              key={item.name}
-              onClick={() => setActiveTab(item.name)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                activeTab === item.name 
-                  ? 'bg-white text-[#141414] shadow-sm border border-gray-100' 
-                  : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              <item.icon size={18} />
-              {item.name}
-            </button>
-          ))}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-6">
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-3 mb-2">Business</h4>
+              {[
+                { name: 'General', icon: SettingsIcon },
+                { name: 'Company Info', icon: Building2 },
+                { name: 'Logistics', icon: Truck },
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => setActiveTab(item.name)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    activeTab === item.name 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon size={18} className={activeTab === item.name ? 'text-blue-600' : 'text-gray-400'} />
+                  {item.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-3 mb-2">User</h4>
+              {[
+                { name: 'Account', icon: UserIcon },
+                { name: 'Notifications', icon: Bell },
+                { name: 'Security', icon: Shield },
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => setActiveTab(item.name)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    activeTab === item.name 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon size={18} className={activeTab === item.name ? 'text-blue-600' : 'text-gray-400'} />
+                  {item.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-3 mb-2">System</h4>
+              {[
+                { name: 'Integrations', icon: Globe },
+                { name: 'SMS Settings', icon: Smartphone },
+                { name: 'Data Management', icon: Database },
+                { name: 'Mobile App', icon: Smartphone },
+                { name: 'Activity Logs', icon: ClipboardList },
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => setActiveTab(item.name)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    activeTab === item.name 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon size={18} className={activeTab === item.name ? 'text-blue-600' : 'text-gray-400'} />
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Content */}
@@ -1379,90 +1425,6 @@ export default function Settings() {
 
             {activeTab === 'Activity Logs' && (
               <ActivityLogsTab />
-            )}
-
-            {activeTab === 'Team Permissions' && currentUserRole === 'admin' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-bold flex items-center gap-2">
-                  <Users size={20} /> Team Permissions
-                </h3>
-                <p className="text-sm text-gray-500">Select a user to manage their access to specific modules.</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* User List */}
-                  <div className="md:col-span-1 border rounded-xl overflow-hidden">
-                    <div className="bg-gray-50 px-4 py-2 border-b text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Team Members
-                    </div>
-                    <div className="divide-y max-h-[400px] overflow-y-auto">
-                      {users.filter(u => u.role !== 'admin').map((user) => (
-                        <button
-                          key={user.uid}
-                          onClick={() => setSelectedUser(user)}
-                          className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${selectedUser?.uid === user.uid ? 'bg-blue-50 border-l-4 border-blue-600' : ''}`}
-                        >
-                          <p className="text-sm font-bold text-gray-900">{user.name}</p>
-                          <p className="text-xs text-gray-500 capitalize">{user.role}</p>
-                        </button>
-                      ))}
-                      {users.filter(u => u.role !== 'admin').length === 0 && (
-                        <div className="p-4 text-center text-sm text-gray-500">
-                          No managers or staff found.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Permissions Toggles */}
-                  <div className="md:col-span-2 border rounded-xl overflow-hidden">
-                    <div className="bg-gray-50 px-4 py-2 border-b text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      {selectedUser ? `Permissions for ${selectedUser.name}` : 'Select a user'}
-                    </div>
-                    <div className="p-4 space-y-4">
-                      {selectedUser ? (
-                        <div className="grid grid-cols-1 gap-3">
-                          {[
-                            { key: 'dashboard', label: 'Dashboard', icon: Globe },
-                            { key: 'pos', label: 'POS', icon: Calculator },
-                            { key: 'orders', label: 'Orders', icon: ShoppingCart },
-                            { key: 'inventory', label: 'Inventory', icon: Database },
-                            { key: 'crm', label: 'CRM / Customers', icon: UserIcon },
-                            { key: 'suppliers', label: 'Suppliers', icon: UserPlus },
-                            { key: 'logistics', label: 'Logistics', icon: Truck },
-                            { key: 'tasks', label: 'Tasks', icon: ClipboardList },
-                            { key: 'finance', label: 'Finance', icon: CreditCard },
-                            { key: 'hr', label: 'HR Management', icon: Users },
-                            { key: 'team', label: 'Team', icon: Users },
-                            { key: 'settings', label: 'Settings', icon: SettingsIcon },
-                            { key: 'reports', label: 'Reports', icon: Shield },
-                          ].map((module) => (
-                            <div key={module.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white rounded-lg shadow-sm">
-                                  <module.icon size={16} className="text-gray-600" />
-                                </div>
-                                <span className="text-sm font-medium text-gray-700">{module.label}</span>
-                              </div>
-                              <button
-                                onClick={() => togglePermission(selectedUser, module.key as keyof UserPermissions)}
-                                disabled={isUpdatingPermissions}
-                                className={`w-12 h-6 rounded-full transition-all relative ${selectedUser.permissions?.[module.key as keyof UserPermissions] ? 'bg-black' : 'bg-gray-300'} ${isUpdatingPermissions ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              >
-                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${selectedUser.permissions?.[module.key as keyof UserPermissions] ? 'right-1' : 'left-1'}`} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                          <Users size={48} className="mb-2 opacity-20" />
-                          <p className="text-sm">Select a team member to manage their permissions</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
             )}
 
             <div className="pt-8 border-t border-gray-100 flex justify-end gap-3">

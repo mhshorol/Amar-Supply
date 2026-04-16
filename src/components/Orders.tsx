@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import type { DraggableProvided, DraggableStateSnapshot, DroppableProvided } from '@hello-pangea/dnd';
-import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp, doc, updateDoc, deleteDoc, writeBatch, getDocs, getDoc, where, arrayUnion, runTransaction } from '../firebase';
+import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp, doc, updateDoc, deleteDoc, writeBatch, getDocs, getDoc, where, arrayUnion, runTransaction, limit } from '../firebase';
 import { useReactToPrint } from 'react-to-print';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -978,6 +978,50 @@ export default function Orders() {
             uid: auth.currentUser!.uid,
             createdAt: serverTimestamp()
           });
+
+          // Add to Finance if paidAmount > 0
+          if (finalData.paidAmount > 0) {
+            let accountId = '';
+            
+            // To find account safely, just do getDocs directly
+            const accountsQuery = query(collection(db, 'accounts'), where('name', '==', finalData.paymentMethod));
+            const accountsSnap = await getDocs(accountsQuery);
+            if (!accountsSnap.empty) {
+              accountId = accountsSnap.docs[0].id;
+            } else {
+              const allAccountsSnap = await getDocs(query(collection(db, 'accounts'), limit(1)));
+              if (!allAccountsSnap.empty) {
+                accountId = allAccountsSnap.docs[0].id;
+              }
+            }
+
+            const transactionRef = doc(collection(db, 'transactions'));
+            transaction.set(transactionRef, {
+              type: 'income',
+              category: 'Sales',
+              amount: finalData.paidAmount,
+              description: `Order #${nextOrderNumber} Payment`,
+              date: serverTimestamp(),
+              method: finalData.paymentMethod,
+              accountId: accountId,
+              orderId: orderRef.id,
+              orderNumber: nextOrderNumber,
+              uid: auth.currentUser?.uid,
+              createdAt: serverTimestamp()
+            });
+
+            if (accountId) {
+              const accountRef = doc(db, 'accounts', accountId);
+              const accountSnap = await transaction.get(accountRef);
+              if (accountSnap.exists()) {
+                const currentBalance = accountSnap.data().balance || 0;
+                transaction.update(accountRef, {
+                  balance: currentBalance + finalData.paidAmount,
+                  updatedAt: serverTimestamp()
+                });
+              }
+            }
+          }
 
           // Deduct Inventory
           for (const invData of inventorySnaps) {

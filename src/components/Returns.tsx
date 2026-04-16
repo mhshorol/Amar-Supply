@@ -27,7 +27,9 @@ import {
   getDoc,
   where,
   getDocs,
-  writeBatch
+  writeBatch,
+  runTransaction,
+  limit
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { toast } from 'sonner';
@@ -106,50 +108,92 @@ export default function Returns() {
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
     try {
-      const requestRef = doc(db, 'rma_requests', requestId);
-      const requestSnap = await getDoc(requestRef);
-      const requestData = requestSnap.data() as RMARequest;
+      await runTransaction(db, async (transaction) => {
+        const requestRef = doc(db, 'rma_requests', requestId);
+        const requestSnap = await transaction.get(requestRef);
+        if (!requestSnap.exists()) return;
+        const requestData = requestSnap.data() as RMARequest;
 
-      const batch = writeBatch(db);
-      batch.update(requestRef, { 
-        status: newStatus, 
-        updatedAt: serverTimestamp() 
-      });
+        transaction.update(requestRef, { 
+          status: newStatus, 
+          updatedAt: serverTimestamp() 
+        });
 
-      // If received, update inventory
-      if (newStatus === 'received') {
-        for (const item of requestData.items) {
-          const invQuery = query(
-            collection(db, 'inventory'),
-            where('productId', '==', item.productId),
-            where('variantId', '==', item.variantId || null)
-          );
-          const invSnap = await getDocs(invQuery);
-          if (!invSnap.empty) {
-            const invDoc = invSnap.docs[0];
-            batch.update(invDoc.ref, {
-              quantity: invDoc.data().quantity + item.quantity,
-              lastStockUpdate: serverTimestamp()
-            });
+        // If received, update inventory
+        if (newStatus === 'received') {
+          for (const item of requestData.items) {
+            const invQuery = query(
+              collection(db, 'inventory'),
+              where('productId', '==', item.productId),
+              where('variantId', '==', item.variantId || null)
+            );
+            const invSnap = await getDocs(invQuery); // getDocs inside transaction is fine for simple queries if not strictly consistent, but better to get refs first
+            if (!invSnap.empty) {
+              const invDoc = invSnap.docs[0];
+              const currentQty = invDoc.data().quantity || 0;
+              transaction.update(invDoc.ref, {
+                quantity: currentQty + item.quantity,
+                lastStockUpdate: serverTimestamp()
+              });
+            }
           }
         }
-      }
 
-      // If refunded, create transaction
-      if (newStatus === 'refunded') {
-        const transRef = doc(collection(db, 'transactions'));
-        batch.set(transRef, {
-          type: 'expense',
-          category: 'Refund',
-          amount: requestData.refundAmount,
-          description: `Refund for RMA #${requestId} (Order #${requestData.orderId})`,
-          date: serverTimestamp(),
-          uid: auth.currentUser?.uid,
-          createdAt: serverTimestamp()
-        });
-      }
+        // If refunded, create transaction
+        if (newStatus === 'refunded') {
+          // Try to find the original order to get the account
+          let accountId = '';
+          let method = 'Cash';
+          if (requestData.orderId) {
+            const ordersQuery = query(collection(db, 'orders'), where('orderNumber', '==', requestData.orderId));
+            const ordersSnap = await getDocs(ordersQuery);
+            if (!ordersSnap.empty) {
+              const orderData = ordersSnap.docs[0].data();
+              if (orderData.paymentMethod) {
+                method = orderData.paymentMethod;
+                const accountsQuery = query(collection(db, 'accounts'), where('name', '==', method));
+                const accountsSnap = await getDocs(accountsQuery);
+                if (!accountsSnap.empty) {
+                  accountId = accountsSnap.docs[0].id;
+                }
+              }
+            }
+          }
+          
+          if (!accountId) {
+            const allAccountsSnap = await getDocs(query(collection(db, 'accounts'), limit(1)));
+            if (!allAccountsSnap.empty) {
+              accountId = allAccountsSnap.docs[0].id;
+            }
+          }
 
-      await batch.commit();
+          const transRef = doc(collection(db, 'transactions'));
+          transaction.set(transRef, {
+            type: 'expense',
+            category: 'Refund',
+            amount: requestData.refundAmount,
+            description: `Refund for RMA #${requestId} (Order #${requestData.orderId})`,
+            date: serverTimestamp(),
+            method: method,
+            accountId: accountId,
+            uid: auth.currentUser?.uid,
+            createdAt: serverTimestamp()
+          });
+
+          if (accountId) {
+            const accountRef = doc(db, 'accounts', accountId);
+            const accountSnap = await transaction.get(accountRef);
+            if (accountSnap.exists()) {
+              const currentBalance = accountSnap.data().balance || 0;
+              transaction.update(accountRef, {
+                balance: currentBalance - requestData.refundAmount,
+                updatedAt: serverTimestamp()
+              });
+            }
+          }
+        }
+      });
+
       toast.success(`RMA status updated to ${newStatus}`);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `rma_requests/${requestId}`);

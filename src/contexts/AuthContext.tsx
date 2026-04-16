@@ -98,13 +98,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Update last login
             await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
           } else {
-            // New user (likely from Google login)
+            // New user (likely from Google login or Email registration)
             const newUser: User = {
               uid: firebaseUser.uid,
               name: firebaseUser.displayName || 'User',
               email: firebaseUser.email || '',
               role: 'staff',
-              active: true,
+              active: false, // Default to false, requires admin approval
               permissions: defaultPermissions,
               createdAt: serverTimestamp(),
               lastLogin: serverTimestamp()
@@ -114,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (firebaseUser.email === 'mhshorol@gmail.com') {
               newUser.role = 'admin';
               newUser.permissions = adminPermissions;
+              newUser.active = true;
             }
 
             await setDoc(userRef, newUser);

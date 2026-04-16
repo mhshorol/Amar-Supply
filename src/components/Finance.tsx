@@ -350,9 +350,44 @@ function Finance() {
         };
 
         if (editingTransaction) {
-          // If editing, we'd need to reverse the old transaction first. 
-          // For simplicity in this audit, we'll focus on NEW transactions and simple updates.
-          // Real-world apps should handle the "reversal" logic.
+          // Reverse old transaction
+          const oldTxnRef = doc(db, 'transactions', editingTransaction.id);
+          const oldTxnSnap = await transaction.get(oldTxnRef);
+          
+          if (oldTxnSnap.exists()) {
+            const oldTxnData = oldTxnSnap.data() as Transaction;
+            
+            // Reverse old account
+            const oldAccountRef = doc(db, 'accounts', oldTxnData.accountId);
+            const oldAccountSnap = await transaction.get(oldAccountRef);
+            if (oldAccountSnap.exists()) {
+              let oldBalance = oldAccountSnap.data().balance || 0;
+              if (oldTxnData.type === 'income') oldBalance -= oldTxnData.amount;
+              else if (oldTxnData.type === 'expense') oldBalance += oldTxnData.amount;
+              else if (oldTxnData.type === 'transfer') {
+                oldBalance += oldTxnData.amount;
+                if (oldTxnData.toAccountId) {
+                  const oldToAccountRef = doc(db, 'accounts', oldTxnData.toAccountId);
+                  const oldToAccountSnap = await transaction.get(oldToAccountRef);
+                  if (oldToAccountSnap.exists()) {
+                    const oldToBalance = (oldToAccountSnap.data().balance || 0) - oldTxnData.amount;
+                    transaction.update(oldToAccountRef, { balance: oldToBalance, updatedAt: serverTimestamp() });
+                  }
+                }
+              }
+              // We need to apply the new transaction on top of the reversed old balance
+              // If the account is the same, we update newBalance
+              if (oldTxnData.accountId === transactionForm.accountId) {
+                newBalance = oldBalance;
+                if (transactionForm.type === 'income') newBalance += amount;
+                else if (transactionForm.type === 'expense') newBalance -= amount;
+                else if (transactionForm.type === 'transfer') newBalance -= amount;
+              } else {
+                transaction.update(oldAccountRef, { balance: oldBalance, updatedAt: serverTimestamp() });
+              }
+            }
+          }
+          
           transaction.update(doc(db, 'transactions', editingTransaction.id), data);
         } else {
           const txnRef = doc(collection(db, 'transactions'));
@@ -378,36 +413,66 @@ function Finance() {
 
     try {
       const selectedSupplier = suppliers.find(s => s.id === supplierPaymentForm.supplierId);
-      const data = {
-        supplierId: supplierPaymentForm.supplierId,
-        supplierName: selectedSupplier?.name || '',
-        date: supplierPaymentForm.date,
-        voucherNo: supplierPaymentForm.voucherNo,
-        dueAmount: Number(supplierPaymentForm.dueAmount),
-        amount: Number(supplierPaymentForm.amount),
-        total: Number(supplierPaymentForm.total),
-        paymentType: supplierPaymentForm.paymentType,
-        paidAmount: Number(supplierPaymentForm.paidAmount),
-        remark: supplierPaymentForm.remark,
-        uid: auth.currentUser.uid,
-        createdAt: serverTimestamp()
-      };
+      const accountId = accounts.find(a => a.name === supplierPaymentForm.paymentType)?.id || accounts[0]?.id || '';
+      
+      if (!accountId) {
+        throw new Error("No account found for payment.");
+      }
 
-      await addDoc(collection(db, 'supplierPayments'), data);
+      await runTransaction(db, async (transaction) => {
+        const accountRef = doc(db, 'accounts', accountId);
+        const accountSnap = await transaction.get(accountRef);
+        
+        if (!accountSnap.exists()) {
+          throw new Error("Account not found.");
+        }
 
-      // Also create a transaction
-      await addDoc(collection(db, 'transactions'), {
-        type: 'expense',
-        category: 'COGS',
-        subCategory: 'Product Cost',
-        amount: Number(supplierPaymentForm.paidAmount),
-        method: supplierPaymentForm.paymentType,
-        accountId: accounts.find(a => a.name === supplierPaymentForm.paymentType)?.id || accounts[0]?.id || '',
-        date: supplierPaymentForm.date,
-        status: 'Completed',
-        notes: `Supplier Payment: ${selectedSupplier?.name} (Voucher: ${supplierPaymentForm.voucherNo})`,
-        createdAt: serverTimestamp(),
-        uid: auth.currentUser.uid
+        const currentBalance = accountSnap.data().balance || 0;
+        const paidAmount = Number(supplierPaymentForm.paidAmount);
+
+        const data = {
+          supplierId: supplierPaymentForm.supplierId,
+          supplierName: selectedSupplier?.name || '',
+          date: supplierPaymentForm.date,
+          voucherNo: supplierPaymentForm.voucherNo,
+          dueAmount: Number(supplierPaymentForm.dueAmount),
+          amount: Number(supplierPaymentForm.amount),
+          total: Number(supplierPaymentForm.total),
+          paymentType: supplierPaymentForm.paymentType,
+          paidAmount: paidAmount,
+          remark: supplierPaymentForm.remark,
+          uid: auth.currentUser!.uid,
+          createdAt: serverTimestamp()
+        };
+
+        const paymentRef = doc(collection(db, 'supplierPayments'));
+
+        // Also create a transaction
+        const txnRef = doc(collection(db, 'transactions'));
+        transaction.set(txnRef, {
+          type: 'expense',
+          category: 'COGS',
+          subCategory: 'Product Cost',
+          amount: paidAmount,
+          method: supplierPaymentForm.paymentType,
+          accountId: accountId,
+          date: supplierPaymentForm.date,
+          status: 'Completed',
+          notes: `Supplier Payment: ${selectedSupplier?.name} (Voucher: ${supplierPaymentForm.voucherNo})`,
+          createdAt: serverTimestamp(),
+          uid: auth.currentUser!.uid
+        });
+
+        transaction.set(paymentRef, {
+          ...data,
+          transactionId: txnRef.id
+        });
+
+        // Update account balance
+        transaction.update(accountRef, {
+          balance: currentBalance - paidAmount,
+          updatedAt: serverTimestamp()
+        });
       });
 
       setIsSupplierPaymentModalOpen(false);
@@ -421,12 +486,41 @@ function Finance() {
     setConfirmConfig({
       isOpen: true,
       title: 'Delete Supplier Payment',
-      message: 'Are you sure you want to delete this supplier payment? This action cannot be undone.',
+      message: 'Are you sure you want to delete this supplier payment? This will also reverse the account balance.',
       variant: 'danger',
       onConfirm: async () => {
         try {
-          await deleteDoc(doc(db, 'supplierPayments', id));
-          toast.success('Supplier payment deleted');
+          await runTransaction(db, async (transaction) => {
+            const paymentRef = doc(db, 'supplierPayments', id);
+            const paymentSnap = await transaction.get(paymentRef);
+            
+            if (!paymentSnap.exists()) return;
+            
+            const paymentData = paymentSnap.data();
+            
+            if (paymentData.transactionId) {
+              const txnRef = doc(db, 'transactions', paymentData.transactionId);
+              const txnSnap = await transaction.get(txnRef);
+              
+              if (txnSnap.exists()) {
+                const txnData = txnSnap.data();
+                const accountRef = doc(db, 'accounts', txnData.accountId);
+                const accountSnap = await transaction.get(accountRef);
+                
+                if (accountSnap.exists()) {
+                  const currentBalance = accountSnap.data().balance || 0;
+                  transaction.update(accountRef, {
+                    balance: currentBalance + txnData.amount,
+                    updatedAt: serverTimestamp()
+                  });
+                }
+                transaction.delete(txnRef);
+              }
+            }
+            
+            transaction.delete(paymentRef);
+          });
+          toast.success('Supplier payment deleted and balance reversed');
         } catch (error) {
           handleFirestoreError(error, OperationType.DELETE, `supplierPayments/${id}`);
         }

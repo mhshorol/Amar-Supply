@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Component, ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { onAuthStateChanged, signInWithPopup, googleProvider, auth, isFirebaseConfigured, db, doc, setDoc, getDoc, serverTimestamp, signInWithEmailAndPassword } from './firebase';
+import { onAuthStateChanged, signInWithPopup, googleProvider, auth, isFirebaseConfigured, db, doc, setDoc, getDoc, serverTimestamp, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from './firebase';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Orders from './components/Orders';
@@ -18,7 +18,7 @@ import Tasks from './components/Tasks';
 import Reports from './components/Reports';
 import Returns from './components/Returns';
 import Settings from './components/Settings';
-import { LogIn, AlertTriangle, ShieldCheck, Mail, Lock, Loader2 } from 'lucide-react';
+import { LogIn, AlertTriangle, ShieldCheck, Mail, Lock, Loader2, UserPlus, User as UserIcon, LogOut } from 'lucide-react';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { toast, Toaster } from 'sonner';
@@ -78,10 +78,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
 function AppContent() {
   const { user, loading, hasPermission } = useAuth();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'google' | 'email'>('google');
+  const [loginMethod, setLoginMethod] = useState<'google' | 'email' | 'register'>('google');
 
   const handleGoogleLogin = async () => {
     if (!isFirebaseConfigured) return;
@@ -110,6 +111,37 @@ function AppContent() {
         toast.error("Email/Password login is not enabled in Firebase Console.");
       } else {
         toast.error("Login failed. Please try again.");
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !password) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+    setIsLoggingIn(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Update profile with name (optional, but good practice)
+      // We also need to set the user doc in Firestore, but AuthContext's onAuthStateChanged handles that.
+      // Wait, AuthContext uses firebaseUser.displayName, which might be null for email/password.
+      // So we should update the Firestore document directly here or let AuthContext do it and update it later.
+      // Let's just create the user, AuthContext will create the doc. We can update the name in Firestore.
+      const userRef = doc(db, 'users', userCredential.user.uid);
+      await setDoc(userRef, { name: name }, { merge: true });
+      toast.success("Registration successful! Please wait for admin approval.");
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        toast.error("Email is already registered.");
+      } else if (error.code === 'auth/weak-password') {
+        toast.error("Password should be at least 6 characters.");
+      } else {
+        toast.error("Registration failed. Please try again.");
       }
     } finally {
       setIsLoggingIn(false);
@@ -165,14 +197,22 @@ function AppContent() {
                     <LogIn size={20} className="group-hover:translate-x-1 transition-transform" />
                     Sign in with Google
                   </button>
-                  <button 
-                    onClick={() => setLoginMethod('email')}
-                    className="text-xs font-bold text-gray-400 hover:text-[#00AEEF] uppercase tracking-wider transition-colors"
-                  >
-                    Or use Email & Password
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => setLoginMethod('email')}
+                      className="text-xs font-bold text-gray-400 hover:text-[#00AEEF] uppercase tracking-wider transition-colors"
+                    >
+                      Or use Email & Password
+                    </button>
+                    <button 
+                      onClick={() => setLoginMethod('register')}
+                      className="text-xs font-bold text-gray-400 hover:text-[#00AEEF] uppercase tracking-wider transition-colors"
+                    >
+                      Create an Account
+                    </button>
+                  </div>
                 </div>
-              ) : (
+              ) : loginMethod === 'email' ? (
                 <form onSubmit={handleEmailLogin} className="space-y-4 text-left">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
@@ -216,13 +256,91 @@ function AppContent() {
                       </>
                     )}
                   </button>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => setLoginMethod('google')}
+                      className="w-full text-xs font-bold text-gray-400 hover:text-[#00AEEF] uppercase tracking-wider transition-colors text-center"
+                    >
+                      Back to Google Login
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setLoginMethod('register')}
+                      className="w-full text-xs font-bold text-gray-400 hover:text-[#00AEEF] uppercase tracking-wider transition-colors text-center"
+                    >
+                      Don't have an account? Register
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleRegister} className="space-y-4 text-left">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
+                    <div className="relative">
+                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input 
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input 
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="admin@amarsupply.com"
+                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input 
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-[#00AEEF]/20 outline-none transition-all"
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </div>
                   <button 
-                    type="button"
-                    onClick={() => setLoginMethod('google')}
-                    className="w-full text-xs font-bold text-gray-400 hover:text-[#00AEEF] uppercase tracking-wider transition-colors text-center"
+                    type="submit"
+                    disabled={isLoggingIn}
+                    className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-[#00AEEF] text-white rounded-2xl font-bold hover:bg-[#0095cc] transition-all shadow-lg group disabled:opacity-50"
                   >
-                    Back to Google Login
+                    {isLoggingIn ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      <>
+                        <UserPlus size={20} className="group-hover:translate-x-1 transition-transform" />
+                        Register
+                      </>
+                    )}
                   </button>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => setLoginMethod('email')}
+                      className="w-full text-xs font-bold text-gray-400 hover:text-[#00AEEF] uppercase tracking-wider transition-colors text-center"
+                    >
+                      Already have an account? Login
+                    </button>
+                  </div>
                 </form>
               )}
             </div>
@@ -231,6 +349,35 @@ function AppContent() {
           <div className="pt-6 border-t border-gray-100">
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Powered by Amar Supply</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && !user.active) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-6">
+        <div className="max-w-md w-full bg-white p-10 rounded-3xl border border-gray-100 shadow-xl text-center space-y-8">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight text-[#141414]">Amar <span className="text-[#00AEEF]">Supply</span></h1>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Account Pending</p>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="w-20 h-20 bg-orange-50 rounded-3xl flex items-center justify-center mx-auto text-orange-500 shadow-inner">
+              <AlertTriangle size={40} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-800">Approval Required</h2>
+            <p className="text-sm text-gray-500">Your account has been created successfully, but it requires administrator approval before you can access the dashboard.</p>
+          </div>
+
+          <button 
+            onClick={() => signOut(auth)}
+            className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-all shadow-sm group"
+          >
+            <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
+            Sign Out
+          </button>
         </div>
       </div>
     );

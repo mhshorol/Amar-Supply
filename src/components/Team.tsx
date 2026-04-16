@@ -183,6 +183,41 @@ export default function Team() {
     }
   };
 
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (currentUserRole !== 'admin') {
+      toast.error('Only administrators can delete users.');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete user ${userName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // 1. Delete from Firebase Auth via API
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete user from Auth');
+      }
+
+      // 2. Delete from Firestore
+      const userRef = doc(db, 'users', userId);
+      await deleteDoc(userRef);
+      
+      // Log activity
+      await addActivityLog('Deleted User', 'Team', `Deleted user ${userName}`);
+      
+      toast.success('User deleted successfully.');
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(`Failed to delete user: ${error.message}`);
+    }
+  };
+
   const openPermissionsModal = (user: User) => {
     setSelectedUser(user);
     setTempPermissions(user.permissions || defaultPermissions);
@@ -387,10 +422,17 @@ export default function Team() {
                                 </select>
                                 <button 
                                   onClick={() => handleToggleStatus(user.uid, user.active)}
-                                  className={`p-2 rounded-lg transition-colors shadow-sm border border-transparent ${user.active ? 'hover:bg-red-50 text-red-400 hover:text-red-600' : 'hover:bg-green-50 text-green-400 hover:text-green-600'}`}
+                                  className={`p-2 rounded-lg transition-colors shadow-sm border border-transparent ${user.active ? 'hover:bg-orange-50 text-orange-400 hover:text-orange-600' : 'hover:bg-green-50 text-green-400 hover:text-green-600'}`}
                                   title={user.active ? 'Deactivate User' : 'Activate User'}
                                 >
                                   {user.active ? <XCircle size={14} /> : <UserCheck size={14} />}
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteUser(user.uid, user.name)}
+                                  className="p-2 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors shadow-sm border border-transparent"
+                                  title="Delete User"
+                                >
+                                  <Trash2 size={14} />
                                 </button>
                               </>
                             )}
