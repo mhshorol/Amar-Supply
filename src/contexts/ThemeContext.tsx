@@ -11,39 +11,36 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  const [theme, setThemeState] = useState<Theme>('light');
 
   const setTheme = (newTheme: Theme) => {
-    if (newTheme !== 'light' && newTheme !== 'dark') return;
-    setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+    // Dark mode is disabled for now by user request
+    setThemeState('light');
+    localStorage.setItem('theme', 'light');
   };
 
   const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
+    // Dark mode is disabled for now
+    // const newTheme = theme === 'light' ? 'dark' : 'light';
+    // setTheme(newTheme);
   };
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
+    root.classList.remove('dark');
+    root.classList.add('light');
   }, [theme]);
 
-  // Listen for system changes
+  // Listen for system changes (disabled)
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      if (!localStorage.getItem('theme')) {
-        setTheme(mediaQuery.matches ? 'dark' : 'light');
-      }
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    // const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    // const handleChange = () => {
+    //   if (!localStorage.getItem('theme')) {
+    //     setTheme(mediaQuery.matches ? 'dark' : 'light');
+    //   }
+    // };
+    // mediaQuery.addEventListener('change', handleChange);
+    // return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
   return (
