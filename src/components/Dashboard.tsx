@@ -97,7 +97,7 @@ const ProfileSummaryCard = ({ name, growth, todayOrders, todaySales, currencySym
         </div>
         <h2 className="text-3xl font-bold tracking-tight text-white leading-tight mb-2">
           Welcome back,<br />
-          <span className="text-white/90">{name.split(' ')[0]}</span>
+          <span className="text-white/90">{name?.split(' ')[0] || ''}</span>
         </h2>
         <p className="text-white/80 text-[13px] font-medium leading-relaxed max-w-[200px]">
           Your daily sales performance is {growth >= 0 ? 'up' : 'down'} <span className="text-white font-bold">{Math.abs(growth)}%</span> from yesterday.

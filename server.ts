@@ -231,10 +231,27 @@ app.use(async (req, res, next) => {
   if (!db && req.path.startsWith('/api/')) {
     try {
       if (admin.apps.length === 0) {
-        admin.initializeApp({
-          credential: admin.credential.applicationDefault(),
-          projectId: firebaseConfig.projectId
-        });
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+          try {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount),
+              projectId: firebaseConfig.projectId || serviceAccount.project_id
+            });
+            console.log('Initialized Firebase Admin with FIREBASE_SERVICE_ACCOUNT');
+          } catch (e) {
+            console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT:', e);
+            admin.initializeApp({
+              credential: admin.credential.applicationDefault(),
+              projectId: firebaseConfig.projectId
+            });
+          }
+        } else {
+          admin.initializeApp({
+            credential: admin.credential.applicationDefault(),
+            projectId: firebaseConfig.projectId
+          });
+        }
       }
       await getDb();
     } catch (e) {
