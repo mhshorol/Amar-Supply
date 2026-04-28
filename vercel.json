@@ -18,7 +18,7 @@
       "destination": "/server.ts"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/|vite\\.svg|sw\\.js|manifest\\.json).*)",
       "destination": "/index.html"
     }
   ]
