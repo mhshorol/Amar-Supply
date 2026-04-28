@@ -654,9 +654,16 @@ export default function Reports() {
                     </div>
                   </div>
 
-                  {/* AI Sales Forecast (Disabled for now) * /}
-                  {/* <div className="bg-gradient-to-r from-[#2196F3] to-[#00BCD4] rounded-[20px] p-6 text-white shadow-md relative overflow-hidden flex-1 flex flex-col">
-                    <div className="absolute top-4 right-4 text-white/50 cursor-pointer hover:text-white">
+                  {/* AI Sales Forecast */}
+                  <div className="bg-gradient-to-r from-[#2196F3] to-[#00BCD4] rounded-[20px] p-6 text-white shadow-md relative overflow-hidden flex-1 flex flex-col select-none opacity-80">
+                    {/* Disabled Overlay */}
+                    <div className="absolute inset-0 bg-gray-900/10 backdrop-blur-[1px] z-20 flex items-center justify-center">
+                      <span className="bg-black/40 backdrop-blur-md text-white border border-white/10 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-sm tracking-wide">
+                        COMING SOON
+                      </span>
+                    </div>
+
+                    <div className="absolute top-4 right-4 text-white/50">
                       <Sparkles size={16} />
                     </div>
                     <div className="flex items-center gap-2 mb-4 relative z-10">
@@ -666,7 +673,7 @@ export default function Reports() {
                       <h4 className="text-sm font-bold tracking-tight">AI Sales Forecast</h4>
                     </div>
                     
-                    <div className="relative z-10 flex-1">
+                    <div className="relative z-10 flex-1 opacity-50 blur-[0.5px]">
                       <p className="text-[11px] text-white/80 font-medium mb-1">Next 7 Days Prediction</p>
                       <div className="flex items-center gap-3 mb-3">
                         <h2 className="text-2xl font-bold tracking-tight">৳ {stats.totalSales > 0 ? Math.round(stats.totalSales * 1.186).toLocaleString() : '86,450'}</h2>
@@ -679,13 +686,13 @@ export default function Reports() {
                       </p>
                     </div>
 
-                    {/* Chart Illustration * /}
-                    <div className="absolute bottom-0 left-0 right-0 h-16 flex items-end justify-between px-6 opacity-40">
+                    {/* Chart Illustration */}
+                    <div className="absolute bottom-0 left-0 right-0 h-16 flex items-end justify-between px-6 opacity-30">
                        {[0.3, 0.5, 0.4, 0.7, 0.5, 0.8, 0.6, 0.9, 0.7, 1.0, 0.8, 0.6, 0.9, 0.8, 0.6, 0.4].map((v, i) => (
                          <div key={i} className="w-[6px] rounded-t-sm bg-white" style={{ height: `${v * 100}%` }} />
                        ))}
                     </div>
-                  </div> */}
+                  </div>
                 </div>
               </div>
             </motion.div>
