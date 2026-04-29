@@ -210,12 +210,12 @@ export default function Returns() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-[#141414] tracking-tight">Returns & RMA</h2>
-          <p className="text-sm text-gray-500 mt-1">Manage product returns, refunds, and replacements.</p>
+          <h2 className="text-3xl font-bold text-primary tracking-tight">Returns & RMA</h2>
+          <p className="text-sm text-secondary mt-1">Manage product returns, refunds, and replacements.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
         >
           <Plus size={16} />
           New RMA Request
@@ -224,60 +224,60 @@ export default function Returns() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
               <Clock size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Pending</span>
+            <span className="text-sm font-bold text-primary">Pending</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">
+          <h3 className="text-2xl font-bold text-primary">
             {requests.filter(r => r.status === 'pending').length}
           </h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-50 text-[#0066FF] rounded-lg">
+            <div className="p-2 bg-brand/10 text-brand rounded-lg">
               <RefreshCcw size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Processing</span>
+            <span className="text-sm font-bold text-primary">Processing</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">
+          <h3 className="text-2xl font-bold text-primary">
             {requests.filter(r => ['approved', 'received'].includes(r.status)).length}
           </h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-green-50 text-green-600 rounded-lg">
               <CheckCircle2 size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Refunded</span>
+            <span className="text-sm font-bold text-primary">Refunded</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">
+          <h3 className="text-2xl font-bold text-primary">
             {requests.filter(r => r.status === 'refunded').length}
           </h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-red-50 text-red-600 rounded-lg">
               <XCircle size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Rejected</span>
+            <span className="text-sm font-bold text-primary">Rejected</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">
+          <h3 className="text-2xl font-bold text-primary">
             {requests.filter(r => r.status === 'rejected').length}
           </h3>
         </div>
       </div>
 
       {/* Search */}
-      <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <div className="bg-surface p-4 rounded-xl border border-border shadow-subtle">
         <div className="relative w-full md:max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
           <input
             type="text"
             placeholder="Search by Order ID or RMA ID..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -285,11 +285,11 @@ export default function Returns() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px] whitespace-nowrap">
             <thead>
-              <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                 <th className="px-6 py-4 font-semibold">RMA ID</th>
                 <th className="px-6 py-4 font-semibold">Order ID</th>
                 <th className="px-6 py-4 font-semibold">Reason</th>
@@ -298,40 +298,40 @@ export default function Returns() {
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
-                    <Loader2 className="animate-spin text-gray-400 mx-auto" size={24} />
+                    <Loader2 className="animate-spin text-muted mx-auto" size={24} />
                   </td>
                 </tr>
               ) : filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500 text-sm">
+                  <td colSpan={6} className="px-6 py-12 text-center text-secondary text-sm">
                     No RMA requests found.
                   </td>
                 </tr>
               ) : (
                 filteredRequests.map((request) => (
-                  <tr key={request.id} className="hover:bg-gray-50 transition-colors group">
+                  <tr key={request.id} className="hover:bg-surface-hover transition-colors group">
                     <td className="px-6 py-4">
-                      <span className="text-xs font-mono font-bold text-gray-900">#{request.id.slice(-6).toUpperCase()}</span>
+                      <span className="text-xs font-mono font-bold text-primary">#{request.id.slice(-6).toUpperCase()}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-medium text-gray-600">{request.orderId}</span>
+                      <span className="text-xs font-medium text-secondary">{request.orderId}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs text-gray-600 truncate max-w-[200px] block">{request.reason}</span>
+                      <span className="text-xs text-secondary truncate max-w-[200px] block">{request.reason}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-gray-900">৳{request.refundAmount.toLocaleString()}</span>
+                      <span className="text-xs font-bold text-primary">৳{request.refundAmount.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
                         request.status === 'refunded' ? 'bg-green-50 text-green-600' :
                         request.status === 'rejected' ? 'bg-red-50 text-red-600' :
                         request.status === 'pending' ? 'bg-orange-50 text-orange-600' :
-                        'bg-blue-50 text-[#0066FF]'
+                        'bg-brand/10 text-brand'
                       }`}>
                         {request.status.toUpperCase()}
                       </span>
@@ -341,7 +341,7 @@ export default function Returns() {
                         {request.status === 'pending' && (
                           <button 
                             onClick={() => handleUpdateStatus(request.id, 'approved')}
-                            className="p-1 text-[#0066FF] hover:bg-blue-50 rounded"
+                            className="p-1 text-brand hover:bg-brand/10 rounded"
                             title="Approve"
                           >
                             <CheckCircle2 size={16} />

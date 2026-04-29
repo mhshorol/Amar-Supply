@@ -772,29 +772,29 @@ function Finance() {
   return (
     <div className="space-y-6 max-w-full">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/10 p-2 rounded-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-hover/10 p-2 rounded-xl">
         <div>
-          <h2 className="text-[28px] font-bold text-[#141414] tracking-tight">Finance & Accounting</h2>
-          <p className="text-[13px] text-gray-500 mt-1">Comprehensive financial management and reporting.</p>
+          <h2 className="text-[28px] font-bold text-primary tracking-tight">Finance & Accounting</h2>
+          <p className="text-[13px] text-secondary mt-1">Comprehensive financial management and reporting.</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold hover:bg-gray-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border rounded-lg text-[13px] font-semibold hover:bg-surface-hover transition-all shadow-subtle"
           >
             <Download size={16} strokeWidth={2.5} />
             Export CSV
           </button>
           <button 
             onClick={() => handleOpenAccountModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold hover:bg-gray-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border rounded-lg text-[13px] font-semibold hover:bg-surface-hover transition-all shadow-subtle"
           >
             <Building2 size={16} strokeWidth={2.5} />
             Add Account
           </button>
           <button 
             onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#0066FF] text-white rounded-lg text-[13px] font-bold hover:bg-[#0052CC] transition-all shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-lg text-[13px] font-bold hover:bg-brand-hover transition-all shadow-subtle"
           >
             <Plus size={16} strokeWidth={2.5} />
             Add Transaction
@@ -803,7 +803,7 @@ function Finance() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl border border-gray-200/60 shadow-sm flex overflow-x-auto">
+      <div className="bg-surface rounded-xl border border-border/60 shadow-subtle flex overflow-x-auto">
         {([
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'transactions', label: 'Transactions', icon: History },
@@ -817,13 +817,13 @@ function Finance() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as 'dashboard' | 'transactions' | 'coa' | 'reports' | 'ar_ap' | 'supplier_payments' | 'petty_cash')}
             className={`whitespace-nowrap px-6 py-4 text-[13px] font-bold transition-all relative flex items-center gap-2 ${
-              activeTab === tab.id ? 'text-[#0066FF]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              activeTab === tab.id ? 'text-brand' : 'text-secondary hover:text-secondary hover:bg-surface-hover'
             }`}
           >
             <tab.icon size={16} />
             {tab.label}
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0066FF]"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand"></div>
             )}
           </button>
         ))}
@@ -832,89 +832,89 @@ function Finance() {
       {activeTab === 'dashboard' && (
         <>
           {/* Main Account Card */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group flex flex-col gap-6">
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-subtle relative group flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-brand/10 text-brand flex items-center justify-center">
                   <Landmark size={24} strokeWidth={2} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#0066FF] transition-colors">{accounts[0]?.name || 'City Bank'}</h3>
-                  <p className="text-[13px] text-gray-500">{accounts[0]?.accountNumber || '1223349433001'}</p>
+                  <h3 className="text-sm font-bold text-primary group-hover:text-brand transition-colors">{accounts[0]?.name || 'City Bank'}</h3>
+                  <p className="text-[13px] text-secondary">{accounts[0]?.accountNumber || '1223349433001'}</p>
                 </div>
               </div>
-              <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-900 transition-colors cursor-pointer" />
+              <ChevronRight size={20} className="text-muted group-hover:text-primary transition-colors cursor-pointer" />
             </div>
             <div>
-              <p className="text-[13px] text-gray-500 mb-1">Current Balance</p>
-              <h2 className="text-[28px] font-black text-gray-900 tracking-tight">{currencySymbol} {(accounts[0]?.balance || 561400).toLocaleString()}</h2>
+              <p className="text-[13px] text-secondary mb-1">Current Balance</p>
+              <h2 className="text-[28px] font-black text-primary tracking-tight">{currencySymbol} {(accounts[0]?.balance || 561400).toLocaleString()}</h2>
             </div>
           </div>
 
           {/* Top 4 Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-subtle flex flex-col justify-between">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 shrink-0 rounded-full bg-green-50 text-green-500 flex items-center justify-center">
                   <TrendingUp size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-gray-500 tracking-wide">Total Revenue</p>
-                  <h3 className="text-[22px] font-black text-gray-900 mt-1">{currencySymbol} {(totalIncome || 19800).toLocaleString()}</h3>
+                  <p className="text-[11px] font-bold text-secondary tracking-wide">Total Revenue</p>
+                  <h3 className="text-[22px] font-black text-primary mt-1">{currencySymbol} {(totalIncome || 19800).toLocaleString()}</h3>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-6">
                 <span className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded-md text-[11px] font-bold">
                   <ArrowUpRight size={14} /> 12%
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">vs last month</span>
+                <span className="text-[11px] text-muted font-medium">vs last month</span>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-subtle flex flex-col justify-between">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 shrink-0 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
                   <TrendingDown size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-gray-500 tracking-wide">Total Expenses</p>
-                  <h3 className="text-[22px] font-black text-gray-900 mt-1">{currencySymbol} {(totalExpense || 1000).toLocaleString()}</h3>
+                  <p className="text-[11px] font-bold text-secondary tracking-wide">Total Expenses</p>
+                  <h3 className="text-[22px] font-black text-primary mt-1">{currencySymbol} {(totalExpense || 1000).toLocaleString()}</h3>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-6">
                 <span className="flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 rounded-md text-[11px] font-bold">
                   <ArrowDownRight size={14} /> 5%
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">vs last month</span>
+                <span className="text-[11px] text-muted font-medium">vs last month</span>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-subtle flex flex-col justify-between">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 shrink-0 rounded-full bg-blue-50 text-[#0066FF] flex items-center justify-center">
+                <div className="w-12 h-12 shrink-0 rounded-full bg-brand/10 text-brand flex items-center justify-center">
                   <DollarSign size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-gray-500 tracking-wide">Net Profit</p>
-                  <h3 className="text-[22px] font-black text-gray-900 mt-1">{currencySymbol} {(netProfit || 18800).toLocaleString()}</h3>
+                  <p className="text-[11px] font-bold text-secondary tracking-wide">Net Profit</p>
+                  <h3 className="text-[22px] font-black text-primary mt-1">{currencySymbol} {(netProfit || 18800).toLocaleString()}</h3>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-6">
-                <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-[#0066FF] rounded-md text-[11px] font-bold">
+                <span className="flex items-center gap-1 px-2 py-1 bg-brand/10 text-brand rounded-md text-[11px] font-bold">
                   <ArrowUpRight size={14} /> 15%
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">vs last month</span>
+                <span className="text-[11px] text-muted font-medium">vs last month</span>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between relative">
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-subtle flex flex-col justify-between relative">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 shrink-0 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center">
                   <Wallet size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-gray-500 tracking-wide">Pending COD</p>
-                  <h3 className="text-[22px] font-black text-gray-900 mt-1">{currencySymbol} {(pendingCod || 0).toLocaleString()}</h3>
+                  <p className="text-[11px] font-bold text-secondary tracking-wide">Pending COD</p>
+                  <h3 className="text-[22px] font-black text-primary mt-1">{currencySymbol} {(pendingCod || 0).toLocaleString()}</h3>
                 </div>
               </div>
               <div className="flex items-end justify-end mt-6 h-full absolute bottom-6 right-6">
@@ -924,30 +924,30 @@ function Finance() {
           </div>
 
           {/* Chart Section */}
-          <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="bg-surface p-6 md:p-8 rounded-2xl border border-border shadow-subtle">
             <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4">
               <div>
-                <h3 className="text-[16px] font-bold text-gray-900">Income vs Expense</h3>
-                <p className="text-[12px] text-gray-500 mt-1">Overview of income and expense over time.</p>
+                <h3 className="text-[16px] font-bold text-primary">Income vs Expense</h3>
+                <p className="text-[12px] text-secondary mt-1">Overview of income and expense over time.</p>
               </div>
               <div className="flex flex-wrap items-center gap-4">
-                <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-[13px] text-gray-600">
-                  <Calendar size={14} className="text-gray-400" />
+                <button className="flex items-center gap-2 px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-secondary">
+                  <Calendar size={14} className="text-muted" />
                   Nov 1, 2024 - Apr 30, 2025
-                  <ChevronDown size={14} className="ml-1 text-gray-400" />
+                  <ChevronDown size={14} className="ml-1 text-muted" />
                 </button>
-                <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-[13px] text-gray-600">
+                <button className="flex items-center gap-2 px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-secondary">
                   Monthly
-                  <ChevronDown size={14} className="ml-1 text-gray-400" />
+                  <ChevronDown size={14} className="ml-1 text-muted" />
                 </button>
                 <div className="flex items-center gap-4 ml-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#141414]"></div>
-                    <span className="text-[12px] text-gray-500 font-medium">Income</span>
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-white text-white dark:text-black"></div>
+                    <span className="text-[12px] text-secondary font-medium">Income</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-gray-200"></div>
-                    <span className="text-[12px] text-gray-500 font-medium">Expense</span>
+                    <span className="text-[12px] text-secondary font-medium">Expense</span>
                   </div>
                 </div>
               </div>
@@ -955,26 +955,26 @@ function Finance() {
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                  <XAxis dataKey="name" axisLine={{ stroke: '#e5e7eb' }} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} />
-                  <Tooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: '1px solid #f3f4f6', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                  <Bar dataKey="income" fill="#141414" radius={[4, 4, 0, 0]} barSize={24} />
-                  <Bar dataKey="expense" fill="#e5e7eb" radius={[4, 4, 0, 0]} barSize={24} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                  <XAxis dataKey="name" axisLine={{ stroke: 'var(--color-border)' }} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-muted)' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-muted)' }} />
+                  <Tooltip cursor={{ fill: 'var(--color-surface-hover)' }} contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)', boxShadow: 'var(--shadow-subtle)' }} />
+                  <Bar dataKey="income" fill="var(--color-brand)" radius={[4, 4, 0, 0]} barSize={24} />
+                  <Bar dataKey="expense" fill="var(--color-border)" radius={[4, 4, 0, 0]} barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
           
           {/* Bottom Stats Block */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-wrap items-center justify-between gap-6 overflow-x-auto">
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-subtle flex flex-wrap items-center justify-between gap-6 overflow-x-auto">
              <div className="flex items-center gap-4 min-w-[120px]">
-               <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+               <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
                  <Building2 size={20} strokeWidth={2} />
                </div>
                <div>
-                 <p className="text-[11px] text-gray-400 font-bold tracking-wide">Total Accounts</p>
-                 <p className="text-[18px] font-black text-gray-900">{accounts.length || 8}</p>
+                 <p className="text-[11px] text-muted font-bold tracking-wide">Total Accounts</p>
+                 <p className="text-[18px] font-black text-primary">{accounts.length || 8}</p>
                </div>
              </div>
              
@@ -983,8 +983,8 @@ function Finance() {
                  <FileText size={20} strokeWidth={2} />
                </div>
                <div>
-                 <p className="text-[11px] text-gray-400 font-bold tracking-wide">Total Transactions</p>
-                 <p className="text-[18px] font-black text-gray-900">{filteredTransactions.length || 156}</p>
+                 <p className="text-[11px] text-muted font-bold tracking-wide">Total Transactions</p>
+                 <p className="text-[18px] font-black text-primary">{filteredTransactions.length || 156}</p>
                </div>
              </div>
              
@@ -993,8 +993,8 @@ function Finance() {
                  <ArrowUpRight size={20} strokeWidth={2} />
                </div>
                <div>
-                 <p className="text-[11px] text-gray-400 font-bold tracking-wide">This Month Revenue</p>
-                 <p className="text-[18px] font-black text-gray-900">{currencySymbol} {(totalIncome || 19800).toLocaleString()}</p>
+                 <p className="text-[11px] text-muted font-bold tracking-wide">This Month Revenue</p>
+                 <p className="text-[18px] font-black text-primary">{currencySymbol} {(totalIncome || 19800).toLocaleString()}</p>
                </div>
              </div>
              
@@ -1003,18 +1003,18 @@ function Finance() {
                  <ArrowDownRight size={20} strokeWidth={2} />
                </div>
                <div>
-                 <p className="text-[11px] text-gray-400 font-bold tracking-wide">This Month Expenses</p>
-                 <p className="text-[18px] font-black text-gray-900">{currencySymbol} {(totalExpense || 1000).toLocaleString()}</p>
+                 <p className="text-[11px] text-muted font-bold tracking-wide">This Month Expenses</p>
+                 <p className="text-[18px] font-black text-primary">{currencySymbol} {(totalExpense || 1000).toLocaleString()}</p>
                </div>
              </div>
              
              <div className="flex items-center gap-4 min-w-[120px]">
-               <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center">
+               <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
                  <PieChartIcon size={20} strokeWidth={2} />
                </div>
                <div>
-                 <p className="text-[11px] text-gray-400 font-bold tracking-wide">Profit Margin</p>
-                 <p className="text-[18px] font-black text-gray-900">{totalIncome ? ((netProfit / totalIncome) * 100).toFixed(1) : '94.9'}%</p>
+                 <p className="text-[11px] text-muted font-bold tracking-wide">Profit Margin</p>
+                 <p className="text-[18px] font-black text-primary">{totalIncome ? ((netProfit / totalIncome) * 100).toFixed(1) : '94.9'}%</p>
                </div>
              </div>
           </div>
@@ -1022,21 +1022,21 @@ function Finance() {
       )}
 
       {activeTab === 'transactions' && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden min-h-[400px]">
+          <div className="p-6 border-b border-border flex items-center justify-between">
             <h3 className="text-lg font-bold">Recent Transactions</h3>
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
                 <input
                   type="text"
                   placeholder="Search..."
-                  className="pl-8 pr-4 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="pl-8 pr-4 py-1.5 bg-surface-hover border border-transparent rounded-lg text-xs focus:bg-surface focus:border-border outline-none transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <button className="p-1.5 bg-gray-50 text-gray-500 rounded-lg hover:bg-gray-100 transition-all">
+              <button className="p-1.5 bg-surface-hover text-secondary rounded-lg hover:bg-surface-hover transition-all">
                 <Filter size={14} />
               </button>
             </div>
@@ -1044,7 +1044,7 @@ function Finance() {
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[800px] whitespace-nowrap">
               <thead>
-                <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+                <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                   <th className="px-6 py-4 font-semibold">Transaction ID</th>
                   <th className="px-6 py-4 font-semibold">Category</th>
                   <th className="px-6 py-4 font-semibold">Method</th>
@@ -1053,13 +1053,13 @@ function Finance() {
                   <th className="px-6 py-4 font-semibold text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="animate-spin text-gray-400" size={24} />
-                        <span className="text-sm text-gray-500">Loading transactions...</span>
+                        <Loader2 className="animate-spin text-muted" size={24} />
+                        <span className="text-sm text-secondary">Loading transactions...</span>
                       </div>
                     </td>
                   </tr>
@@ -1067,45 +1067,45 @@ function Finance() {
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
-                        <Wallet className="text-gray-300" size={48} />
-                        <span className="text-sm text-gray-500">No transactions found</span>
+                        <Wallet className="text-muted" size={48} />
+                        <span className="text-sm text-secondary">No transactions found</span>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   filteredTransactions.map((txn) => (
-                    <tr key={txn.id} className="hover:bg-gray-50 transition-colors group">
+                    <tr key={txn.id} className="hover:bg-surface-hover transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-mono font-bold text-[#141414]">{txn.id}</span>
-                          <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">#{txn.orderNumber || txn.orderId?.slice(0, 8)}</span>
+                          <span className="text-sm font-mono font-bold text-primary">{txn.id}</span>
+                          <span className="text-[10px] text-muted mt-1 uppercase tracking-wider">#{txn.orderNumber || txn.orderId?.slice(0, 8)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-xs font-medium text-gray-600">{txn.category}</span>
-                          <span className="text-[10px] text-gray-400">{txn.subCategory}</span>
+                          <span className="text-xs font-medium text-secondary">{txn.category}</span>
+                          <span className="text-[10px] text-muted">{txn.subCategory}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <CreditCard size={12} className="text-gray-400" />
+                        <div className="flex items-center gap-2 text-xs text-secondary">
+                          <CreditCard size={12} className="text-muted" />
                           <span>{txn.method}</span>
                           {txn.paymentDetails?.last4Digits && (
-                            <span className="text-[10px] bg-gray-100 border border-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-1 font-mono">
+                            <span className="text-[10px] bg-surface-hover border border-border text-secondary px-1.5 py-0.5 rounded ml-1 font-mono">
                               *{txn.paymentDetails.last4Digits}
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <Calendar size={12} className="text-gray-400" />
+                        <div className="flex items-center gap-2 text-xs text-secondary">
+                          <Calendar size={12} className="text-muted" />
                           {(txn.date as any)?.toDate ? (txn.date as any).toDate().toLocaleDateString() : ((txn.date as any)?.seconds ? new Date((txn.date as any).seconds * 1000).toLocaleDateString() : 'N/A')}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`text-sm font-bold ${txn.type === 'income' ? 'text-green-600' : txn.type === 'expense' ? 'text-red-600' : 'text-[#0066FF]'}`}>
+                        <span className={`text-sm font-bold ${txn.type === 'income' ? 'text-green-600' : txn.type === 'expense' ? 'text-red-600' : 'text-brand'}`}>
                           {txn.type === 'income' ? '+' : txn.type === 'expense' ? '-' : '⇄'} {currencySymbol} {(txn.amount || 0).toLocaleString()}
                         </span>
                       </td>
@@ -1124,14 +1124,14 @@ function Finance() {
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               onClick={() => handleOpenEditModal(txn)}
-                              className="p-1.5 text-gray-400 hover:text-[#0066FF] hover:bg-blue-50 rounded-md transition-all" 
+                              className="p-1.5 text-muted hover:text-brand hover:bg-brand/10 rounded-md transition-all" 
                               title="Edit"
                             >
                               <Edit size={14} />
                             </button>
                             <button 
                               onClick={() => handleDeleteTransaction(txn.id)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all" 
+                              className="p-1.5 text-muted hover:text-red-600 hover:bg-red-50 rounded-md transition-all" 
                               title="Delete"
                             >
                               <Trash2 size={14} />
@@ -1151,15 +1151,15 @@ function Finance() {
       {activeTab === 'coa' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(COA_STRUCTURE).map(([category, subCategories]) => (
-            <div key={category} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-[#141414] uppercase tracking-wider">{category}</h3>
+            <div key={category} className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
+              <div className="p-4 border-b border-border bg-surface-hover flex items-center justify-between">
+                <h3 className="text-sm font-bold text-primary uppercase tracking-wider">{category}</h3>
                 <button 
                   onClick={() => {
                     setAccountForm({ ...accountForm, category: category as any });
                     setIsAccountModalOpen(true);
                   }}
-                  className="p-1 text-gray-400 hover:text-[#141414] transition-colors"
+                  className="p-1 text-muted hover:text-primary transition-colors"
                 >
                   <Plus size={16} />
                 </button>
@@ -1171,12 +1171,12 @@ function Finance() {
                   return (
                     <div key={sub} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-600">{sub}</span>
-                        <span className="text-xs font-bold text-[#141414]">{currencySymbol} {(totalBalance || 0).toLocaleString()}</span>
+                        <span className="text-xs font-medium text-secondary">{sub}</span>
+                        <span className="text-xs font-bold text-primary">{currencySymbol} {(totalBalance || 0).toLocaleString()}</span>
                       </div>
                       <div className="pl-4 space-y-1">
                         {accounts.filter(acc => acc.category === category && acc.name.includes(sub)).map(acc => (
-                          <div key={acc.id} className="flex items-center justify-between text-[10px] text-gray-400 group">
+                          <div key={acc.id} className="flex items-center justify-between text-[10px] text-muted group">
                             <span>{acc.name}</span>
                             <div className="flex items-center gap-2">
                               <span>{currencySymbol} {(acc.balance || 0).toLocaleString()}</span>
@@ -1201,48 +1201,48 @@ function Finance() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div 
               onClick={() => setIsPnLModalOpen(true)}
-              className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:border-[#141414] transition-all cursor-pointer group"
+              className="bg-surface p-6 rounded-xl border border-border shadow-subtle hover:border-slate-900 dark:border-white transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 rounded-xl bg-blue-50 text-[#0066FF] group-hover:bg-[#141414] group-hover:text-white transition-all">
+                <div className="p-3 rounded-xl bg-brand/10 text-brand group-hover:bg-slate-900 group-hover:dark:bg-white group-hover:text-white group-hover:dark:text-black transition-all">
                   <FileText size={24} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#141414]">Profit & Loss</h4>
-                  <p className="text-xs text-gray-500">Revenue, COGS, and Expenses</p>
+                  <h4 className="font-bold text-primary">Profit & Loss</h4>
+                  <p className="text-xs text-secondary">Revenue, COGS, and Expenses</p>
                 </div>
               </div>
-              <button className="w-full py-2 bg-gray-50 text-xs font-bold rounded-lg hover:bg-gray-100 transition-all">Generate Report</button>
+              <button className="w-full py-2 bg-surface-hover text-xs font-bold rounded-lg hover:bg-surface-hover transition-all">Generate Report</button>
             </div>
             <div 
               onClick={() => setIsBalanceSheetModalOpen(true)}
-              className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:border-[#141414] transition-all cursor-pointer group"
+              className="bg-surface p-6 rounded-xl border border-border shadow-subtle hover:border-slate-900 dark:border-white transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 rounded-xl bg-green-50 text-green-600 group-hover:bg-[#141414] group-hover:text-white transition-all">
+                <div className="p-3 rounded-xl bg-green-50 text-green-600 group-hover:bg-slate-900 group-hover:dark:bg-white group-hover:text-white group-hover:dark:text-black transition-all">
                   <Calculator size={24} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#141414]">Balance Sheet</h4>
-                  <p className="text-xs text-gray-500">Assets, Liabilities, and Equity</p>
+                  <h4 className="font-bold text-primary">Balance Sheet</h4>
+                  <p className="text-xs text-secondary">Assets, Liabilities, and Equity</p>
                 </div>
               </div>
-              <button className="w-full py-2 bg-gray-50 text-xs font-bold rounded-lg hover:bg-gray-100 transition-all">Generate Report</button>
+              <button className="w-full py-2 bg-surface-hover text-xs font-bold rounded-lg hover:bg-surface-hover transition-all">Generate Report</button>
             </div>
             <div 
               onClick={() => setIsCashFlowModalOpen(true)}
-              className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:border-[#141414] transition-all cursor-pointer group"
+              className="bg-surface p-6 rounded-xl border border-border shadow-subtle hover:border-slate-900 dark:border-white transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 rounded-xl bg-orange-50 text-orange-600 group-hover:bg-[#141414] group-hover:text-white transition-all">
+                <div className="p-3 rounded-xl bg-orange-50 text-orange-600 group-hover:bg-slate-900 group-hover:dark:bg-white group-hover:text-white group-hover:dark:text-black transition-all">
                   <ArrowRightLeft size={24} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#141414]">Cash Flow</h4>
-                  <p className="text-xs text-gray-500">Inflow and Outflow tracking</p>
+                  <h4 className="font-bold text-primary">Cash Flow</h4>
+                  <p className="text-xs text-secondary">Inflow and Outflow tracking</p>
                 </div>
               </div>
-              <button className="w-full py-2 bg-gray-50 text-xs font-bold rounded-lg hover:bg-gray-100 transition-all">Generate Report</button>
+              <button className="w-full py-2 bg-surface-hover text-xs font-bold rounded-lg hover:bg-surface-hover transition-all">Generate Report</button>
             </div>
           </div>
         </div>
@@ -1250,21 +1250,21 @@ function Finance() {
 
       {activeTab === 'ar_ap' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-bold text-[#141414] uppercase tracking-wider">Accounts Receivable (A/R)</h3>
+          <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
+            <div className="p-4 border-b border-border bg-surface-hover">
+              <h3 className="text-sm font-bold text-primary uppercase tracking-wider">Accounts Receivable (A/R)</h3>
             </div>
-            <div className="p-6 text-center text-gray-500 text-sm">
-              <Users size={48} className="mx-auto mb-4 text-gray-200" />
+            <div className="p-6 text-center text-secondary text-sm">
+              <Users size={48} className="mx-auto mb-4 text-muted" />
               <p>Customer dues and pending payments will appear here.</p>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-bold text-[#141414] uppercase tracking-wider">Accounts Payable (A/P)</h3>
+          <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
+            <div className="p-4 border-b border-border bg-surface-hover">
+              <h3 className="text-sm font-bold text-primary uppercase tracking-wider">Accounts Payable (A/P)</h3>
             </div>
-            <div className="p-6 text-center text-gray-500 text-sm">
-              <Building2 size={48} className="mx-auto mb-4 text-gray-200" />
+            <div className="p-6 text-center text-secondary text-sm">
+              <Building2 size={48} className="mx-auto mb-4 text-muted" />
               <p>Supplier dues and unpaid expenses will appear here.</p>
             </div>
           </div>
@@ -1272,8 +1272,8 @@ function Finance() {
       )}
 
       {activeTab === 'supplier_payments' && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden min-h-[400px]">
+          <div className="p-6 border-b border-border flex items-center justify-between">
             <h3 className="text-lg font-bold">Supplier Payments</h3>
             <button 
               onClick={() => {
@@ -1291,7 +1291,7 @@ function Finance() {
                 });
                 setIsSupplierPaymentModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-xs font-bold hover:bg-black transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold hover:bg-black transition-all"
             >
               <Plus size={14} />
               Add Payment
@@ -1300,7 +1300,7 @@ function Finance() {
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[800px] whitespace-nowrap">
               <thead>
-                <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+                <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                   <th className="px-6 py-4 font-semibold">Date</th>
                   <th className="px-6 py-4 font-semibold">Supplier</th>
                   <th className="px-6 py-4 font-semibold">Voucher No</th>
@@ -1309,28 +1309,28 @@ function Finance() {
                   <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {supplierPayments.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
-                        <Building2 className="text-gray-300" size={48} />
-                        <span className="text-sm text-gray-500">No supplier payments found</span>
+                        <Building2 className="text-muted" size={48} />
+                        <span className="text-sm text-secondary">No supplier payments found</span>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   supplierPayments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50 transition-colors group">
-                      <td className="px-6 py-4 text-sm text-gray-600">{payment.date}</td>
+                    <tr key={payment.id} className="hover:bg-surface-hover transition-colors group">
+                      <td className="px-6 py-4 text-sm text-secondary">{payment.date}</td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold text-[#141414]">{payment.supplierName}</span>
-                          <span className="text-[10px] text-gray-400">{payment.remark}</span>
+                          <span className="text-sm font-bold text-primary">{payment.supplierName}</span>
+                          <span className="text-[10px] text-muted">{payment.remark}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{payment.voucherNo}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{currencySymbol} {(payment.dueAmount || 0).toLocaleString()}</td>
+                      <td className="px-6 py-4 text-sm text-secondary">{payment.voucherNo}</td>
+                      <td className="px-6 py-4 text-sm text-secondary">{currencySymbol} {(payment.dueAmount || 0).toLocaleString()}</td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold text-red-600">
                           {currencySymbol} {(payment.paidAmount || 0).toLocaleString()}
@@ -1339,7 +1339,7 @@ function Finance() {
                       <td className="px-6 py-4 text-right">
                         <button 
                           onClick={() => handleDeleteSupplierPayment(payment.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                          className="p-1.5 text-muted hover:text-red-600 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -1358,12 +1358,12 @@ function Finance() {
       {/* Supplier Payment Modal */}
       {isSupplierPaymentModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">Supplier Payment</h3>
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">Supplier Payment</h3>
               <button 
                 onClick={() => setIsSupplierPaymentModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-surface-hover rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
@@ -1371,20 +1371,20 @@ function Finance() {
             <form onSubmit={handleSupplierPaymentSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Date*</label>
                   <input
                     required
                     type="date"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={supplierPaymentForm.date}
                     onChange={(e) => setSupplierPaymentForm({...supplierPaymentForm, date: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Remark</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Remark</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="Optional notes"
                     value={supplierPaymentForm.remark}
                     onChange={(e) => setSupplierPaymentForm({...supplierPaymentForm, remark: e.target.value})}
@@ -1393,10 +1393,10 @@ function Finance() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Supplier Name*</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Supplier Name*</label>
                 <select
                   required
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   value={supplierPaymentForm.supplierId}
                   onChange={(e) => setSupplierPaymentForm({...supplierPaymentForm, supplierId: e.target.value})}
                 >
@@ -1409,31 +1409,31 @@ function Finance() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Voucher No</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Voucher No</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="V-001"
                     value={supplierPaymentForm.voucherNo}
                     onChange={(e) => setSupplierPaymentForm({...supplierPaymentForm, voucherNo: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Due Amount</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Due Amount</label>
                   <input
                     type="number"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="0.00"
                     value={supplierPaymentForm.dueAmount}
                     onChange={(e) => setSupplierPaymentForm({...supplierPaymentForm, dueAmount: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Amount*</label>
                   <input
                     required
                     type="number"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="0.00"
                     value={supplierPaymentForm.amount}
                     onChange={(e) => {
@@ -1449,20 +1449,20 @@ function Finance() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Total</label>
                   <input
                     readOnly
                     type="number"
-                    className="w-full px-4 py-2 bg-gray-100 border border-transparent rounded-lg text-sm outline-none"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm outline-none"
                     value={supplierPaymentForm.total}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Payment Type</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Payment Type</label>
                   <select
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={supplierPaymentForm.paymentType}
                     onChange={(e) => setSupplierPaymentForm({...supplierPaymentForm, paymentType: e.target.value})}
                   >
@@ -1475,11 +1475,11 @@ function Finance() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Paid Amount</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Paid Amount</label>
                 <input
                   required
                   type="number"
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all font-bold text-green-600"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all font-bold text-green-600"
                   value={supplierPaymentForm.paidAmount}
                   onChange={(e) => setSupplierPaymentForm({...supplierPaymentForm, paidAmount: e.target.value})}
                 />
@@ -1489,13 +1489,13 @@ function Finance() {
                 <button
                   type="button"
                   onClick={() => setIsSupplierPaymentModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
                 >
                   Save Payment
                 </button>
@@ -1506,15 +1506,15 @@ function Finance() {
       )}
       {isBalanceSheetModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
               <div>
-                <h3 className="text-lg font-bold text-[#141414]">Balance Sheet</h3>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Financial Position Statement</p>
+                <h3 className="text-lg font-bold text-primary">Balance Sheet</h3>
+                <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Financial Position Statement</p>
               </div>
               <button 
                 onClick={() => setIsBalanceSheetModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-surface-hover rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
@@ -1528,23 +1528,23 @@ function Finance() {
                   <span className="text-sm font-black">{currencySymbol} {(balanceSheet.assets.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Cash in Hand</span>
                     <span>{currencySymbol} {(balanceSheet.assets.cash || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Bank Accounts</span>
                     <span>{currencySymbol} {(balanceSheet.assets.bank || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Mobile Wallets</span>
                     <span>{currencySymbol} {(balanceSheet.assets.mobile || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Accounts Receivable</span>
                     <span>{currencySymbol} {(balanceSheet.assets.ar || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Inventory Value</span>
                     <span>{currencySymbol} {(balanceSheet.assets.inventory || 0).toLocaleString()}</span>
                   </div>
@@ -1553,16 +1553,16 @@ function Finance() {
 
               {/* Liabilities Section */}
               <section className="space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                <div className="flex items-center justify-between border-b border-border pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest text-red-600">Liabilities</h4>
                   <span className="text-sm font-black text-red-600">{currencySymbol} {(balanceSheet.liabilities.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Accounts Payable</span>
                     <span>{currencySymbol} {(balanceSheet.liabilities.ap || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Outstanding Loans</span>
                     <span>{currencySymbol} {(balanceSheet.liabilities.loans || 0).toLocaleString()}</span>
                   </div>
@@ -1571,16 +1571,16 @@ function Finance() {
 
               {/* Equity Section */}
               <section className="space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-2">
-                  <h4 className="text-sm font-black uppercase tracking-widest text-[#0066FF]">Equity</h4>
-                  <span className="text-sm font-black text-[#0066FF]">{currencySymbol} {(balanceSheet.equity.total || 0).toLocaleString()}</span>
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-brand">Equity</h4>
+                  <span className="text-sm font-black text-brand">{currencySymbol} {(balanceSheet.equity.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Owner Investment</span>
                     <span>{currencySymbol} {(balanceSheet.equity.investment || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Retained Earnings (Net Profit)</span>
                     <span>{currencySymbol} {(balanceSheet.equity.retainedEarnings || 0).toLocaleString()}</span>
                   </div>
@@ -1607,11 +1607,11 @@ function Finance() {
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-              <p className="text-[10px] text-gray-400 italic">* As of {new Date().toLocaleDateString()}</p>
+            <div className="px-6 py-4 border-t border-border bg-surface-hover flex items-center justify-between">
+              <p className="text-[10px] text-muted italic">* As of {new Date().toLocaleDateString()}</p>
               <button 
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-xs font-bold hover:bg-black transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold hover:bg-black transition-all"
               >
                 <Download size={14} />
                 Download PDF
@@ -1624,22 +1624,22 @@ function Finance() {
       {/* Cash Flow Modal */}
       {isCashFlowModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
               <div>
-                <h3 className="text-lg font-bold text-[#141414]">Cash Flow Statement</h3>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Cash Inflow & Outflow Report</p>
+                <h3 className="text-lg font-bold text-primary">Cash Flow Statement</h3>
+                <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Cash Inflow & Outflow Report</p>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                  <Calendar size={14} className="text-gray-400" />
+                <div className="flex items-center gap-2 bg-surface-hover px-3 py-1.5 rounded-lg border border-border">
+                  <Calendar size={14} className="text-muted" />
                   <input 
                     type="date" 
                     className="bg-transparent text-xs outline-none" 
                     value={reportRange.start}
                     onChange={(e) => setReportRange({...reportRange, start: e.target.value})}
                   />
-                  <span className="text-gray-300">-</span>
+                  <span className="text-muted">-</span>
                   <input 
                     type="date" 
                     className="bg-transparent text-xs outline-none" 
@@ -1649,7 +1649,7 @@ function Finance() {
                 </div>
                 <button 
                   onClick={() => setIsCashFlowModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-surface-hover rounded-full transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -1664,11 +1664,11 @@ function Finance() {
                   <span className="text-sm font-black text-green-600">+{currencySymbol} {(cashFlow.inflow.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Sales Receipts</span>
                     <span>{currencySymbol} {(cashFlow.inflow.sales || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Other Inflows</span>
                     <span>{currencySymbol} {(cashFlow.inflow.other || 0).toLocaleString()}</span>
                   </div>
@@ -1682,15 +1682,15 @@ function Finance() {
                   <span className="text-sm font-black text-red-600">-{currencySymbol} {(cashFlow.outflow.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>COGS Payments</span>
                     <span>{currencySymbol} {(cashFlow.outflow.cogs || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Operating Expenses</span>
                     <span>{currencySymbol} {(cashFlow.outflow.expenses || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Other Outflows</span>
                     <span>{currencySymbol} {(cashFlow.outflow.other || 0).toLocaleString()}</span>
                   </div>
@@ -1709,11 +1709,11 @@ function Finance() {
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-              <p className="text-[10px] text-gray-400 italic">* This report shows actual cash movement during the period.</p>
+            <div className="px-6 py-4 border-t border-border bg-surface-hover flex items-center justify-between">
+              <p className="text-[10px] text-muted italic">* This report shows actual cash movement during the period.</p>
               <button 
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-xs font-bold hover:bg-black transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold hover:bg-black transition-all"
               >
                 <Download size={14} />
                 Download PDF
@@ -1724,22 +1724,22 @@ function Finance() {
       )}
       {isPnLModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
               <div>
-                <h3 className="text-lg font-bold text-[#141414]">Profit & Loss Statement</h3>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Financial Performance Report</p>
+                <h3 className="text-lg font-bold text-primary">Profit & Loss Statement</h3>
+                <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Financial Performance Report</p>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                  <Calendar size={14} className="text-gray-400" />
+                <div className="flex items-center gap-2 bg-surface-hover px-3 py-1.5 rounded-lg border border-border">
+                  <Calendar size={14} className="text-muted" />
                   <input 
                     type="date" 
                     className="bg-transparent text-xs outline-none" 
                     value={reportRange.start}
                     onChange={(e) => setReportRange({...reportRange, start: e.target.value})}
                   />
-                  <span className="text-gray-300">-</span>
+                  <span className="text-muted">-</span>
                   <input 
                     type="date" 
                     className="bg-transparent text-xs outline-none" 
@@ -1749,7 +1749,7 @@ function Finance() {
                 </div>
                 <button 
                   onClick={() => setIsPnLModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-surface-hover rounded-full transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -1764,15 +1764,15 @@ function Finance() {
                   <span className="text-sm font-black">{currencySymbol} {(pnlReport.revenue.total || 0).toLocaleString()}</span>
                 </div>
                 <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Product Sales</span>
                     <span>{currencySymbol} {(pnlReport.revenue.productSales || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Delivery Charge Income</span>
                     <span>{currencySymbol} {(pnlReport.revenue.deliveryIncome || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Other Income</span>
                     <span>{currencySymbol} {(pnlReport.revenue.otherIncome || 0).toLocaleString()}</span>
                   </div>
@@ -1785,20 +1785,20 @@ function Finance() {
 
               {/* COGS Section */}
               <section className="space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                <div className="flex items-center justify-between border-b border-border pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest">Cost of Goods Sold (COGS)</h4>
                   <span className="text-sm font-black text-red-600">({currencySymbol} {(pnlReport.cogs.total || 0).toLocaleString()})</span>
                 </div>
                 <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Product Cost</span>
                     <span>{currencySymbol} {(pnlReport.cogs.productCost || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Packaging Cost</span>
                     <span>{currencySymbol} {(pnlReport.cogs.packagingCost || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Delivery Cost (Shipping)</span>
                     <span>{currencySymbol} {(pnlReport.cogs.deliveryCost || 0).toLocaleString()}</span>
                   </div>
@@ -1806,7 +1806,7 @@ function Finance() {
               </section>
 
               {/* Gross Profit */}
-              <div className="bg-gray-50 p-4 rounded-xl flex items-center justify-between border border-gray-100">
+              <div className="bg-surface-hover p-4 rounded-xl flex items-center justify-between border border-border">
                 <h4 className="text-sm font-black uppercase tracking-widest">Gross Profit</h4>
                 <span className={`text-lg font-black ${pnlReport.grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {currencySymbol} {(pnlReport.grossProfit || 0).toLocaleString()}
@@ -1815,32 +1815,32 @@ function Finance() {
 
               {/* Expenses Section */}
               <section className="space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                <div className="flex items-center justify-between border-b border-border pb-2">
                   <h4 className="text-sm font-black uppercase tracking-widest">Operating Expenses</h4>
                   <span className="text-sm font-black text-red-600">({currencySymbol} {(pnlReport.expenses.total || 0).toLocaleString()})</span>
                 </div>
                 <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Marketing & Ads</span>
                     <span>{currencySymbol} {(pnlReport.expenses.marketing || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Salaries & Wages</span>
                     <span>{currencySymbol} {(pnlReport.expenses.salary || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Rent & Office</span>
                     <span>{currencySymbol} {(pnlReport.expenses.rent || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Utilities</span>
                     <span>{currencySymbol} {(pnlReport.expenses.utilities || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Courier Charges</span>
                     <span>{currencySymbol} {(pnlReport.expenses.courierCharge || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-secondary">
                     <span>Miscellaneous</span>
                     <span>{currencySymbol} {(pnlReport.expenses.miscExpenses || 0).toLocaleString()}</span>
                   </div>
@@ -1859,11 +1859,11 @@ function Finance() {
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-              <p className="text-[10px] text-gray-400 italic">* This report is generated based on recorded transactions in the selected period.</p>
+            <div className="px-6 py-4 border-t border-border bg-surface-hover flex items-center justify-between">
+              <p className="text-[10px] text-muted italic">* This report is generated based on recorded transactions in the selected period.</p>
               <button 
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-xs font-bold hover:bg-black transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold hover:bg-black transition-all"
               >
                 <Download size={14} />
                 Download PDF
@@ -1874,14 +1874,14 @@ function Finance() {
       )}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">
                 {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
               </h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-surface-hover rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
@@ -1889,9 +1889,9 @@ function Finance() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Type</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Type</label>
                   <select
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={transactionForm.type}
                     onChange={(e) => setTransactionForm({...transactionForm, type: e.target.value as any})}
                   >
@@ -1901,10 +1901,10 @@ function Finance() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Category</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Category</label>
                   <select
                     required
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={transactionForm.category}
                     onChange={(e) => setTransactionForm({...transactionForm, category: e.target.value})}
                   >
@@ -1916,10 +1916,10 @@ function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sub-Category</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Sub-Category</label>
                   <select
                     required
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={transactionForm.subCategory}
                     onChange={(e) => setTransactionForm({...transactionForm, subCategory: e.target.value})}
                   >
@@ -1929,11 +1929,11 @@ function Finance() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount ({currencySymbol})</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Amount ({currencySymbol})</label>
                   <input
                     required
                     type="number"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="0.00"
                     value={transactionForm.amount}
                     onChange={(e) => setTransactionForm({...transactionForm, amount: e.target.value})}
@@ -1942,12 +1942,12 @@ function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">
                     {transactionForm.type === 'transfer' ? 'From Account' : 'Account'}
                   </label>
                   <select
                     required
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={transactionForm.accountId}
                     onChange={(e) => setTransactionForm({...transactionForm, accountId: e.target.value})}
                   >
@@ -1959,10 +1959,10 @@ function Finance() {
                 </div>
                 {transactionForm.type === 'transfer' ? (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">To Account</label>
+                    <label className="text-xs font-bold text-secondary uppercase tracking-wider">To Account</label>
                     <select
                       required
-                      className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                      className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                       value={transactionForm.toAccountId}
                       onChange={(e) => setTransactionForm({...transactionForm, toAccountId: e.target.value})}
                     >
@@ -1974,9 +1974,9 @@ function Finance() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Method</label>
+                    <label className="text-xs font-bold text-secondary uppercase tracking-wider">Method</label>
                     <select
-                      className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                      className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                       value={transactionForm.method}
                       onChange={(e) => setTransactionForm({...transactionForm, method: e.target.value})}
                     >
@@ -1990,9 +1990,9 @@ function Finance() {
                 )}
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notes</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Notes</label>
                 <textarea
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all min-h-[60px] resize-none"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all min-h-[60px] resize-none"
                   placeholder="Transaction details..."
                   value={transactionForm.notes}
                   onChange={(e) => setTransactionForm({...transactionForm, notes: e.target.value})}
@@ -2000,19 +2000,19 @@ function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Order ID (Optional)</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Order ID (Optional)</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="ORD-..."
                     value={transactionForm.orderId}
                     onChange={(e) => setTransactionForm({...transactionForm, orderId: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Status</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Status</label>
                   <select
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={transactionForm.status}
                     onChange={(e) => setTransactionForm({...transactionForm, status: e.target.value as 'Completed' | 'Pending'})}
                   >
@@ -2025,13 +2025,13 @@ function Finance() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
                 >
                   {editingTransaction ? 'Save Changes' : 'Save Transaction'}
                 </button>
@@ -2043,21 +2043,21 @@ function Finance() {
       {/* Account Modal */}
       {isAccountModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">
                 {editingAccount ? 'Edit Account' : 'Add Account'}
               </h3>
-              <button onClick={() => setIsAccountModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <button onClick={() => setIsAccountModalOpen(false)} className="p-2 hover:bg-surface-hover rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={handleAccountSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Account Name</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Account Name</label>
                 <input
                   required
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   placeholder="e.g. City Bank, bKash Personal"
                   value={accountForm.name}
                   onChange={(e) => setAccountForm({...accountForm, name: e.target.value})}
@@ -2065,9 +2065,9 @@ function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Type</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Type</label>
                   <select
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={accountForm.type}
                     onChange={(e) => setAccountForm({...accountForm, type: e.target.value as any})}
                   >
@@ -2080,9 +2080,9 @@ function Finance() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Category</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Category</label>
                   <select
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={accountForm.category}
                     onChange={(e) => setAccountForm({...accountForm, category: e.target.value as any})}
                   >
@@ -2094,19 +2094,19 @@ function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Initial Balance</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Initial Balance</label>
                   <input
                     required
                     type="number"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={accountForm.balance}
                     onChange={(e) => setAccountForm({...accountForm, balance: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Account Number (Optional)</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Account Number (Optional)</label>
                   <input
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="e.g. 123456789"
                     value={accountForm.accountNumber}
                     onChange={(e) => setAccountForm({...accountForm, accountNumber: e.target.value})}
@@ -2114,8 +2114,8 @@ function Finance() {
                 </div>
               </div>
               <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsAccountModalOpen(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors">Save Account</button>
+                <button type="button" onClick={() => setIsAccountModalOpen(false)} className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors">Save Account</button>
               </div>
             </form>
           </div>

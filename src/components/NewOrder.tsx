@@ -602,31 +602,31 @@ export default function NewOrder() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-6xl mx-auto pb-20 lg:pb-8">
+    <div className="min-h-screen bg-surface-hover p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-6xl mx-auto pb-20 lg:pb-8">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/orders')}
-            className="p-2 hover:bg-slate-100 text-slate-500 rounded-xl transition-all shrink-0"
+            className="p-2 hover:bg-surface-hover text-secondary rounded-xl transition-all shrink-0"
           >
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Create Order</h2>
-            <p className="text-sm font-medium text-slate-500 mt-1">Create a new order by adding customer and products.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">Create Order</h2>
+            <p className="text-sm font-medium text-secondary mt-1">Create a new order by adding customer and products.</p>
           </div>
         </div>
         <div className="flex gap-3">
           <button 
             type="button"
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2"
+            className="px-4 py-2 bg-surface border border-border text-primary rounded-lg text-sm font-semibold hover:bg-surface-hover transition-all shadow-subtle flex items-center gap-2"
           >
             <Save size={16} /> <span>Save Draft</span>
           </button>
           <button 
             onClick={handleSubmit}
             disabled={loading}
-            className="flex items-center justify-center gap-2 px-5 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-semibold hover:bg-[#0052CC] transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-5 py-2 bg-brand text-white rounded-lg text-sm font-semibold hover:bg-brand-hover transition-all shadow-subtle disabled:opacity-50"
           >
             {loading ? 'Saving...' : (
               <>
@@ -640,24 +640,24 @@ export default function NewOrder() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Section */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-6">
-            <h4 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-6">
-              <UserCheck size={20} className="text-[#0066FF]" /> Customer Information
+          <div className="bg-surface rounded-xl border border-border p-6 shadow-subtle space-y-6">
+            <h4 className="text-base font-bold text-primary flex items-center gap-2 mb-6">
+              <UserCheck size={20} className="text-brand" /> Customer Information
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               {/* Row 1: Phone */}
               <div className="space-y-2">
-                <label className="mb-2 block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Phone Number *</label>
+                <label className="mb-2 block text-[11px] font-semibold text-secondary uppercase tracking-wider">Phone Number *</label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <input 
                       required
-                      className={`w-full pl-11 ${orderForm.customerPhone.length >= 11 ? 'pr-11 border-emerald-500 focus:border-emerald-500 ring-emerald-500/20' : 'pr-4 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20'} py-2.5 bg-white text-sm rounded-lg outline-none transition-all border`}
+                      className={`w-full pl-11 ${orderForm.customerPhone.length >= 11 ? 'pr-11 border-emerald-500 focus:border-emerald-500 ring-emerald-500/20' : 'pr-4 border-border focus:border-brand focus:ring-brand/20'} py-2.5 bg-surface text-sm rounded-lg outline-none transition-all border`}
                       value={orderForm.customerPhone}
                       onChange={e => handlePhoneChange(e.target.value)}
                       placeholder="01XXX-XXXXXX"
                     />
-                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                     {orderForm.customerPhone.length >= 11 && (
                       <CheckCircle size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500" />
                     )}
@@ -667,7 +667,7 @@ export default function NewOrder() {
                       href={`https://wa.me/88${orderForm.customerPhone.replace(/\D/g, '')}`} 
                       target="_blank" 
                       rel="noreferrer"
-                      className="p-3 bg-[#25D366] text-white rounded-xl hover:bg-[#128C7E] transition-all shadow-md flex items-center justify-center shrink-0"
+                      className="p-3 bg-[#25D366] text-white rounded-xl hover:bg-[#128C7E] transition-all shadow-premium flex items-center justify-center shrink-0"
                       title="Chat on WhatsApp"
                     >
                       <Smartphone size={20} />
@@ -680,9 +680,9 @@ export default function NewOrder() {
               <div className="flex items-end min-h-[76px] sm:min-h-0 sm:pt-6">
                 <div className="w-full">
                   {isFetchingHistory ? (
-                    <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-xl">
-                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-xs font-medium text-blue-500">Checking customer history...</span>
+                    <div className="flex items-center gap-2 px-4 py-3 bg-surface-hover rounded-xl">
+                      <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-medium text-brand">Checking customer history...</span>
                     </div>
                   ) : courierHistory ? (
                     <div className="p-3 sm:p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
@@ -713,7 +713,7 @@ export default function NewOrder() {
                             toast.error("No names/addresses found in courier network");
                           }
                         }}
-                        className="px-3 py-1.5 bg-white text-[#0066FF] text-[11px] font-bold rounded-lg border border-blue-200 shadow-sm hover:bg-slate-50 transition-colors active:scale-95 whitespace-nowrap"
+                        className="px-3 py-1.5 bg-surface text-brand text-[11px] font-bold rounded-lg border border-blue-200 shadow-subtle hover:bg-surface-hover transition-colors active:scale-95 whitespace-nowrap"
                       >
                         Autofill Data
                       </button>
@@ -724,25 +724,25 @@ export default function NewOrder() {
 
               {/* Row 2: Name */}
               <div className="space-y-2">
-                <label className="mb-2 block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Customer Name *</label>
+                <label className="mb-2 block text-[11px] font-semibold text-secondary uppercase tracking-wider">Customer Name *</label>
                 <div className="relative">
                   <input 
                     required
-                    className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-slate-900"
+                    className="w-full pl-11 pr-4 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary"
                     value={orderForm.customerName}
                     onChange={e => setOrderForm({...orderForm, customerName: e.target.value})}
                     placeholder="Enter full name"
                   />
-                  <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                 </div>
               </div>
 
               {/* Row 2: Full Address */}
               <div className="space-y-2 relative">
-                <label className="mb-2 block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Full Address *</label>
+                <label className="mb-2 block text-[11px] font-semibold text-secondary uppercase tracking-wider">Full Address *</label>
                 <textarea 
                   required
-                  className="w-full pl-4 pr-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all resize-none text-slate-900"
+                  className="w-full pl-4 pr-4 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all resize-none text-primary"
                   rows={1}
                   placeholder="House 10, Dhanmondi, Dhaka"
                   value={orderForm.customerAddress}
@@ -752,10 +752,10 @@ export default function NewOrder() {
 
               {/* Row 3: District */}
               <div className="space-y-2">
-                <label className="mb-2 block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">District</label>
+                <label className="mb-2 block text-[11px] font-semibold text-secondary uppercase tracking-wider">District</label>
                 <div className="relative">
                   <select 
-                    className="w-full pl-4 pr-10 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-slate-900 appearance-none cursor-pointer"
+                    className="w-full pl-4 pr-10 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary appearance-none cursor-pointer"
                     value={orderForm.district}
                     onChange={e => {
                       setOrderForm({...orderForm, district: e.target.value, area: ''});
@@ -767,7 +767,7 @@ export default function NewOrder() {
                       <option key={d.id} value={d.nameEn}>{d.nameEn}</option>
                     ))}
                   </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                     <ChevronDown size={16} strokeWidth={3} />
                   </div>
                 </div>
@@ -775,10 +775,10 @@ export default function NewOrder() {
 
               {/* Row 3: Area */}
               <div className="space-y-2">
-                <label className="mb-2 block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Area</label>
+                <label className="mb-2 block text-[11px] font-semibold text-secondary uppercase tracking-wider">Area</label>
                 <div className="relative">
                   <select 
-                    className="w-full pl-4 pr-10 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-slate-900 appearance-none cursor-pointer disabled:opacity-50 disabled:bg-slate-50"
+                    className="w-full pl-4 pr-10 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary appearance-none cursor-pointer disabled:opacity-50 disabled:bg-surface-hover"
                     value={orderForm.area}
                     onChange={e => {
                       setOrderForm({...orderForm, area: e.target.value});
@@ -794,7 +794,7 @@ export default function NewOrder() {
                       ))
                     }
                   </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                     <ChevronDown size={16} strokeWidth={3} />
                   </div>
                 </div>
@@ -803,23 +803,23 @@ export default function NewOrder() {
           </div>
 
           {/* Add Products Section */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-6">
+          <div className="bg-surface rounded-xl border border-border p-6 shadow-subtle space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h4 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-2 sm:mb-0">
-                <Package size={20} className="text-[#0066FF]" /> Add Products
+              <h4 className="text-base font-bold text-primary flex items-center gap-2 mb-2 sm:mb-0">
+                <Package size={20} className="text-brand" /> Add Products
               </h4>
               <div className="w-full sm:w-64">
                 <div className="relative">
                   <select 
                     required
-                    className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-slate-900 appearance-none cursor-pointer"
+                    className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg text-xs font-semibold focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary appearance-none cursor-pointer"
                     value={orderForm.warehouseId}
                     onChange={e => setOrderForm({...orderForm, warehouseId: e.target.value})}
                   >
                     <option value="">Select Warehouse...</option>
                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                     <ChevronDown size={14} strokeWidth={3} />
                   </div>
                 </div>
@@ -829,13 +829,13 @@ export default function NewOrder() {
             <div className="space-y-4">
               <div ref={dropdownRef} className="relative z-20">
                 <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-accent transition-colors">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent transition-colors">
                     <Search size={18} strokeWidth={2.5} />
                   </div>
                   <input
                     type="text"
                     placeholder="Search by product name, SKU or scan barcode..."
-                    className="w-full pl-12 pr-[140px] py-3 bg-white border border-slate-300 rounded-lg text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-slate-900 placeholder:text-slate-400"
+                    className="w-full pl-12 pr-[140px] py-3 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary placeholder:text-muted"
                     value={productSearch}
                     onFocus={() => setShowProductDropdown(true)}
                     onChange={(e) => {
@@ -844,10 +844,10 @@ export default function NewOrder() {
                     }}
                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded hidden sm:block border border-slate-200">Ctrl + K</span>
+                    <span className="text-[10px] font-bold text-muted bg-surface-hover px-2 py-1 rounded hidden sm:block border border-border">Ctrl + K</span>
                     <button 
                       type="button"
-                      className="p-2 sm:px-3 sm:py-1.5 bg-white border border-slate-200 text-[#0066FF] rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-sm"
+                      className="p-2 sm:px-3 sm:py-1.5 bg-surface border border-border text-brand rounded-lg hover:bg-surface-hover transition-colors flex items-center gap-1.5 shadow-subtle"
                     >
                       <ScanBarcode size={16} /> <span className="text-xs font-bold hidden sm:block">Scan</span>
                     </button>
@@ -855,59 +855,59 @@ export default function NewOrder() {
                 </div>
 
                 {showProductDropdown && productSearch && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto overflow-hidden">
                     {filteredProducts.length > 0 ? (
                       filteredProducts.map(p => (
                         <button
                           key={p.id}
                           type="button"
-                          className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 text-left group/item"
+                          className="w-full flex items-center gap-4 p-4 hover:bg-surface-hover transition-colors border-b border-border last:border-0 text-left group/item"
                           onClick={() => {
                             setNewItem({...newItem, productId: p.id, variantId: '', price: p.price || 0, image: p.images?.[0] || p.image || ''});
                             setProductSearch(p.name);
                             setShowProductDropdown(false);
                           }}
                         >
-                          <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-border">
                             {(p.images?.[0] || p.image) ? (
                               <img src={p.images?.[0] || p.image} alt="" className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                             ) : (
-                              <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300">
+                              <div className="w-full h-full bg-surface-hover flex items-center justify-center text-muted">
                                 <Package size={20} strokeWidth={1.5} />
                               </div>
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-slate-900 truncate group-hover/item:text-[#0066FF] transition-colors">{p.name}</p>
-                            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                              {currencySymbol}{p.price?.toLocaleString()} <span className="text-slate-300 mx-1">•</span> <span className="font-normal">SKU: {p.sku || 'N/A'}</span>
+                            <p className="text-sm font-semibold text-primary truncate group-hover/item:text-brand transition-colors">{p.name}</p>
+                            <p className="text-xs text-secondary mt-1 flex items-center gap-1">
+                              {currencySymbol}{p.price?.toLocaleString()} <span className="text-muted mx-1">•</span> <span className="font-normal">SKU: {p.sku || 'N/A'}</span>
                             </p>
                           </div>
                         </button>
                       ))
                     ) : (
-                      <div className="p-8 text-center text-[11px] font-bold uppercase tracking-wider text-slate-400">No matching products found</div>
+                      <div className="p-8 text-center text-[11px] font-bold uppercase tracking-wider text-muted">No matching products found</div>
                     )}
                   </div>
                 )}
               </div>
 
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-blue-100 transition-colors"><Package size={14} /> Recent Products</button>
-                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-slate-50 transition-colors"><ShoppingCart size={14} /> Best Selling</button>
-                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-slate-50 transition-colors"><ListFilter size={14} /> Frequently Bought</button>
+                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand/10 text-brand-hover border border-blue-200 rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-brand/20 transition-colors"><Package size={14} /> Recent Products</button>
+                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface text-secondary border border-border rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-surface-hover transition-colors"><ShoppingCart size={14} /> Best Selling</button>
+                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface text-secondary border border-border rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-surface-hover transition-colors"><ListFilter size={14} /> Frequently Bought</button>
               </div>
 
               {newItem.productId && (
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-4">
+                <div className="bg-surface-hover p-4 rounded-xl border border-border mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                     {/* Variant Select */}
                     <div className="md:col-span-5 space-y-2">
-                      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Select Variant</label>
+                      <label className="text-[11px] font-semibold text-secondary uppercase tracking-wider block mb-1">Select Variant</label>
                       <div className="relative">
                         <select 
                           disabled={!newItem.productId || products.find(p => p.id === newItem.productId)?.type !== 'variable'}
-                          className="w-full pl-4 pr-10 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-slate-900 appearance-none cursor-pointer disabled:opacity-50 disabled:bg-slate-50"
+                          className="w-full pl-4 pr-10 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary appearance-none cursor-pointer disabled:opacity-50 disabled:bg-surface-hover"
                           value={newItem.variantId}
                           onChange={e => {
                             const v = variants.find(varnt => varnt.id === e.target.value);
@@ -919,7 +919,7 @@ export default function NewOrder() {
                             <option key={v.id} value={v.id}>{v.size} / {v.color} - {currencySymbol}{v.price}</option>
                           ))}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                           <ChevronDown size={14} strokeWidth={3} />
                         </div>
                       </div>
@@ -927,18 +927,18 @@ export default function NewOrder() {
 
                     {/* Quantity */}
                     <div className="md:col-span-4 space-y-2">
-                      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Quantity</label>
-                      <div className="flex items-center h-[42px] bg-white border border-slate-300 rounded-lg overflow-hidden shadow-sm group focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/20 transition-all">
+                      <label className="text-[11px] font-semibold text-secondary uppercase tracking-wider block mb-1">Quantity</label>
+                      <div className="flex items-center h-[42px] bg-surface border border-border rounded-lg overflow-hidden shadow-subtle group focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/20 transition-all">
                         <button 
                           type="button"
                           onClick={() => setNewItem(prev => ({...prev, quantity: Math.max(1, prev.quantity - 1)}))}
-                          className="h-full px-4 hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors active:bg-slate-100"
+                          className="h-full px-4 hover:bg-surface-hover text-secondary hover:text-primary transition-colors active:bg-surface-hover"
                         >
                           <Minus size={14} strokeWidth={3} />
                         </button>
                         <input 
                           type="number" 
-                          className="w-full text-center h-full text-sm font-bold bg-transparent outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-slate-900"
+                          className="w-full text-center h-full text-sm font-bold bg-transparent outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-primary"
                           value={newItem.quantity === 0 ? '' : newItem.quantity}
                           onChange={e => {
                             const val = parseInt(e.target.value);
@@ -948,7 +948,7 @@ export default function NewOrder() {
                         <button 
                           type="button"
                           onClick={() => setNewItem(prev => ({...prev, quantity: prev.quantity + 1}))}
-                          className="h-full px-4 hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors active:bg-slate-100"
+                          className="h-full px-4 hover:bg-surface-hover text-secondary hover:text-primary transition-colors active:bg-surface-hover"
                         >
                           <Plus size={14} strokeWidth={3} />
                         </button>
@@ -976,7 +976,7 @@ export default function NewOrder() {
                           setNewItem({ productId: '', variantId: '', quantity: 1, price: 0, image: '' });
                           setProductSearch('');
                         }}
-                        className="w-full h-[42px] bg-[#0066FF] text-white rounded-xl text-sm font-bold hover:bg-[#0052CC] transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
+                        className="w-full h-[42px] bg-brand text-white rounded-xl text-sm font-bold hover:bg-brand-hover transition-all shadow-subtle active:scale-[0.98] flex items-center justify-center gap-2"
                       >
                         <Plus size={16} /> Add 
                       </button>
@@ -988,13 +988,13 @@ export default function NewOrder() {
           </div>
 
           {/* Order Items Section */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-6">
-            <h4 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <ShoppingCart size={20} className="text-[#0066FF]" /> Order Items ({orderForm.items.length})
+          <div className="bg-surface rounded-xl border border-border p-6 shadow-subtle space-y-6">
+            <h4 className="text-base font-bold text-primary flex items-center gap-2 mb-4">
+              <ShoppingCart size={20} className="text-brand" /> Order Items ({orderForm.items.length})
             </h4>
 
             {orderForm.items.length > 0 && (
-              <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-border text-[11px] font-semibold text-secondary uppercase tracking-wider">
                 <div className="col-span-6">Product</div>
                 <div className="col-span-2 text-center">Price</div>
                 <div className="col-span-2 text-center">Quantity</div>
@@ -1004,20 +1004,20 @@ export default function NewOrder() {
             
             <div className="space-y-3">
               {orderForm.items.map((item, idx) => (
-                <div key={idx} className="flex flex-col sm:grid sm:grid-cols-12 gap-4 items-center bg-white border border-slate-200 p-4 rounded-xl hover:border-blue-300 transition-all group/item shadow-sm">
+                <div key={idx} className="flex flex-col sm:grid sm:grid-cols-12 gap-4 items-center bg-surface border border-border p-4 rounded-xl hover:border-blue-300 transition-all group/item shadow-subtle">
                   <div className="col-span-6 w-full flex items-center gap-4">
                     {item.image ? (
-                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-border">
                         <img src={item.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 shrink-0 border border-slate-200">
+                      <div className="w-12 h-12 rounded-lg bg-surface-hover flex items-center justify-center text-muted shrink-0 border border-border">
                         <Package size={20} strokeWidth={1.5} />
                       </div>
                     )}
                     <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-bold text-slate-900 truncate">{item.name}</span>
-                      <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5 mt-0.5">
+                      <span className="text-sm font-bold text-primary truncate">{item.name}</span>
+                      <span className="text-[11px] font-medium text-secondary flex items-center gap-1.5 mt-0.5">
                         {item.variant ? <span>Variant: {item.variant}</span> : null}
                         {item.variant && <span className="w-1 h-1 rounded-full bg-slate-300"></span>}
                         <span>SKU: {item.sku || 'N/A'}</span>
@@ -1025,13 +1025,13 @@ export default function NewOrder() {
                     </div>
                   </div>
                   
-                  <div className="col-span-2 w-full sm:w-auto flex justify-between sm:justify-center items-center font-bold text-slate-900 text-sm">
-                    <span className="sm:hidden text-xs text-slate-500 font-normal">Price:</span>
+                  <div className="col-span-2 w-full sm:w-auto flex justify-between sm:justify-center items-center font-bold text-primary text-sm">
+                    <span className="sm:hidden text-xs text-secondary font-normal">Price:</span>
                     {currencySymbol}{item.price.toLocaleString()}
                   </div>
 
                   <div className="col-span-2 w-full sm:w-auto flex justify-center items-center">
-                    <div className="flex items-center bg-white rounded-lg overflow-hidden border border-slate-300 w-full max-w-[120px] sm:max-w-none">
+                    <div className="flex items-center bg-surface rounded-lg overflow-hidden border border-border w-full max-w-[120px] sm:max-w-none">
                       <button 
                         type="button"
                         onClick={() => {
@@ -1039,13 +1039,13 @@ export default function NewOrder() {
                           newItems[idx].quantity = Math.max(1, newItems[idx].quantity - 1);
                           setOrderForm({...orderForm, items: newItems});
                         }}
-                        className="px-3 py-1.5 hover:bg-slate-50 text-slate-500 transition-colors"
+                        className="px-3 py-1.5 hover:bg-surface-hover text-secondary transition-colors"
                       >
                         <Minus size={14} />
                       </button>
                       <input 
                         type="number"
-                        className="w-full text-center bg-transparent text-sm font-bold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-slate-900"
+                        className="w-full text-center bg-transparent text-sm font-bold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-primary"
                         value={item.quantity === 0 ? '' : item.quantity}
                         onChange={(e) => {
                           const val = parseInt(e.target.value);
@@ -1061,7 +1061,7 @@ export default function NewOrder() {
                           newItems[idx].quantity = newItems[idx].quantity + 1;
                           setOrderForm({...orderForm, items: newItems});
                         }}
-                        className="px-3 py-1.5 hover:bg-slate-50 text-slate-500 transition-colors"
+                        className="px-3 py-1.5 hover:bg-surface-hover text-secondary transition-colors"
                       >
                         <Plus size={14} />
                       </button>
@@ -1069,19 +1069,19 @@ export default function NewOrder() {
                   </div>
 
                   <div className="col-span-2 w-full sm:w-auto flex justify-between sm:justify-end items-center gap-4">
-                    <span className="sm:hidden text-xs text-slate-500 font-normal">Total:</span>
-                    <span className="text-sm font-black text-slate-900">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</span>
+                    <span className="sm:hidden text-xs text-secondary font-normal">Total:</span>
+                    <span className="text-sm font-black text-primary">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</span>
                     <div className="flex gap-1 shrink-0">
                       <button 
                         type="button"
-                        className="p-2 text-slate-400 hover:text-blue-500 rounded-lg transition-colors"
+                        className="p-2 text-muted hover:text-brand rounded-lg transition-colors"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                       </button>
                       <button 
                         type="button"
                         onClick={() => setOrderForm({...orderForm, items: orderForm.items.filter((_, i) => i !== idx)})}
-                        className="p-2 text-slate-400 hover:text-red-500 rounded-lg transition-colors"
+                        className="p-2 text-muted hover:text-red-500 rounded-lg transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -1091,12 +1091,12 @@ export default function NewOrder() {
               ))}
 
               {orderForm.items.length === 0 && (
-                <div className="text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-                  <div className="mx-auto w-12 h-12 bg-white rounded-lg flex items-center justify-center text-slate-400 border border-slate-200 shadow-sm mb-4">
+                <div className="text-center py-16 bg-surface-hover rounded-xl border border-dashed border-border">
+                  <div className="mx-auto w-12 h-12 bg-surface rounded-lg flex items-center justify-center text-muted border border-border shadow-subtle mb-4">
                     <Package size={24} strokeWidth={1.5} />
                   </div>
-                  <p className="text-sm font-bold text-slate-900">No items added yet</p>
-                  <p className="text-xs font-medium text-slate-500 mt-1">Search the catalog above to add products.</p>
+                  <p className="text-sm font-bold text-primary">No items added yet</p>
+                  <p className="text-xs font-medium text-secondary mt-1">Search the catalog above to add products.</p>
                 </div>
               )}
 
@@ -1105,11 +1105,11 @@ export default function NewOrder() {
                   <button
                     type="button"
                     onClick={() => setOrderForm({...orderForm, items: []})}
-                    className="px-4 py-2 border border-red-200 text-red-500 rounded-lg text-sm font-semibold hover:bg-red-50 transition-colors bg-white shadow-sm"
+                    className="px-4 py-2 border border-red-200 text-red-500 rounded-lg text-sm font-semibold hover:bg-red-50 transition-colors bg-surface shadow-subtle"
                   >
                     Clear All
                   </button>
-                  <p className="text-sm font-semibold text-slate-500">Total Items: {orderForm.items.length}</p>
+                  <p className="text-sm font-semibold text-secondary">Total Items: {orderForm.items.length}</p>
                 </div>
               )}
             </div>
@@ -1118,23 +1118,23 @@ export default function NewOrder() {
 
         <div className="space-y-6">
           {/* Summary Section */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-6 lg:sticky lg:top-6">
-            <h4 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-6">
-              <CreditCard size={20} className="text-[#0066FF]" /> Order Summary
+          <div className="bg-surface rounded-xl border border-border p-6 shadow-subtle space-y-6 lg:sticky lg:top-6">
+            <h4 className="text-base font-bold text-primary flex items-center gap-2 mb-6">
+              <CreditCard size={20} className="text-brand" /> Order Summary
             </h4>
             
             <div className="space-y-4">
-              <div className="flex justify-between text-sm text-slate-900">
-                <span className="text-slate-600">Subtotal</span>
+              <div className="flex justify-between text-sm text-primary">
+                <span className="text-secondary">Subtotal</span>
                 <span className="font-bold">{currencySymbol}{subtotal.toLocaleString()}</span>
               </div>
               
               <div className="space-y-4">
-                <div className="flex justify-between items-center text-slate-900 text-sm">
-                  <span className="text-slate-600">Delivery Zone</span>
+                <div className="flex justify-between items-center text-primary text-sm">
+                  <span className="text-secondary">Delivery Zone</span>
                   <div className="relative">
                     <select 
-                      className="text-sm bg-white border border-slate-300 hover:bg-slate-50 px-2 py-1 rounded-md outline-none text-slate-900 appearance-none cursor-pointer pr-6"
+                      className="text-sm bg-surface border border-border hover:bg-surface-hover px-2 py-1 rounded-md outline-none text-primary appearance-none cursor-pointer pr-6"
                       value={orderForm.customerZone}
                       onChange={e => handleZoneChange(e.target.value)}
                     >
@@ -1142,27 +1142,27 @@ export default function NewOrder() {
                       <option value="Sub Area">Sub Area</option>
                       <option value="Outside Dhaka">Outside Dhaka</option>
                     </select>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                       <ChevronDown size={14} strokeWidth={2} />
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-sm text-slate-900">
-                  <span className="text-slate-600">Delivery Charge</span>
+                <div className="flex justify-between items-center text-sm text-primary">
+                  <span className="text-secondary">Delivery Charge</span>
                   <div className="relative flex items-center justify-end">
-                    <span className="text-slate-900 font-bold mr-1">{currencySymbol}</span>
+                    <span className="text-primary font-bold mr-1">{currencySymbol}</span>
                     <span className="font-bold">{orderForm.deliveryCharge}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center text-sm text-slate-900 border-b border-slate-100 pb-4">
-                <span className="text-slate-600">Discount</span>
+              <div className="flex justify-between items-center text-sm text-primary border-b border-border pb-4">
+                <span className="text-secondary">Discount</span>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">{currencySymbol}</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs">{currencySymbol}</span>
                   <input 
                     type="number"
-                    className="w-24 pl-6 pr-3 py-1.5 text-right font-bold text-red-500 bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    className="w-24 pl-6 pr-3 py-1.5 text-right font-bold text-red-500 bg-surface border border-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                     value={orderForm.discount === 0 ? '' : orderForm.discount}
                     placeholder="0"
                     onChange={e => setOrderForm({...orderForm, discount: parseFloat(e.target.value) || 0})}
@@ -1170,21 +1170,21 @@ export default function NewOrder() {
                 </div>
               </div>
 
-              <div className="pt-2 text-slate-900">
+              <div className="pt-2 text-primary">
                 <div className="flex justify-between items-center">
                   <span className="text-base sm:text-lg font-bold">Total</span>
-                  <span className="text-xl sm:text-2xl font-black text-[#0066FF]">{currencySymbol}{totalAmount.toLocaleString()}</span>
+                  <span className="text-xl sm:text-2xl font-black text-brand">{currencySymbol}{totalAmount.toLocaleString()}</span>
                 </div>
               </div>
 
               {totalCost > 0 && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 grid grid-cols-2 mt-4">
                   <div>
-                    <p className="text-xs text-slate-500 mb-0.5">Cost Price</p>
-                    <p className="font-bold text-slate-900 text-sm">{currencySymbol}{totalCost.toLocaleString()}</p>
+                    <p className="text-xs text-secondary mb-0.5">Cost Price</p>
+                    <p className="font-bold text-primary text-sm">{currencySymbol}{totalCost.toLocaleString()}</p>
                   </div>
                   <div className="border-l border-green-200 pl-3">
-                    <p className="text-xs text-slate-500 mb-0.5">Profit</p>
+                    <p className="text-xs text-secondary mb-0.5">Profit</p>
                     <p className="font-bold text-green-600 text-sm">{currencySymbol}{profit.toLocaleString()}</p>
                     <p className="text-[10px] text-green-600 font-medium">Margin: {marginPercentage}%</p>
                   </div>
@@ -1204,7 +1204,7 @@ export default function NewOrder() {
                   </div>
                   <div className="flex items-center gap-1.5 ml-6">
                     <div className={`w-2 h-2 rounded-full ${courierHistory.success_rate >= 80 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-xs text-slate-600">Risk Level: <span className={`font-bold ${courierHistory.success_rate >= 80 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className="text-xs text-secondary">Risk Level: <span className={`font-bold ${courierHistory.success_rate >= 80 ? 'text-green-600' : 'text-red-600'}`}>
                       {courierHistory.success_rate >= 80 ? "Low" : "High"}
                     </span></span>
                   </div>
@@ -1212,13 +1212,13 @@ export default function NewOrder() {
               )}
 
               <div className="space-y-4 pt-4">
-                <div className="flex justify-between items-center text-sm text-slate-900 border-b border-slate-100 pb-4">
-                  <label className="text-slate-600">Advance Paid</label>
+                <div className="flex justify-between items-center text-sm text-primary border-b border-border pb-4">
+                  <label className="text-secondary">Advance Paid</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">{currencySymbol}</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs">{currencySymbol}</span>
                     <input 
                       type="number"
-                      className="w-24 pl-6 pr-3 py-1.5 text-right font-bold text-slate-900 bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      className="w-24 pl-6 pr-3 py-1.5 text-right font-bold text-primary bg-surface border border-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                       value={orderForm.paidAmount === 0 ? '' : orderForm.paidAmount}
                       placeholder="0"
                       onChange={e => setOrderForm({...orderForm, paidAmount: parseFloat(e.target.value) || 0})}
@@ -1226,20 +1226,20 @@ export default function NewOrder() {
                   </div>
                 </div>
                 
-                <div className="flex justify-between items-center text-sm text-slate-900">
+                <div className="flex justify-between items-center text-sm text-primary">
                   <span className="text-orange-500 font-bold">Due Amount</span>
                   <span className="text-orange-500 font-bold text-xl">{currencySymbol}{dueAmount.toLocaleString()}</span>
                 </div>
 
                 <div className="space-y-4 mt-6">
                   <div>
-                    <label className="text-xs text-slate-600 block mb-1.5">Payment Method</label>
+                    <label className="text-xs text-secondary block mb-1.5">Payment Method</label>
                     <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
                         <Banknote size={16} />
                       </div>
                       <select 
-                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-slate-900 appearance-none cursor-pointer"
+                        className="w-full pl-9 pr-4 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary appearance-none cursor-pointer"
                         value={orderForm.paymentMethod}
                         onChange={e => setOrderForm({...orderForm, paymentMethod: e.target.value})}
                       >
@@ -1249,20 +1249,20 @@ export default function NewOrder() {
                         <option value="Rocket">Rocket</option>
                         <option value="Bank Transfer">Bank Transfer</option>
                       </select>
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                         <ChevronDown size={16} strokeWidth={2} />
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-600 block mb-1.5">Order Source</label>
+                    <label className="text-xs text-secondary block mb-1.5">Order Source</label>
                     <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
                         <Facebook size={16} />
                       </div>
                       <select 
-                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-slate-900 appearance-none cursor-pointer"
+                        className="w-full pl-9 pr-4 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary appearance-none cursor-pointer"
                         value={orderForm.source}
                         onChange={e => setOrderForm({...orderForm, source: e.target.value})}
                       >
@@ -1275,26 +1275,26 @@ export default function NewOrder() {
                         <option value="TikTok">TikTok</option>
                         <option value="Others">Others</option>
                       </select>
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                         <ChevronDown size={16} strokeWidth={2} />
                       </div>
                     </div>
                   </div>
 
-                <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-lg border border-blue-100 mt-4">
+                <div className="flex items-center justify-between p-3 bg-brand/10/50 rounded-lg border border-brand/20 mt-4">
                   <div className="flex items-center gap-3">
-                    <Smartphone size={18} className="text-blue-500" />
+                    <Smartphone size={18} className="text-brand" />
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">Send Confirmation SMS</p>
-                      <p className="text-xs text-slate-500">Notify customer about this order</p>
+                      <p className="text-sm font-semibold text-primary">Send Confirmation SMS</p>
+                      <p className="text-xs text-secondary">Notify customer about this order</p>
                     </div>
                   </div>
                   <button 
                     type="button"
                     onClick={() => setSendSMS(!sendSMS)}
-                    className={`w-10 h-5 rounded-full transition-all relative ${sendSMS ? 'bg-[#0066FF]' : 'bg-slate-300'}`}
+                    className={`w-10 h-5 rounded-full transition-all relative ${sendSMS ? 'bg-brand' : 'bg-slate-300'}`}
                   >
-                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${sendSMS ? 'right-0.5' : 'left-0.5'}`} />
+                    <div className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full transition-all ${sendSMS ? 'right-0.5' : 'left-0.5'}`} />
                   </button>
                 </div>
               </div>

@@ -374,8 +374,8 @@ const HR: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#141414]">Human Resources</h1>
-          <p className="text-sm text-gray-500">Manage employees, attendance, and payroll</p>
+          <h1 className="text-2xl font-bold text-primary">Human Resources</h1>
+          <p className="text-sm text-secondary">Manage employees, attendance, and payroll</p>
         </div>
         <div className="flex items-center gap-2">
           {activeTab === 'employees' && (
@@ -389,7 +389,7 @@ const HR: React.FC = () => {
                 });
                 setIsEmployeeModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-bold hover:bg-black transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-bold hover:bg-black transition-all"
             >
               <UserPlus size={18} />
               Add Employee
@@ -402,7 +402,7 @@ const HR: React.FC = () => {
                 setDesignationForm({ name: '', description: '' });
                 setIsDesignationModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-bold hover:bg-black transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-bold hover:bg-black transition-all"
             >
               <Plus size={18} />
               Add Designation
@@ -417,7 +417,7 @@ const HR: React.FC = () => {
                 setAttendanceMarks(marks);
                 setIsAttendanceModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-bold hover:bg-black transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-bold hover:bg-black transition-all"
             >
               <Clock size={18} />
               Mark Attendance
@@ -427,14 +427,14 @@ const HR: React.FC = () => {
             <div className="flex gap-2">
               <button 
                 onClick={() => setIsAdvanceModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition-all"
+                className="flex items-center gap-2 px-4 py-2 border border-border text-secondary rounded-lg text-sm font-bold hover:bg-surface-hover transition-all"
               >
                 <DollarSign size={18} />
                 Salary Advance
               </button>
               <button 
                 onClick={() => setIsSalaryModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-bold hover:bg-black transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-bold hover:bg-black transition-all"
               >
                 <FileText size={18} />
                 Generate Salary
@@ -445,7 +445,7 @@ const HR: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl w-fit">
+      <div className="flex items-center gap-1 p-1 bg-surface-hover rounded-xl w-fit">
         {[
           { id: 'employees', label: 'Employees', icon: Users },
           { id: 'designations', label: 'Designations', icon: Briefcase },
@@ -457,8 +457,8 @@ const HR: React.FC = () => {
             onClick={() => setActiveTab(tab.id as HRTab)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
               activeTab === tab.id 
-                ? 'bg-white text-[#141414] shadow-sm' 
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-surface text-primary shadow-subtle' 
+                : 'text-secondary hover:text-secondary'
             }`}
           >
             <tab.icon size={16} />
@@ -469,30 +469,30 @@ const HR: React.FC = () => {
 
       {/* Search & Filters */}
       {activeTab === 'employees' && (
-        <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-4 bg-surface p-4 rounded-xl border border-border shadow-subtle">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
             <input
               type="text"
               placeholder="Search employees by name or designation..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-all">
+          <button className="p-2 text-secondary hover:bg-surface-hover rounded-lg transition-all">
             <Filter size={20} />
           </button>
         </div>
       )}
 
       {/* Content Area */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-border shadow-subtle overflow-hidden">
         {activeTab === 'employees' && (
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[800px] whitespace-nowrap">
               <thead>
-                <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+                <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                   <th className="px-6 py-4 font-semibold">Employee</th>
                   <th className="px-6 py-4 font-semibold">Designation</th>
                   <th className="px-6 py-4 font-semibold">Contact</th>
@@ -501,35 +501,35 @@ const HR: React.FC = () => {
                   <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-gray-50 transition-colors group">
+                  <tr key={emp.id} className="hover:bg-surface-hover transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+                        <div className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center overflow-hidden border border-border">
                           {emp.profileImage ? (
                             <img src={emp.profileImage} alt={emp.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
-                            <Users size={20} className="text-gray-400" />
+                            <Users size={20} className="text-muted" />
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-[#141414]">{emp.name}</p>
-                          <p className="text-[10px] text-gray-500">Joined: {emp.joiningDate}</p>
+                          <p className="text-sm font-bold text-primary">{emp.name}</p>
+                          <p className="text-[10px] text-secondary">Joined: {emp.joiningDate}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-blue-50 text-[#0066FF] rounded-md text-[10px] font-bold uppercase">
+                      <span className="px-2 py-1 bg-brand/10 text-brand rounded-md text-[10px] font-bold uppercase">
                         {emp.designationName}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-600">{emp.phone}</p>
-                      <p className="text-[10px] text-gray-400">{emp.email}</p>
+                      <p className="text-sm text-secondary">{emp.phone}</p>
+                      <p className="text-[10px] text-muted">{emp.email}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-[#141414]">৳{(emp.baseSalary || 0).toLocaleString()}</p>
+                      <p className="text-sm font-bold text-primary">৳{(emp.baseSalary || 0).toLocaleString()}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
@@ -546,7 +546,7 @@ const HR: React.FC = () => {
                             setSelectedEmployee(emp);
                             setIsProfileModalOpen(true);
                           }}
-                          className="p-1.5 text-gray-400 hover:text-[#0066FF] hover:bg-blue-50 rounded-md"
+                          className="p-1.5 text-muted hover:text-brand hover:bg-brand/10 rounded-md"
                         >
                           <Eye size={14} />
                         </button>
@@ -566,13 +566,13 @@ const HR: React.FC = () => {
                             });
                             setIsEmployeeModalOpen(true);
                           }}
-                          className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md"
+                          className="p-1.5 text-muted hover:text-green-600 hover:bg-green-50 rounded-md"
                         >
                           <Edit2 size={14} />
                         </button>
                         <button 
                           onClick={() => deleteEmployee(emp.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
+                          className="p-1.5 text-muted hover:text-red-600 hover:bg-red-50 rounded-md"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -589,24 +589,24 @@ const HR: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[800px] whitespace-nowrap">
               <thead>
-                <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+                <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                   <th className="px-6 py-4 font-semibold">Designation Name</th>
                   <th className="px-6 py-4 font-semibold">Description</th>
                   <th className="px-6 py-4 font-semibold">Employees</th>
                   <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {designations.map((des) => (
-                  <tr key={des.id} className="hover:bg-gray-50 transition-colors group">
+                  <tr key={des.id} className="hover:bg-surface-hover transition-colors group">
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-[#141414]">{des.name}</p>
+                      <p className="text-sm font-bold text-primary">{des.name}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-500">{des.description || 'No description'}</p>
+                      <p className="text-sm text-secondary">{des.description || 'No description'}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-[10px] font-bold">
+                      <span className="px-2 py-1 bg-surface-hover text-secondary rounded-md text-[10px] font-bold">
                         {employees.filter(e => e.designationId === des.id).length} Employees
                       </span>
                     </td>
@@ -618,13 +618,13 @@ const HR: React.FC = () => {
                             setDesignationForm({ name: des.name, description: des.description || '' });
                             setIsDesignationModalOpen(true);
                           }}
-                          className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md"
+                          className="p-1.5 text-muted hover:text-green-600 hover:bg-green-50 rounded-md"
                         >
                           <Edit2 size={14} />
                         </button>
                         <button 
                           onClick={() => deleteDesignation(des.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
+                          className="p-1.5 text-muted hover:text-red-600 hover:bg-red-50 rounded-md"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -643,41 +643,41 @@ const HR: React.FC = () => {
               <div className="flex items-center gap-4">
                 <input 
                   type="date" 
-                  className="px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   value={attendanceDate}
                   onChange={(e) => setAttendanceDate(e.target.value)}
                 />
-                <p className="text-sm font-medium text-gray-500">
-                  Showing attendance for <span className="text-[#141414] font-bold">{format(new Date(attendanceDate), 'MMMM dd, yyyy')}</span>
+                <p className="text-sm font-medium text-secondary">
+                  Showing attendance for <span className="text-primary font-bold">{format(new Date(attendanceDate), 'MMMM dd, yyyy')}</span>
                 </p>
               </div>
             </div>
-            <div className="overflow-x-auto border border-gray-100 rounded-xl">
+            <div className="overflow-x-auto border border-border rounded-xl">
               <table className="w-full text-left min-w-[800px] whitespace-nowrap">
                 <thead>
-                  <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+                  <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                     <th className="px-6 py-4 font-semibold">Employee</th>
                     <th className="px-6 py-4 font-semibold">Status</th>
                     <th className="px-6 py-4 font-semibold">Note</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border">
                   {employees.map((emp) => {
                     const record = attendance.find(a => a.employeeId === emp.id && a.date === attendanceDate);
                     return (
-                      <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={emp.id} className="hover:bg-surface-hover transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                            <div className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center overflow-hidden">
                               {emp.profileImage ? (
                                 <img src={emp.profileImage} alt={emp.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                               ) : (
-                                <Users size={14} className="text-gray-400" />
+                                <Users size={14} className="text-muted" />
                               )}
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-[#141414]">{emp.name}</p>
-                              <p className="text-[10px] text-gray-500">{emp.designationName}</p>
+                              <p className="text-sm font-bold text-primary">{emp.name}</p>
+                              <p className="text-[10px] text-secondary">{emp.designationName}</p>
                             </div>
                           </div>
                         </td>
@@ -687,16 +687,16 @@ const HR: React.FC = () => {
                               record.status === 'Present' ? 'bg-green-50 text-green-600' :
                               record.status === 'Absent' ? 'bg-red-50 text-red-600' :
                               record.status === 'Late' ? 'bg-yellow-50 text-yellow-600' :
-                              'bg-blue-50 text-[#0066FF]'
+                              'bg-brand/10 text-brand'
                             }`}>
                               {record.status}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-gray-400 italic">Not Marked</span>
+                            <span className="text-[10px] text-muted italic">Not Marked</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm text-gray-500">{record?.note || '-'}</p>
+                          <p className="text-sm text-secondary">{record?.note || '-'}</p>
                         </td>
                       </tr>
                     );
@@ -712,12 +712,12 @@ const HR: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Recent Advances */}
               <div className="md:col-span-1 space-y-4">
-                <h4 className="text-sm font-bold text-[#141414] uppercase tracking-wider">Recent Advances</h4>
+                <h4 className="text-sm font-bold text-primary uppercase tracking-wider">Recent Advances</h4>
                 <div className="space-y-3">
                   {salaryAdvances.slice(0, 5).map((adv) => (
-                    <div key={adv.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div key={adv.id} className="p-3 bg-surface-hover rounded-xl border border-border">
                       <div className="flex justify-between items-start mb-1">
-                        <p className="text-sm font-bold text-[#141414]">{adv.employeeName}</p>
+                        <p className="text-sm font-bold text-primary">{adv.employeeName}</p>
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                           adv.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
                         }`}>
@@ -725,7 +725,7 @@ const HR: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <p className="text-xs text-gray-500">{adv.date}</p>
+                        <p className="text-xs text-secondary">{adv.date}</p>
                         <p className="text-sm font-bold text-red-600">৳{(adv.amount || 0).toLocaleString()}</p>
                       </div>
                     </div>
@@ -735,11 +735,11 @@ const HR: React.FC = () => {
 
               {/* Salary History */}
               <div className="md:col-span-2 space-y-4">
-                <h4 className="text-sm font-bold text-[#141414] uppercase tracking-wider">Salary History</h4>
-                <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                <h4 className="text-sm font-bold text-primary uppercase tracking-wider">Salary History</h4>
+                <div className="overflow-x-auto border border-border rounded-xl">
                   <table className="w-full text-left min-w-[800px] whitespace-nowrap">
                     <thead>
-                      <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+                      <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                         <th className="px-4 py-3 font-semibold">Employee</th>
                         <th className="px-4 py-3 font-semibold">Month</th>
                         <th className="px-4 py-3 font-semibold">Net Salary</th>
@@ -747,11 +747,11 @@ const HR: React.FC = () => {
                         <th className="px-4 py-3 font-semibold text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-border">
                       {salaryRecords.map((rec) => (
-                        <tr key={rec.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 text-sm font-bold text-[#141414]">{rec.employeeName}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{rec.month}</td>
+                        <tr key={rec.id} className="hover:bg-surface-hover transition-colors">
+                          <td className="px-4 py-3 text-sm font-bold text-primary">{rec.employeeName}</td>
+                          <td className="px-4 py-3 text-sm text-secondary">{rec.month}</td>
                           <td className="px-4 py-3 text-sm font-bold text-green-600">৳{(rec.netSalary || 0).toLocaleString()}</td>
                           <td className="px-4 py-3">
                             <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded text-[10px] font-bold uppercase">
@@ -759,7 +759,7 @@ const HR: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <button className="p-1 text-gray-400 hover:text-[#0066FF]">
+                            <button className="p-1 text-muted hover:text-brand">
                               <Download size={14} />
                             </button>
                           </td>
@@ -778,29 +778,29 @@ const HR: React.FC = () => {
       {/* Designation Modal */}
       {isDesignationModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">{editingId ? 'Edit' : 'Add'} Designation</h3>
-              <button onClick={() => setIsDesignationModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">{editingId ? 'Edit' : 'Add'} Designation</h3>
+              <button onClick={() => setIsDesignationModalOpen(false)} className="p-2 hover:bg-surface-hover rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={handleDesignationSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Designation Name*</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Designation Name*</label>
                 <input
                   required
                   type="text"
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   placeholder="e.g. Sales Executive"
                   value={designationForm.name}
                   onChange={(e) => setDesignationForm({...designationForm, name: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Description</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Description</label>
                 <textarea
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all resize-none h-24"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all resize-none h-24"
                   placeholder="Optional description..."
                   value={designationForm.description}
                   onChange={(e) => setDesignationForm({...designationForm, description: e.target.value})}
@@ -810,13 +810,13 @@ const HR: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsDesignationModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
                 >
                   {editingId ? 'Update' : 'Save'} Designation
                 </button>
@@ -829,49 +829,49 @@ const HR: React.FC = () => {
       {/* Employee Modal */}
       {isEmployeeModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">{editingId ? 'Edit' : 'Add'} Employee</h3>
-              <button onClick={() => setIsEmployeeModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">{editingId ? 'Edit' : 'Add'} Employee</h3>
+              <button onClick={() => setIsEmployeeModalOpen(false)} className="p-2 hover:bg-surface-hover rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={handleEmployeeSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Full Name*</label>
                   <input
                     required
                     type="text"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={employeeForm.name}
                     onChange={(e) => setEmployeeForm({...employeeForm, name: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Phone*</label>
                   <input
                     required
                     type="tel"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={employeeForm.phone}
                     onChange={(e) => setEmployeeForm({...employeeForm, phone: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Email</label>
                   <input
                     type="email"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={employeeForm.email}
                     onChange={(e) => setEmployeeForm({...employeeForm, email: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Designation*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Designation*</label>
                   <select
                     required
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={employeeForm.designationId}
                     onChange={(e) => setEmployeeForm({...employeeForm, designationId: e.target.value})}
                   >
@@ -882,38 +882,38 @@ const HR: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Joining Date*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Joining Date*</label>
                   <input
                     required
                     type="date"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={employeeForm.joiningDate}
                     onChange={(e) => setEmployeeForm({...employeeForm, joiningDate: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Base Salary*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Base Salary*</label>
                   <input
                     required
                     type="number"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={employeeForm.baseSalary}
                     onChange={(e) => setEmployeeForm({...employeeForm, baseSalary: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Address</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Address</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={employeeForm.address}
                     onChange={(e) => setEmployeeForm({...employeeForm, address: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Status</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Status</label>
                   <select
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={employeeForm.status}
                     onChange={(e) => setEmployeeForm({...employeeForm, status: e.target.value as 'Active' | 'Inactive'})}
                   >
@@ -922,10 +922,10 @@ const HR: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Profile Image URL</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Profile Image URL</label>
                   <input
                     type="url"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="https://..."
                     value={employeeForm.profileImage}
                     onChange={(e) => setEmployeeForm({...employeeForm, profileImage: e.target.value})}
@@ -936,13 +936,13 @@ const HR: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsEmployeeModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
                 >
                   {editingId ? 'Update' : 'Save'} Employee
                 </button>
@@ -955,17 +955,17 @@ const HR: React.FC = () => {
       {/* Attendance Modal */}
       {isAttendanceModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">Mark Daily Attendance</h3>
-              <button onClick={() => setIsAttendanceModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">Mark Daily Attendance</h3>
+              <button onClick={() => setIsAttendanceModalOpen(false)} className="p-2 hover:bg-surface-hover rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
-              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
+              <div className="flex items-center justify-between bg-surface-hover p-4 rounded-xl">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Attendance Date</p>
+                  <p className="text-xs font-bold text-secondary uppercase tracking-wider">Attendance Date</p>
                   <input 
                     type="date" 
                     className="bg-transparent border-none text-sm font-bold outline-none"
@@ -989,18 +989,18 @@ const HR: React.FC = () => {
 
               <div className="space-y-2">
                 {employees.map((emp) => (
-                  <div key={emp.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-gray-200 transition-all">
+                  <div key={emp.id} className="flex items-center justify-between p-3 bg-surface border border-border rounded-xl hover:border-border transition-all">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                      <div className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center overflow-hidden">
                         {emp.profileImage ? (
                           <img src={emp.profileImage} alt={emp.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
-                          <Users size={14} className="text-gray-400" />
+                          <Users size={14} className="text-muted" />
                         )}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-[#141414]">{emp.name}</p>
-                        <p className="text-[10px] text-gray-500">{emp.designationName}</p>
+                        <p className="text-sm font-bold text-primary">{emp.name}</p>
+                        <p className="text-[10px] text-secondary">{emp.designationName}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -1013,8 +1013,8 @@ const HR: React.FC = () => {
                               ? status === 'Present' ? 'bg-green-600 text-white' :
                                 status === 'Absent' ? 'bg-red-600 text-white' :
                                 status === 'Late' ? 'bg-yellow-600 text-white' :
-                                'bg-[#0066FF] text-white'
-                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                'bg-brand text-white'
+                              : 'bg-surface-hover text-secondary hover:bg-surface-hover'
                           }`}
                         >
                           {status}
@@ -1025,17 +1025,17 @@ const HR: React.FC = () => {
                 ))}
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3">
+            <div className="p-6 border-t border-border flex gap-3">
               <button
                 type="button"
                 onClick={() => setIsAttendanceModalOpen(false)}
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkAttendance}
-                className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
               >
                 Save Attendance
               </button>
@@ -1047,19 +1047,19 @@ const HR: React.FC = () => {
       {/* Advance Modal */}
       {isAdvanceModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">Salary Advance</h3>
-              <button onClick={() => setIsAdvanceModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">Salary Advance</h3>
+              <button onClick={() => setIsAdvanceModalOpen(false)} className="p-2 hover:bg-surface-hover rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={handleAdvanceSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Employee*</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Employee*</label>
                 <select
                   required
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   value={advanceForm.employeeId}
                   onChange={(e) => setAdvanceForm({...advanceForm, employeeId: e.target.value})}
                 >
@@ -1071,31 +1071,31 @@ const HR: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Amount*</label>
                   <input
                     required
                     type="number"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={advanceForm.amount}
                     onChange={(e) => setAdvanceForm({...advanceForm, amount: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Date*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Date*</label>
                   <input
                     required
                     type="date"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={advanceForm.date}
                     onChange={(e) => setAdvanceForm({...advanceForm, date: e.target.value})}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Note</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Note</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   placeholder="Reason for advance..."
                   value={advanceForm.note}
                   onChange={(e) => setAdvanceForm({...advanceForm, note: e.target.value})}
@@ -1105,13 +1105,13 @@ const HR: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAdvanceModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
                 >
                   Save Advance
                 </button>
@@ -1124,19 +1124,19 @@ const HR: React.FC = () => {
       {/* Salary Generation Modal */}
       {isSalaryModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">Generate Salary</h3>
-              <button onClick={() => setIsSalaryModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">Generate Salary</h3>
+              <button onClick={() => setIsSalaryModalOpen(false)} className="p-2 hover:bg-surface-hover rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={generateSalary} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Employee*</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Employee*</label>
                 <select
                   required
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   value={salaryForm.employeeId}
                   onChange={(e) => setSalaryForm({...salaryForm, employeeId: e.target.value})}
                 >
@@ -1148,27 +1148,27 @@ const HR: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Month*</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Month*</label>
                   <input
                     required
                     type="month"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={salaryForm.month}
                     onChange={(e) => setSalaryForm({...salaryForm, month: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Bonus</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Bonus</label>
                   <input
                     type="number"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={salaryForm.bonus}
                     onChange={(e) => setSalaryForm({...salaryForm, bonus: e.target.value})}
                   />
                 </div>
               </div>
-              <div className="p-4 bg-blue-50 rounded-xl space-y-2">
-                <p className="text-xs text-blue-700 font-medium">
+              <div className="p-4 bg-brand/10 rounded-xl space-y-2">
+                <p className="text-xs text-brand-hover font-medium">
                   * Deductions (Absent/Late) and Pending Advances will be automatically calculated and deducted from the net salary.
                 </p>
               </div>
@@ -1176,13 +1176,13 @@ const HR: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsSalaryModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
                 >
                   Generate & Pay
                 </button>
@@ -1195,51 +1195,51 @@ const HR: React.FC = () => {
       {/* Profile View Modal */}
       {isProfileModalOpen && selectedEmployee && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="relative h-32 bg-[#141414]">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="relative h-32 bg-slate-900 dark:bg-white text-white dark:text-black">
               <button 
                 onClick={() => setIsProfileModalOpen(false)}
-                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+                className="absolute top-4 right-4 p-2 bg-surface/10 hover:bg-surface/20 text-white rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
             <div className="px-8 pb-8">
               <div className="relative -mt-12 mb-6 flex items-end gap-6">
-                <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg">
-                  <div className="w-full h-full rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-100">
+                <div className="w-24 h-24 rounded-2xl bg-surface p-1 shadow-lg">
+                  <div className="w-full h-full rounded-xl bg-surface-hover flex items-center justify-center overflow-hidden border border-border">
                     {selectedEmployee.profileImage ? (
                       <img src={selectedEmployee.profileImage} alt={selectedEmployee.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
-                      <Users size={40} className="text-gray-300" />
+                      <Users size={40} className="text-muted" />
                     )}
                   </div>
                 </div>
                 <div className="pb-2">
-                  <h3 className="text-2xl font-bold text-[#141414]">{selectedEmployee.name}</h3>
-                  <p className="text-gray-500 font-medium">{selectedEmployee.designationName}</p>
+                  <h3 className="text-2xl font-bold text-primary">{selectedEmployee.name}</h3>
+                  <p className="text-secondary font-medium">{selectedEmployee.designationName}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div>
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Contact Information</h4>
+                    <h4 className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">Contact Information</h4>
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-sm text-gray-600">
-                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
+                      <div className="flex items-center gap-3 text-sm text-secondary">
+                        <div className="w-8 h-8 rounded-lg bg-surface-hover flex items-center justify-center text-muted">
                           <Users size={16} />
                         </div>
                         {selectedEmployee.phone}
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-600">
-                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
+                      <div className="flex items-center gap-3 text-sm text-secondary">
+                        <div className="w-8 h-8 rounded-lg bg-surface-hover flex items-center justify-center text-muted">
                           <Users size={16} />
                         </div>
                         {selectedEmployee.email || 'No email provided'}
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-600">
-                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
+                      <div className="flex items-center gap-3 text-sm text-secondary">
+                        <div className="w-8 h-8 rounded-lg bg-surface-hover flex items-center justify-center text-muted">
                           <Users size={16} />
                         </div>
                         {selectedEmployee.address || 'No address provided'}
@@ -1250,18 +1250,18 @@ const HR: React.FC = () => {
 
                 <div className="space-y-6">
                   <div>
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Employment Details</h4>
+                    <h4 className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">Employment Details</h4>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                        <span className="text-xs text-gray-500">Base Salary</span>
-                        <span className="text-sm font-bold text-[#141414]">৳{(selectedEmployee.baseSalary || 0).toLocaleString()}</span>
+                      <div className="flex items-center justify-between p-3 bg-surface-hover rounded-xl">
+                        <span className="text-xs text-secondary">Base Salary</span>
+                        <span className="text-sm font-bold text-primary">৳{(selectedEmployee.baseSalary || 0).toLocaleString()}</span>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                        <span className="text-xs text-gray-500">Joining Date</span>
-                        <span className="text-sm font-bold text-[#141414]">{selectedEmployee.joiningDate}</span>
+                      <div className="flex items-center justify-between p-3 bg-surface-hover rounded-xl">
+                        <span className="text-xs text-secondary">Joining Date</span>
+                        <span className="text-sm font-bold text-primary">{selectedEmployee.joiningDate}</span>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                        <span className="text-xs text-gray-500">Status</span>
+                      <div className="flex items-center justify-between p-3 bg-surface-hover rounded-xl">
+                        <span className="text-xs text-secondary">Status</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                           selectedEmployee.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                         }`}>

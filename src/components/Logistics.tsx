@@ -82,54 +82,54 @@ const CourierCard = ({
   children: React.ReactNode;
 }) => {
   return (
-    <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm flex flex-col hover:shadow-md transition-shadow">
-      <div className="p-5 flex items-start justify-between border-b border-gray-50">
+    <div className="bg-surface rounded-[20px] border border-border shadow-subtle flex flex-col hover:shadow-premium transition-shadow">
+      <div className="p-5 flex items-start justify-between border-b border-border">
         <div className="flex gap-4">
-          <div className="w-[60px] h-[60px] rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center shrink-0">
+          <div className="w-[60px] h-[60px] rounded-2xl bg-surface border border-border shadow-subtle flex items-center justify-center shrink-0">
             <div className={`w-[44px] h-[44px] rounded-full text-white flex items-center justify-center text-lg font-bold tracking-tight ${iconColor}`}>
               {iconInitials}
             </div>
           </div>
           <div className="flex flex-col justify-center">
-            <h4 className="text-[15px] font-bold text-gray-900 group-hover:text-[#0066FF] transition-colors leading-tight">{name}</h4>
-            <p className="text-[12px] text-gray-500 mt-1 font-medium leading-tight">{subtitle}</p>
+            <h4 className="text-[15px] font-bold text-primary group-hover:text-brand transition-colors leading-tight">{name}</h4>
+            <p className="text-[12px] text-secondary mt-1 font-medium leading-tight">{subtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {isActive ? (
             <>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-[#EEFDF4] text-[#166534] text-[10px] font-bold rounded-full border border-[#D5F5E3]">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 dark:bg-green-500/20 text-[#166534] text-[10px] font-bold rounded-full border border-[#D5F5E3]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>Connected
               </span>
               <button 
                 onClick={onToggleActive}
                 className="w-10 h-5 bg-[#10B981] rounded-full flex items-center px-0.5 transition-colors shrink-0"
               >
-                <div className="w-4 h-4 bg-white rounded-full shadow-sm transform translate-x-5 transition-transform" />
+                <div className="w-4 h-4 bg-surface rounded-full shadow-subtle transform translate-x-5 transition-transform" />
               </button>
             </>
           ) : (
             <>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 text-gray-500 text-[10px] font-bold rounded-full border border-gray-100">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-surface-hover text-secondary text-[10px] font-bold rounded-full border border-border">
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>Disconnected
               </span>
               <button 
                  onClick={onToggleActive}
                  className="w-10 h-5 bg-gray-200 rounded-full flex items-center px-0.5 transition-colors shrink-0"
               >
-                <div className="w-4 h-4 bg-white rounded-full shadow-sm transition-transform" />
+                <div className="w-4 h-4 bg-surface rounded-full shadow-subtle transition-transform" />
               </button>
             </>
           )}
-          <button className="text-gray-400 hover:text-gray-600 transition-colors ml-1 shrink-0">
+          <button className="text-muted hover:text-secondary transition-colors ml-1 shrink-0">
             <MoreVertical size={18} />
           </button>
         </div>
       </div>
       
-      <div className="px-6 py-5 grid grid-cols-3 gap-4 border-b border-gray-50/50">
+      <div className="px-6 py-5 grid grid-cols-3 gap-4 border-b border-border/50">
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-medium text-gray-400">API Status</span>
+          <span className="text-[11px] font-medium text-muted">API Status</span>
           {isActive ? (
              <div className="flex items-center gap-1.5 pt-0.5">
                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
@@ -138,50 +138,50 @@ const CourierCard = ({
           ) : (
              <div className="flex items-center gap-1.5 pt-0.5">
                <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-               <span className="text-[13px] font-bold text-gray-500">Not Connected</span>
+               <span className="text-[13px] font-bold text-secondary">Not Connected</span>
              </div>
           )}
         </div>
-        <div className="flex flex-col gap-1.5 border-l border-gray-100 pl-4">
-          <span className="text-[11px] font-medium text-gray-400">Last Sync</span>
-          <span className="text-[13px] font-bold text-gray-900 pt-0.5 border-0">
+        <div className="flex flex-col gap-1.5 border-l border-border pl-4">
+          <span className="text-[11px] font-medium text-muted">Last Sync</span>
+          <span className="text-[13px] font-bold text-primary pt-0.5 border-0">
             {isActive ? lastSync : '—'}
           </span>
         </div>
-        <div className="flex flex-col gap-1.5 border-l border-gray-100 pl-4">
-          <span className="text-[11px] font-medium text-gray-400">Orders Synced</span>
-          <span className="text-[13px] font-bold text-gray-900 pt-0.5 border-0">
+        <div className="flex flex-col gap-1.5 border-l border-border pl-4">
+          <span className="text-[11px] font-medium text-muted">Orders Synced</span>
+          <span className="text-[13px] font-bold text-primary pt-0.5 border-0">
             {isActive ? ordersSynced : '—'}
           </span>
         </div>
       </div>
 
-      <div className="p-4 flex items-center gap-3 bg-gray-50/30 mt-auto rounded-b-[20px]">
+      <div className="p-4 flex items-center gap-3 bg-surface-hover/30 mt-auto rounded-b-[20px]">
         {isActive ? (
           <button 
             onClick={onToggleExpand}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-blue-100 text-[#0066FF] hover:bg-blue-50 text-[13px] font-semibold rounded-lg transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-brand/20 text-brand hover:bg-brand/10 text-[13px] font-semibold rounded-lg transition-all"
           >
             <Settings size={15} /> Configure
           </button>
         ) : (
           <button 
             onClick={onToggleExpand}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-[#0066FF] text-white hover:bg-blue-700 text-[13px] font-semibold rounded-lg shadow-sm transition-all shadow-[#0066FF]/20"
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-brand text-white hover:bg-blue-700 text-[13px] font-semibold rounded-lg shadow-subtle transition-all shadow-brand/20"
           >
             <Link size={15} /> Connect
           </button>
         )}
-        <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-200 text-gray-600 hover:bg-gray-50 text-[13px] font-semibold rounded-lg transition-all">
+        <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-border text-secondary hover:bg-surface-hover text-[13px] font-semibold rounded-lg transition-all">
           {isActive ? <FileText size={15} /> : <Info size={15} />} 
           {isActive ? 'View Logs' : 'View Details'}
         </button>
       </div>
       
       {isExpanded && (
-        <div className="px-5 pb-5 pt-4 bg-white border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="px-5 pb-5 pt-4 bg-surface border-t border-border animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center justify-between mb-4">
-            <h5 className="text-sm font-bold text-gray-800">API Configuration</h5>
+            <h5 className="text-sm font-bold text-primary">API Configuration</h5>
           </div>
           {children}
         </div>
@@ -907,28 +907,28 @@ export default function Logistics() {
         {/* Title and Top Actions */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div className="shrink-0">
-            <h2 className="text-3xl font-bold text-[#141414] tracking-tight">Logistics & Delivery</h2>
-            <p className="text-sm text-gray-500 mt-1 pb-2">Track shipments, manage couriers, and optimize delivery operations.</p>
+            <h2 className="text-3xl font-bold text-primary tracking-tight">Logistics & Delivery</h2>
+            <p className="text-sm text-secondary mt-1 pb-2">Track shipments, manage couriers, and optimize delivery operations.</p>
           </div>
           
           <div className="flex items-center gap-3 overflow-x-auto pb-2 xl:pb-0 hide-scrollbar w-full xl:w-auto">
             <button 
               onClick={handleExportCSV}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold hover:bg-gray-50 transition-colors shrink-0"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-[13px] font-semibold hover:bg-surface-hover transition-colors shrink-0"
             >
               <Download size={16} />
               Export CSV
             </button>
             <button 
               onClick={handleOpenAddDeliveryModal}
-              className="flex items-center justify-center gap-2 px-5 py-2 bg-[#0066FF] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0052CC] transition-colors shadow-sm cursor-pointer shrink-0"
+              className="flex items-center justify-center gap-2 px-5 py-2 bg-brand text-white rounded-lg text-[13px] font-semibold hover:bg-brand-hover transition-colors shadow-subtle cursor-pointer shrink-0"
             >
               <Plus size={16} />
               Add Shipment
             </button>
             <button 
               onClick={handleOpenAddCourierModal}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold hover:bg-gray-50 transition-colors shrink-0"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-[13px] font-semibold hover:bg-surface-hover transition-colors shrink-0"
             >
               <Plus size={16} />
               Connect Courier
@@ -940,34 +940,34 @@ export default function Logistics() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar w-full border-b border-transparent">
           <button 
             onClick={() => setActiveSubTab('shipments')}
-            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 border ${activeSubTab === 'shipments' ? 'bg-white text-[#0066FF] border-gray-200 border-b-[#0066FF] border-b-[3px]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 border ${activeSubTab === 'shipments' ? 'bg-surface text-brand border-border border-b-[#0066FF] border-b-[3px]' : 'bg-surface text-secondary border-border hover:bg-surface-hover'}`}
           >
             Shipments
           </button>
           <button 
             onClick={() => setActiveSubTab('pending')}
-            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 flex items-center gap-2 border ${activeSubTab === 'pending' ? 'bg-white text-[#0066FF] border-gray-200 border-b-[#0066FF] border-b-[3px]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 flex items-center gap-2 border ${activeSubTab === 'pending' ? 'bg-surface text-brand border-border border-b-[#0066FF] border-b-[3px]' : 'bg-surface text-secondary border-border hover:bg-surface-hover'}`}
           >
             Pending Ready-to-Ship
-            <span className={`px-2 py-0.5 text-[11px] rounded-full font-bold ${activeSubTab === 'pending' ? 'bg-blue-100 text-[#0066FF]' : 'bg-blue-50 text-[#0066FF]'}`}>
+            <span className={`px-2 py-0.5 text-[11px] rounded-full font-bold ${activeSubTab === 'pending' ? 'bg-brand/20 text-brand' : 'bg-brand/10 text-brand'}`}>
               {pendingOrders.length}
             </span>
           </button>
           <button 
             onClick={() => setActiveSubTab('couriers')}
-            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 border ${activeSubTab === 'couriers' ? 'bg-white text-[#0066FF] border-gray-200 border-b-[#0066FF] border-b-[3px]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 border ${activeSubTab === 'couriers' ? 'bg-surface text-brand border-border border-b-[#0066FF] border-b-[3px]' : 'bg-surface text-secondary border-border hover:bg-surface-hover'}`}
           >
             Courier Partners
           </button>
           <button 
             onClick={() => setActiveSubTab('reconciliation')}
-            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 border ${activeSubTab === 'reconciliation' ? 'bg-white text-[#0066FF] border-gray-200 border-b-[#0066FF] border-b-[3px]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 border ${activeSubTab === 'reconciliation' ? 'bg-surface text-brand border-border border-b-[#0066FF] border-b-[3px]' : 'bg-surface text-secondary border-border hover:bg-surface-hover'}`}
           >
             Charge Reconciliation
           </button>
           <button 
             onClick={() => setActiveSubTab('logs')}
-            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 border ${activeSubTab === 'logs' ? 'bg-white text-[#0066FF] border-gray-200 border-b-[#0066FF] border-b-[3px]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 border ${activeSubTab === 'logs' ? 'bg-surface text-brand border-border border-b-[#0066FF] border-b-[3px]' : 'bg-surface text-secondary border-border hover:bg-surface-hover'}`}
           >
             API Logs
           </button>
@@ -984,13 +984,13 @@ export default function Logistics() {
         <div className="space-y-8 animate-in fade-in duration-300">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h3 className="text-xl font-bold text-gray-900 tracking-tight">Available Integrations</h3>
-              <p className="text-sm text-gray-500 mt-1">Connect and configure your delivery partners</p>
+              <h3 className="text-xl font-bold text-primary tracking-tight">Available Integrations</h3>
+              <p className="text-sm text-secondary mt-1">Connect and configure your delivery partners</p>
             </div>
             <button 
               onClick={handleSaveConfigs}
               disabled={isSaving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#0066FF] text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-subtle disabled:opacity-50"
             >
               {isSaving ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
               {isSaving ? 'Saving...' : 'Save Configurations'}
@@ -1013,22 +1013,22 @@ export default function Logistics() {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">API Key</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">API Key</label>
                   <input 
                     type="text" 
                     value={courierConfigs.steadfast?.apiKey || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, steadfast: { ...prev.steadfast, apiKey: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="Enter API Key"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Secret Key</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Secret Key</label>
                   <input 
                     type="password" 
                     value={courierConfigs.steadfast?.secretKey || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, steadfast: { ...prev.steadfast, secretKey: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="Enter Secret Key"
                   />
                 </div>
@@ -1058,62 +1058,62 @@ export default function Logistics() {
                       checked={courierConfigs.pathao?.isSandbox || false}
                       onChange={e => setCourierConfigs(prev => ({ ...prev, pathao: { ...prev.pathao, isSandbox: e.target.checked } }))}
                     />
-                    <div className="w-4 h-4 border-2 border-gray-300 rounded peer-checked:bg-[#EA580C] peer-checked:border-[#EA580C] transition-colors"></div>
+                    <div className="w-4 h-4 border-2 border-border rounded peer-checked:bg-[#EA580C] peer-checked:border-[#EA580C] transition-colors"></div>
                     <svg className="absolute w-4 h-4 text-white p-0.5 opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-500 group-hover/sandbox:text-gray-800 uppercase tracking-widest transition-colors">Sandbox Mode</span>
+                  <span className="text-[11px] font-bold text-secondary group-hover/sandbox:text-primary uppercase tracking-widest transition-colors">Sandbox Mode</span>
                 </label>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Client ID</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Client ID</label>
                   <input 
                     type="text" 
                     value={courierConfigs.pathao?.clientId || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, pathao: { ...prev.pathao, clientId: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="Enter Client ID"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Client Secret</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Client Secret</label>
                   <input 
                     type="password" 
                     value={courierConfigs.pathao?.clientSecret || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, pathao: { ...prev.pathao, clientSecret: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="Enter Client Secret"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Email (Username)</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Email (Username)</label>
                   <input 
                     type="text" 
                     value={courierConfigs.pathao?.username || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, pathao: { ...prev.pathao, username: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="email@example.com"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Password</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Password</label>
                   <input 
                     type="password" 
                     value={courierConfigs.pathao?.password || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, pathao: { ...prev.pathao, password: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="Enter Password"
                   />
                 </div>
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Store ID</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Store ID</label>
                   <input 
                     type="text" 
                     value={courierConfigs.pathao?.storeId || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, pathao: { ...prev.pathao, storeId: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="Enter Pathao Store ID"
                   />
                 </div>
@@ -1135,12 +1135,12 @@ export default function Logistics() {
               ordersSynced={getCourierStatsData('redx').ordersSynced}
             >
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">API Key</label>
+                <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">API Key</label>
                 <input 
                   type="text" 
                   value={courierConfigs.redx?.apiKey || ''} 
                   onChange={e => setCourierConfigs(prev => ({ ...prev, redx: { ...prev.redx, apiKey: e.target.value } }))}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                   placeholder="Enter API Key"
                 />
               </div>
@@ -1167,42 +1167,42 @@ export default function Logistics() {
                       checked={courierConfigs.carrybee?.isSandbox || false}
                       onChange={e => setCourierConfigs(prev => ({ ...prev, carrybee: { ...prev.carrybee, isSandbox: e.target.checked } }))}
                     />
-                    <div className="w-4 h-4 border-2 border-gray-300 rounded peer-checked:bg-[#EAB308] peer-checked:border-[#EAB308] transition-colors"></div>
+                    <div className="w-4 h-4 border-2 border-border rounded peer-checked:bg-[#EAB308] peer-checked:border-[#EAB308] transition-colors"></div>
                     <svg className="absolute w-4 h-4 text-white p-0.5 opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-500 group-hover/sandbox:text-gray-800 uppercase tracking-widest transition-colors">Sandbox Mode</span>
+                  <span className="text-[11px] font-bold text-secondary group-hover/sandbox:text-primary uppercase tracking-widest transition-colors">Sandbox Mode</span>
                 </label>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Store ID</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Store ID</label>
                   <input 
                     type="text" 
                     value={courierConfigs.carrybee?.storeId || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, carrybee: { ...prev.carrybee, storeId: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="Enter Store ID"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Email</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Email</label>
                   <input 
                     type="text" 
                     value={courierConfigs.carrybee?.email || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, carrybee: { ...prev.carrybee, email: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="email@example.com"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Password</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">Password</label>
                   <input 
                     type="password" 
                     value={courierConfigs.carrybee?.password || ''} 
                     onChange={e => setCourierConfigs(prev => ({ ...prev, carrybee: { ...prev.carrybee, password: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                     placeholder="Enter Password"
                   />
                 </div>
@@ -1223,12 +1223,12 @@ export default function Logistics() {
               ordersSynced={getCourierStatsData('paperfly').ordersSynced}
             >
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">API Key</label>
+                <label className="text-[11px] font-bold text-secondary uppercase tracking-widest">API Key</label>
                 <input 
                   type="text" 
                   value={courierConfigs.paperfly?.apiKey || ''} 
                   onChange={e => setCourierConfigs(prev => ({ ...prev, paperfly: { ...prev.paperfly, apiKey: e.target.value } }))}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none transition-all shadow-sm" 
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all shadow-subtle" 
                   placeholder="Enter API Key"
                 />
               </div>
@@ -1236,15 +1236,15 @@ export default function Logistics() {
           </div>
             
           {/* OTHER CUSTOM COURIERS HEADER */}
-          <div className="pt-8 mb-4 border-t border-gray-100 mt-4">
+          <div className="pt-8 mb-4 border-t border-border mt-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 tracking-tight">Manual Couriers</h3>
-                <p className="text-sm text-gray-500 mt-1">Manage couriers that are not directly integrated via API</p>
+                <h3 className="text-xl font-bold text-primary tracking-tight">Manual Couriers</h3>
+                <p className="text-sm text-secondary mt-1">Manage couriers that are not directly integrated via API</p>
               </div>
               <button 
                 onClick={handleOpenAddCourierModal}
-                className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 bg-brand/10 text-brand-hover hover:bg-brand/20 rounded-xl text-sm font-semibold transition-colors"
               >
                 <Plus size={16} /> Add Custom Courier
               </button>
@@ -1253,40 +1253,40 @@ export default function Logistics() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {couriers.filter(c => !['steadfast', 'pathao', 'redx', 'carrybee', 'paperfly'].includes(c.name.toLowerCase())).map((courier) => (
-              <div key={courier.id} className="bg-white p-5 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow relative group">
+              <div key={courier.id} className="bg-surface p-5 rounded-3xl border border-border shadow-subtle hover:shadow-premium transition-shadow relative group">
                 <div className="absolute top-4 right-4 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => handleOpenEditCourierModal(courier)}
-                    className="p-2 text-gray-400 hover:text-[#0066FF] hover:bg-blue-50 rounded-xl transition-colors"
+                    className="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-colors"
                   >
                     <Edit size={16} />
                   </button>
                   <button 
                     onClick={() => handleDeleteCourier(courier.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    className="p-2 text-muted hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-700 font-bold shadow-inner border-b-2">
-                    <Truck size={20} className="text-gray-400" />
+                  <div className="w-12 h-12 rounded-2xl bg-surface-hover border border-border flex items-center justify-center text-secondary font-bold shadow-inner border-b-2">
+                    <Truck size={20} className="text-muted" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 text-sm leading-tight">{courier.name}</h4>
+                    <h4 className="font-bold text-primary text-sm leading-tight">{courier.name}</h4>
                     <div className="flex items-center gap-2 mt-1.5">
                       <div className={`w-2 h-2 rounded-full ${courier.active ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-300'}`}></div>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-gray-500">{courier.active ? 'Active' : 'Inactive'}</span>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-secondary">{courier.active ? 'Active' : 'Inactive'}</span>
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest mb-1">Total</p>
-                    <p className="text-xl font-bold text-gray-900">{courierStats[courier.name]?.total || 0}</p>
+                    <p className="text-[10px] uppercase font-bold text-muted tracking-widest mb-1">Total</p>
+                    <p className="text-xl font-bold text-primary">{courierStats[courier.name]?.total || 0}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest mb-1">Success</p>
+                    <p className="text-[10px] uppercase font-bold text-muted tracking-widest mb-1">Success</p>
                     <p className="text-sm font-bold text-green-600 mt-2">
                       {courierStats[courier.name]?.total > 0 
                         ? `${Math.round((courierStats[courier.name].delivered / courierStats[courier.name].total) * 100)}%`
@@ -1301,12 +1301,12 @@ export default function Logistics() {
       )}
 
       {activeSubTab === 'logs' && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
-            <h4 className="text-sm font-bold text-gray-900">Courier API Logs</h4>
+        <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
+          <div className="p-4 border-b border-border bg-surface-hover/50 flex justify-between items-center">
+            <h4 className="text-sm font-bold text-primary">Courier API Logs</h4>
             <button 
               onClick={() => setActiveSubTab('logs')}
-              className="p-1 hover:bg-gray-200 rounded-md transition-all"
+              className="p-1 hover:bg-surface-hover rounded-md transition-all"
             >
               <RefreshCw size={14} />
             </button>
@@ -1314,7 +1314,7 @@ export default function Logistics() {
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[800px] whitespace-nowrap">
               <thead>
-                <tr className="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                <tr className="bg-surface-hover text-[10px] uppercase font-bold text-muted tracking-wider">
                   <th className="px-6 py-3">Timestamp</th>
                   <th className="px-6 py-3">Courier</th>
                   <th className="px-6 py-3">Order ID</th>
@@ -1322,16 +1322,16 @@ export default function Logistics() {
                   <th className="px-6 py-3">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-border">
                 {courierLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-xs text-gray-500">
+                  <tr key={log.id} className="hover:bg-surface-hover transition-colors">
+                    <td className="px-6 py-4 text-xs text-secondary">
                       {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-gray-900 uppercase">{log.courier}</span>
+                      <span className="text-xs font-bold text-primary uppercase">{log.courier}</span>
                     </td>
-                    <td className="px-6 py-4 text-xs font-medium text-gray-600">#{log.orderId}</td>
+                    <td className="px-6 py-4 text-xs font-medium text-secondary">#{log.orderId}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
                         log.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
@@ -1346,7 +1346,7 @@ export default function Logistics() {
                 ))}
                 {courierLogs.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-400">
+                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-muted">
                       No logs found.
                     </td>
                   </tr>
@@ -1359,20 +1359,20 @@ export default function Logistics() {
 
       {activeSubTab === 'pending' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-[#f3f4f6] shadow-sm">
+          <div className="flex items-center justify-between bg-surface p-4 rounded-2xl border border-[#f3f4f6] shadow-subtle">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-50 text-[#0066FF] rounded-xl">
+              <div className="p-3 bg-brand/10 text-brand rounded-xl">
                 <Truck size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#141414]">Pending Shipments</h3>
-                <p className="text-xs text-gray-500">Orders ready to be sent to courier partners.</p>
+                <h3 className="text-lg font-bold text-primary">Pending Shipments</h3>
+                <p className="text-xs text-secondary">Orders ready to be sent to courier partners.</p>
               </div>
             </div>
             {selectedPendingOrders.length > 0 && (
               <button 
                 onClick={handleBulkBook}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#0066FF] text-white rounded-xl text-sm font-bold hover:bg-[#0052CC] transition-all shadow-lg"
+                className="flex items-center gap-2 px-6 py-2.5 bg-brand text-white rounded-xl text-sm font-bold hover:bg-brand-hover transition-all shadow-lg"
               >
                 <Zap size={16} />
                 Bulk Book ({selectedPendingOrders.length})
@@ -1380,7 +1380,7 @@ export default function Logistics() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-[#f3f4f6] shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-2xl border border-[#f3f4f6] shadow-subtle overflow-hidden">
             <table className="w-full text-left border-collapse min-w-[800px] whitespace-nowrap">
               <thead>
                 <tr className="border-b border-[#f9fafb] bg-[#f9fafb]/50">
@@ -1405,7 +1405,7 @@ export default function Logistics() {
               <tbody className="divide-y divide-[#f9fafb]">
                 {pendingOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-sm italic">
+                    <td colSpan={6} className="px-6 py-12 text-center text-muted text-sm italic">
                       No pending shipments found.
                     </td>
                   </tr>
@@ -1425,25 +1425,25 @@ export default function Logistics() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-[#141414]">#{order.orderNumber || order.id.slice(0, 8)}</span>
+                          <span className="text-xs font-bold text-primary">#{order.orderNumber || order.id.slice(0, 8)}</span>
                           <span className="text-[10px] text-[#9ca3af]">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : 'N/A'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-[#141414]">{order.customerName}</span>
+                          <span className="text-xs font-bold text-primary">{order.customerName}</span>
                           <span className="text-[10px] text-[#9ca3af]">{order.customerPhone}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-[10px] text-[#6b7280] line-clamp-1 max-w-[200px]">{order.customerAddress}</span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold text-[#141414]">
+                      <td className="px-6 py-4 text-xs font-bold text-primary">
                         {currencySymbol || '৳'}{(order.totalAmount || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          order.status === 'confirmed' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-[#0066FF]'
+                          order.status === 'confirmed' ? 'bg-green-50 text-green-600' : 'bg-brand/10 text-brand'
                         }`}>
                           {order.status}
                         </span>
@@ -1461,32 +1461,32 @@ export default function Logistics() {
         <>
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl border border-gray-100 p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+            <div className="bg-surface rounded-xl border border-border p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
               <div className="flex gap-4 mb-4">
-                <div className="w-[45px] h-[45px] rounded-2xl bg-blue-50/80 flex items-center justify-center text-[#0066FF]">
+                <div className="w-[45px] h-[45px] rounded-2xl bg-brand/10/80 flex items-center justify-center text-brand">
                   <Navigation size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-gray-500 mb-0.5">Total Shipments</p>
-                  <h3 className="text-2xl font-bold text-gray-900 leading-tight">{deliveries.length.toLocaleString()}</h3>
+                  <p className="text-[11px] font-semibold text-secondary mb-0.5">Total Shipments</p>
+                  <h3 className="text-2xl font-bold text-primary leading-tight">{deliveries.length.toLocaleString()}</h3>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1 text-[11px] font-bold text-[#1DAB61] bg-[#1DAB61]/10 px-2 py-0.5 rounded-[4px]">
                   <Activity size={10} /> Live Data
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">real-time sync</span>
+                <span className="text-[11px] text-muted font-medium">real-time sync</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+            <div className="bg-surface rounded-xl border border-border p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
               <div className="flex gap-4 mb-4">
                 <div className="w-[45px] h-[45px] rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500">
                   <Activity size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-gray-500 mb-0.5">In Transit</p>
-                  <h3 className="text-2xl font-bold text-gray-900 leading-tight">
+                  <p className="text-[11px] font-semibold text-secondary mb-0.5">In Transit</p>
+                  <h3 className="text-2xl font-bold text-primary leading-tight">
                     {deliveries.filter(d => 
                       d.status.toLowerCase().includes('transit') || 
                       d.status.toLowerCase().includes('pickup') || 
@@ -1499,18 +1499,18 @@ export default function Logistics() {
                 <span className="flex items-center gap-1 text-[11px] font-bold text-[#1DAB61] bg-[#1DAB61]/10 px-2 py-0.5 rounded-[4px]">
                   <Activity size={10} /> Active
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">currently moving</span>
+                <span className="text-[11px] text-muted font-medium">currently moving</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+            <div className="bg-surface rounded-xl border border-border p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
               <div className="flex gap-4 mb-4">
                 <div className="w-[45px] h-[45px] rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
                   <CheckCircle2 size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-gray-500 mb-0.5">Delivered</p>
-                  <h3 className="text-2xl font-bold text-gray-900 leading-tight">
+                  <p className="text-[11px] font-semibold text-secondary mb-0.5">Delivered</p>
+                  <h3 className="text-2xl font-bold text-primary leading-tight">
                     {deliveries.filter(d => d.status.toLowerCase() === 'delivered').length.toLocaleString()}
                   </h3>
                 </div>
@@ -1519,18 +1519,18 @@ export default function Logistics() {
                 <span className="flex items-center gap-1 text-[11px] font-bold text-[#1DAB61] bg-[#1DAB61]/10 px-2 py-0.5 rounded-[4px]">
                   <CheckCircle2 size={10} /> Completed
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">successfully delivered</span>
+                <span className="text-[11px] text-muted font-medium">successfully delivered</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+            <div className="bg-surface rounded-xl border border-border p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
               <div className="flex gap-4 mb-4">
                 <div className="w-[45px] h-[45px] rounded-2xl bg-red-50 flex items-center justify-center text-red-500">
                   <XCircle size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-gray-500 mb-0.5">Failed / Returned</p>
-                  <h3 className="text-2xl font-bold text-gray-900 leading-tight">
+                  <p className="text-[11px] font-semibold text-secondary mb-0.5">Failed / Returned</p>
+                  <h3 className="text-2xl font-bold text-primary leading-tight">
                     {deliveries.filter(d => 
                       d.status.toLowerCase().includes('returned') || 
                       d.status.toLowerCase().includes('failed') || 
@@ -1543,7 +1543,7 @@ export default function Logistics() {
                 <span className="flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-[4px]">
                   <XCircle size={10} /> Issues
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">needs attention</span>
+                <span className="text-[11px] text-muted font-medium">needs attention</span>
               </div>
             </div>
           </div>
@@ -1552,55 +1552,55 @@ export default function Logistics() {
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
         <div className="flex items-center gap-2 w-full md:w-auto">
           <div className="relative w-full md:min-w-[400px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
             <input
               type="text"
               placeholder="Search by Tracking ID, Order ID, Courier..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] focus:border-[#0066FF] outline-none transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border rounded-lg text-[13px] focus:border-brand outline-none transition-all shadow-subtle"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="p-2.5 bg-white border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors shadow-sm shrink-0">
+          <button className="p-2.5 bg-surface border border-border rounded-lg text-secondary hover:bg-surface-hover transition-colors shadow-subtle shrink-0">
              <Filter size={16} />
           </button>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button 
             onClick={handleSyncAll}
-            className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-lg text-[13px] font-semibold transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-lg text-[13px] font-semibold transition-all shadow-subtle"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Sync All Status
           </button>
           <div className="relative">
-             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-             <select className="pl-9 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 outline-none hover:bg-gray-50 appearance-none shadow-sm cursor-pointer">
+             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+             <select className="pl-9 pr-8 py-2.5 bg-surface border border-border rounded-lg text-[13px] font-medium text-secondary outline-none hover:bg-surface-hover appearance-none shadow-subtle cursor-pointer">
                <option>All Time</option>
                <option>Last 7 Days</option>
                <option>Last 30 Days</option>
              </select>
-             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
           </div>
           <div className="relative">
-            <select className="px-4 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 outline-none hover:bg-gray-50 appearance-none shadow-sm cursor-pointer">
+            <select className="px-4 pr-8 py-2.5 bg-surface border border-border rounded-lg text-[13px] font-medium text-secondary outline-none hover:bg-surface-hover appearance-none shadow-subtle cursor-pointer">
               <option>All Statuses</option>
               <option>In Transit</option>
               <option>Delivered</option>
               <option>Pending Pickup</option>
               <option>Cancelled</option>
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
           </div>
         </div>
       </div>
 
       {/* Deliveries Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px] whitespace-nowrap">
             <thead>
-              <tr className="bg-white border-b border-gray-100 text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+              <tr className="bg-surface border-b border-border text-[10px] uppercase tracking-wider text-muted font-bold">
                 <th className="px-6 py-4 font-semibold">Tracking info</th>
                 <th className="px-6 py-4 font-semibold">Order ID</th>
                 <th className="px-6 py-4 font-semibold">Courier</th>
@@ -1609,27 +1609,27 @@ export default function Logistics() {
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
             {filteredDeliveries.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      <Truck className="text-gray-300" size={48} />
-                      <span className="text-sm text-gray-500">No deliveries found</span>
+                      <Truck className="text-muted" size={48} />
+                      <span className="text-sm text-secondary">No deliveries found</span>
                     </div>
                   </td>
                 </tr>
               ) : (
                 currentDeliveries.map((delivery) => (
-                  <tr key={delivery.id} className="hover:bg-gray-50 transition-colors group">
+                  <tr key={delivery.id} className="hover:bg-surface-hover transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-[36px] h-[36px] rounded-[10px] bg-blue-50 flex items-center justify-center shadow-sm shrink-0">
-                           <Truck size={16} className="text-[#0066FF]" />
+                        <div className="w-[36px] h-[36px] rounded-[10px] bg-brand/10 flex items-center justify-center shadow-subtle shrink-0">
+                           <Truck size={16} className="text-brand" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-xs font-mono font-bold text-gray-900">{delivery.trackingCode || delivery.id}</span>
-                          <div className="flex items-center gap-1 text-[10px] text-gray-500 mt-0.5 font-medium">
+                          <span className="text-xs font-mono font-bold text-primary">{delivery.trackingCode || delivery.id}</span>
+                          <div className="flex items-center gap-1 text-[10px] text-secondary mt-0.5 font-medium">
                             <Truck size={10} />
                             Standard Delivery
                           </div>
@@ -1637,7 +1637,7 @@ export default function Logistics() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-medium text-gray-600">
+                      <span className="text-xs font-medium text-secondary">
                         {delivery.orderId.startsWith('woo_') ? delivery.orderId : 
                            ((delivery.orderNumber ?? orderMap[delivery.orderId]) && (delivery.orderNumber ?? orderMap[delivery.orderId]) !== -1
                               ? `#${delivery.orderNumber ?? orderMap[delivery.orderId]}` 
@@ -1646,18 +1646,18 @@ export default function Logistics() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-[30px] h-[30px] rounded-full border border-gray-200 bg-white flex items-center justify-center text-[13px] font-bold text-gray-900 shadow-sm shrink-0">
+                        <div className="w-[30px] h-[30px] rounded-full border border-border bg-surface flex items-center justify-center text-[13px] font-bold text-primary shadow-subtle shrink-0">
                           {delivery.courier.charAt(0)}
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[13px] font-bold text-gray-900">{delivery.courier}</span>
-                          <span className="text-[11px] text-gray-400 font-medium">{delivery.courier}</span>
+                          <span className="text-[13px] font-bold text-primary">{delivery.courier}</span>
+                          <span className="text-[11px] text-muted font-medium">{delivery.courier}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className={`flex items-center gap-2 text-[12px] font-medium ${delivery.location?.toLowerCase().includes('processing') ? 'text-purple-500' : 'text-gray-500'}`}>
-                        {delivery.location?.toLowerCase().includes('processing') ? <Settings2 size={14} className="text-purple-400" /> : <MapPin size={14} className="text-gray-400" />}
+                      <div className={`flex items-center gap-2 text-[12px] font-medium ${delivery.location?.toLowerCase().includes('processing') ? 'text-purple-500' : 'text-secondary'}`}>
+                        {delivery.location?.toLowerCase().includes('processing') ? <Settings2 size={14} className="text-purple-400" /> : <MapPin size={14} className="text-muted" />}
                         {delivery.location || 'Processing'}
                       </div>
                     </td>
@@ -1666,14 +1666,14 @@ export default function Logistics() {
                         <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${
                             delivery.status?.toLowerCase() === 'delivered' ? 'bg-green-50 text-[#1DAB61]' :
                             delivery.status?.toLowerCase() === 'cancelled' ? 'bg-red-50 text-red-600' :
-                            'bg-blue-50 text-[#0066FF]'
+                            'bg-brand/10 text-brand'
                         }`}>
                           <Clock size={12} strokeWidth={2.5} />
                           <span className="text-[10px] font-bold tracking-wide">
                             {delivery.status.replace(/_/g, ' ').charAt(0).toUpperCase() + delivery.status.replace(/_/g, ' ').slice(1)}
                           </span>
                         </div>
-                        <span className="text-[10px] font-medium text-gray-400 ml-1">{delivery.eta}</span>
+                        <span className="text-[10px] font-medium text-muted ml-1">{delivery.eta}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -1682,7 +1682,7 @@ export default function Logistics() {
                           <>
                             <button 
                               onClick={() => handleSyncStatus(delivery)}
-                              className="w-[32px] h-[32px] flex items-center justify-center bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-[#1DAB61] hover:border-[#1DAB61] hover:bg-green-50 transition-all shadow-sm" 
+                              className="w-[32px] h-[32px] flex items-center justify-center bg-surface border border-border rounded-lg text-muted hover:text-[#1DAB61] hover:border-[#1DAB61] hover:bg-green-50 transition-all shadow-subtle" 
                               title="Sync Status"
                             >
                               <RefreshCw size={14} />
@@ -1692,7 +1692,7 @@ export default function Logistics() {
                                 href={delivery.courier?.toLowerCase() === 'steadfast' ? `https://steadfast.com.bd/t/${delivery.trackingCode || delivery.id}` : `https://pathao.com/courier/tracking/${delivery.trackingCode || delivery.id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-[32px] h-[32px] flex items-center justify-center bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-[#0066FF] hover:border-[#0066FF] hover:bg-blue-50 transition-all shadow-sm" 
+                                className="w-[32px] h-[32px] flex items-center justify-center bg-surface border border-border rounded-lg text-muted hover:text-brand hover:border-brand hover:bg-brand/10 transition-all shadow-subtle" 
                                 title="Live Tracking"
                               >
                                 <Navigation size={14} />
@@ -1702,14 +1702,14 @@ export default function Logistics() {
                         )}
                         <button 
                           onClick={() => handleOpenEditDeliveryModal(delivery)}
-                          className="w-[32px] h-[32px] flex items-center justify-center bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-[#0066FF] hover:border-[#0066FF] hover:bg-blue-50 transition-all shadow-sm" 
+                          className="w-[32px] h-[32px] flex items-center justify-center bg-surface border border-border rounded-lg text-muted hover:text-brand hover:border-brand hover:bg-brand/10 transition-all shadow-subtle" 
                           title="Edit Shipment"
                         >
                           <Edit size={14} />
                         </button>
                         <button 
                           onClick={() => handleDeleteDelivery(delivery.id)}
-                          className="w-[32px] h-[32px] flex items-center justify-center bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-red-600 hover:border-red-600 hover:bg-red-50 transition-all shadow-sm" 
+                          className="w-[32px] h-[32px] flex items-center justify-center bg-surface border border-border rounded-lg text-muted hover:text-red-600 hover:border-red-600 hover:bg-red-50 transition-all shadow-subtle" 
                           title="Delete Shipment"
                         >
                           <Trash2 size={14} />
@@ -1724,15 +1724,15 @@ export default function Logistics() {
         </div>
       </div>
       {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 bg-white border border-gray-100 rounded-xl mt-4 shadow-sm">
-        <span className="text-xs text-gray-500 mb-4 sm:mb-0">
-          Showing <span className="font-semibold text-gray-900">{filteredDeliveries.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> to <span className="font-semibold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredDeliveries.length)}</span> of <span className="font-semibold text-gray-900">{filteredDeliveries.length.toLocaleString()}</span> shipments
+      <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 bg-surface border border-border rounded-xl mt-4 shadow-subtle">
+        <span className="text-xs text-secondary mb-4 sm:mb-0">
+          Showing <span className="font-semibold text-primary">{filteredDeliveries.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> to <span className="font-semibold text-primary">{Math.min(currentPage * itemsPerPage, filteredDeliveries.length)}</span> of <span className="font-semibold text-primary">{filteredDeliveries.length.toLocaleString()}</span> shipments
         </span>
         <div className="flex items-center gap-2">
            <button 
              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
              disabled={currentPage === 1}
-             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-50 text-gray-400 disabled:opacity-50"
+             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-hover text-muted disabled:opacity-50"
            >
              &lt;
            </button>
@@ -1742,18 +1742,18 @@ export default function Logistics() {
                onClick={() => setCurrentPage(i + 1)}
                className={`w-8 h-8 flex items-center justify-center rounded-md text-xs font-semibold border transition-all ${
                  currentPage === i + 1 
-                   ? 'bg-blue-50 text-[#0066FF] border-blue-100' 
-                   : 'bg-white text-gray-600 border-transparent hover:bg-gray-50'
+                   ? 'bg-brand/10 text-brand border-brand/20' 
+                   : 'bg-surface text-secondary border-transparent hover:bg-surface-hover'
                }`}
              >
                {i + 1}
              </button>
            )).slice(0, 5)}
-           {totalPages > 5 && <span className="px-1 text-gray-400">...</span>}
+           {totalPages > 5 && <span className="px-1 text-muted">...</span>}
            <button 
              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
              disabled={currentPage === totalPages}
-             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-50 text-gray-400 disabled:opacity-50"
+             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-hover text-muted disabled:opacity-50"
            >
              &gt;
            </button>
@@ -1765,25 +1765,25 @@ export default function Logistics() {
       {/* Add/Edit Courier Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">
                 {editingCourier ? 'Edit Courier' : 'Connect New Courier'}
               </h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-surface-hover rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={handleCourierSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Courier Name</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Courier Name</label>
                 <input
                   required
                   type="text"
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   placeholder="e.g. Pathao, RedX"
                   value={courierForm.name}
                   onChange={(e) => setCourierForm({...courierForm, name: e.target.value})}
@@ -1793,23 +1793,23 @@ export default function Logistics() {
                 <input
                   type="checkbox"
                   id="active"
-                  className="w-4 h-4 rounded border-gray-300 text-[#141414] focus:ring-[#141414]"
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-slate-900 dark:ring-white"
                   checked={courierForm.active}
                   onChange={(e) => setCourierForm({...courierForm, active: e.target.checked})}
                 />
-                <label htmlFor="active" className="text-sm text-gray-600">Active and available for deliveries</label>
+                <label htmlFor="active" className="text-sm text-secondary">Active and available for deliveries</label>
               </div>
               <div className="pt-4 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
                 >
                   {editingCourier ? 'Save Changes' : 'Connect Courier'}
                 </button>
@@ -1822,14 +1822,14 @@ export default function Logistics() {
       {/* Add/Edit Delivery Modal */}
       {isDeliveryModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#141414]">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">
                 {editingDelivery ? 'Edit Shipment' : 'Add New Shipment'}
               </h3>
               <button 
                 onClick={() => setIsDeliveryModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-surface-hover rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
@@ -1837,20 +1837,20 @@ export default function Logistics() {
             <form onSubmit={handleDeliverySubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Order ID</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Order ID</label>
                   <input
                     required
                     type="text"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="ORD-..."
                     value={deliveryForm.orderId}
                     onChange={(e) => setDeliveryForm({...deliveryForm, orderId: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Courier</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Courier</label>
                   <select
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={deliveryForm.courier}
                     onChange={(e) => setDeliveryForm({...deliveryForm, courier: e.target.value})}
                   >
@@ -1867,9 +1867,9 @@ export default function Logistics() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Status</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">Status</label>
                   <select
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     value={deliveryForm.status}
                     onChange={(e) => setDeliveryForm({...deliveryForm, status: e.target.value})}
                   >
@@ -1880,10 +1880,10 @@ export default function Logistics() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">ETA</label>
+                  <label className="text-xs font-bold text-secondary uppercase tracking-wider">ETA</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                     placeholder="e.g. 2-3 Days"
                     value={deliveryForm.eta}
                     onChange={(e) => setDeliveryForm({...deliveryForm, eta: e.target.value})}
@@ -1891,11 +1891,11 @@ export default function Logistics() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Current Location / Hub</label>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Current Location / Hub</label>
                 <input
                   required
                   type="text"
-                  className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                   placeholder="e.g. Dhaka Hub"
                   value={deliveryForm.location}
                   onChange={(e) => setDeliveryForm({...deliveryForm, location: e.target.value})}
@@ -1903,16 +1903,16 @@ export default function Logistics() {
               </div>
 
               {(deliveryForm.courier === 'Pathao' || deliveryForm.courier === 'Carrybee') && (
-                <div className="space-y-4 pt-2 border-t border-gray-50">
+                <div className="space-y-4 pt-2 border-t border-border">
                   <p className={`text-[10px] font-bold uppercase tracking-widest ${deliveryForm.courier === 'Pathao' ? 'text-orange-500' : 'text-yellow-600'}`}>
                     {deliveryForm.courier} Location Details
                   </p>
                   <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase">City</label>
+                      <label className="text-[10px] font-bold text-muted uppercase">City</label>
                       <select
                         required={deliveryForm.courier === 'Pathao' || deliveryForm.courier === 'Carrybee'}
-                        className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all"
                         value={deliveryForm.city_id}
                         onChange={(e) => {
                           setDeliveryForm({...deliveryForm, city_id: e.target.value, zone_id: '', area_id: ''});
@@ -1927,11 +1927,11 @@ export default function Logistics() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase">Zone</label>
+                        <label className="text-[10px] font-bold text-muted uppercase">Zone</label>
                         <select
                           required={deliveryForm.courier === 'Pathao' || deliveryForm.courier === 'Carrybee'}
                           disabled={!deliveryForm.city_id || loadingLocations}
-                          className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all disabled:opacity-50"
+                          className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all disabled:opacity-50"
                           value={deliveryForm.zone_id}
                           onChange={(e) => {
                             setDeliveryForm({...deliveryForm, zone_id: e.target.value, area_id: ''});
@@ -1945,11 +1945,11 @@ export default function Logistics() {
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase">Area</label>
+                        <label className="text-[10px] font-bold text-muted uppercase">Area</label>
                         <select
                           required={deliveryForm.courier === 'Pathao' || deliveryForm.courier === 'Carrybee'}
                           disabled={!deliveryForm.zone_id || loadingLocations}
-                          className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-gray-200 outline-none transition-all disabled:opacity-50"
+                          className="w-full px-4 py-2 bg-surface-hover border border-transparent rounded-lg text-sm focus:bg-surface focus:border-border outline-none transition-all disabled:opacity-50"
                           value={deliveryForm.area_id}
                           onChange={(e) => setDeliveryForm({...deliveryForm, area_id: e.target.value})}
                         >
@@ -1967,13 +1967,13 @@ export default function Logistics() {
                 <button
                   type="button"
                   onClick={() => setIsDeliveryModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
                 >
                   {editingDelivery ? 'Save Changes' : 'Add Shipment'}
                 </button>

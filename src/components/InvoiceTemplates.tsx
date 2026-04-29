@@ -103,7 +103,7 @@ export const A5Invoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ order
         </div>
 
         {/* Table Section */}
-        <div className="flex-grow rounded border border-[#eeeeee] overflow-hidden mb-2 shadow-sm">
+        <div className="flex-grow rounded border border-[#eeeeee] overflow-hidden mb-2 shadow-subtle">
           <table className="w-full border-collapse">
             <thead>
               <tr className="text-[10px] font-black text-[#000000] uppercase tracking-wider" style={{ backgroundColor: '#f3f3f3' }}>

@@ -131,12 +131,12 @@ export default function PettyCash() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-[#141414] tracking-tight">Petty Cash</h2>
-          <p className="text-sm text-gray-500 mt-1">Track small daily business expenses and cash flow.</p>
+          <h2 className="text-3xl font-bold text-primary tracking-tight">Petty Cash</h2>
+          <p className="text-sm text-secondary mt-1">Track small daily business expenses and cash flow.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
         >
           <Plus size={16} />
           Add Expense
@@ -145,41 +145,41 @@ export default function PettyCash() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-red-50 text-red-600 rounded-lg">
               <TrendingDown size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Total Expenses</span>
+            <span className="text-sm font-bold text-primary">Total Expenses</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">৳{totalExpense.toLocaleString()}</h3>
+          <h3 className="text-2xl font-bold text-primary">৳{totalExpense.toLocaleString()}</h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
               <Calendar size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">This Month</span>
+            <span className="text-sm font-bold text-primary">This Month</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">৳{monthlyExpense.toLocaleString()}</h3>
+          <h3 className="text-2xl font-bold text-primary">৳{monthlyExpense.toLocaleString()}</h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-50 text-[#0066FF] rounded-lg">
+            <div className="p-2 bg-brand/10 text-brand rounded-lg">
               <FileText size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Total Records</span>
+            <span className="text-sm font-bold text-primary">Total Records</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">{records.length}</h3>
+          <h3 className="text-2xl font-bold text-primary">{records.length}</h3>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px] whitespace-nowrap">
             <thead>
-              <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                 <th className="px-6 py-4 font-semibold">Date</th>
                 <th className="px-6 py-4 font-semibold">Category</th>
                 <th className="px-6 py-4 font-semibold">Description</th>
@@ -187,34 +187,34 @@ export default function PettyCash() {
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
-                    <Loader2 className="animate-spin text-gray-400 mx-auto" size={24} />
+                    <Loader2 className="animate-spin text-muted mx-auto" size={24} />
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500 text-sm">
+                  <td colSpan={5} className="px-6 py-12 text-center text-secondary text-sm">
                     No petty cash records found.
                   </td>
                 </tr>
               ) : (
                 records.map((record) => (
-                  <tr key={record.id} className="hover:bg-gray-50 transition-colors group">
+                  <tr key={record.id} className="hover:bg-surface-hover transition-colors group">
                     <td className="px-6 py-4">
-                      <span className="text-xs font-medium text-gray-600">
+                      <span className="text-xs font-medium text-secondary">
                         {record.date instanceof Timestamp ? format(record.date.toDate(), 'MMM dd, yyyy') : format(new Date(record.date), 'MMM dd, yyyy')}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-[10px] font-bold">
+                      <span className="px-2 py-1 bg-surface-hover text-secondary rounded-full text-[10px] font-bold">
                         {record.category.toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs text-gray-600 truncate max-w-[300px] block">{record.description}</span>
+                      <span className="text-xs text-secondary truncate max-w-[300px] block">{record.description}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-xs font-bold text-red-600">-৳{record.amount.toLocaleString()}</span>
@@ -222,7 +222,7 @@ export default function PettyCash() {
                     <td className="px-6 py-4 text-right">
                       <button 
                         onClick={() => handleDelete(record.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-1 text-muted hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <Trash2 size={16} />
                       </button>

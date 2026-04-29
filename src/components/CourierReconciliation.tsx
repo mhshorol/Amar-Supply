@@ -228,9 +228,9 @@ export default function CourierReconciliation() {
   const getStatusBadge = (status?: string) => {
     switch(status) {
       case 'matched': return <span className="px-2 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold items-center flex gap-1"><CheckCircle2 size={12}/> Matched</span>;
-      case 'adjusted': return <span className="px-2 py-1 bg-blue-50 text-[#0066FF] rounded-full text-xs font-bold items-center flex gap-1"><RefreshCw size={12}/> Adjusted</span>;
+      case 'adjusted': return <span className="px-2 py-1 bg-brand/10 text-brand rounded-full text-xs font-bold items-center flex gap-1"><RefreshCw size={12}/> Adjusted</span>;
       case 'error': return <span className="px-2 py-1 bg-red-50 text-red-600 rounded-full text-xs font-bold items-center flex gap-1"><AlertCircle size={12}/> Error</span>;
-      default: return <span className="px-2 py-1 bg-gray-50 text-gray-600 rounded-full text-xs font-bold items-center flex gap-1"><Clock size={12}/> Pending</span>;
+      default: return <span className="px-2 py-1 bg-surface-hover text-secondary rounded-full text-xs font-bold items-center flex gap-1"><Clock size={12}/> Pending</span>;
     }
   };
 
@@ -238,13 +238,13 @@ export default function CourierReconciliation() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Charge Reconciliation</h2>
-          <p className="text-sm text-gray-500">Automatically sync actual delivery charges from couriers.</p>
+          <h2 className="text-xl font-bold text-primary">Charge Reconciliation</h2>
+          <p className="text-sm text-secondary">Automatically sync actual delivery charges from couriers.</p>
         </div>
         <button 
           onClick={handleBulkReconcile}
           disabled={isProcessing}
-          className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors disabled:opacity-50"
         >
           {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
           Auto Reconcile All
@@ -253,19 +253,19 @@ export default function CourierReconciliation() {
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
           <input 
             type="text"
             placeholder="Search tracking ID or order ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#141414] focus:border-transparent outline-none"
+            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-slate-900 dark:ring-white focus:border-transparent outline-none"
           />
         </div>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#141414] bg-white text-sm font-medium"
+          className="px-4 py-2 border border-border rounded-lg outline-none focus:ring-2 focus:ring-slate-900 dark:ring-white bg-surface text-sm font-medium"
         >
           <option value="all">All Status</option>
           <option value="pending">Pending</option>
@@ -275,11 +275,11 @@ export default function CourierReconciliation() {
         </select>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px] whitespace-nowrap">
             <thead>
-              <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                 <th className="px-6 py-4 font-semibold">Order Detail</th>
                 <th className="px-6 py-4 font-semibold">Tracking ID</th>
                 <th className="px-6 py-4 font-semibold text-right">Estimated</th>
@@ -289,16 +289,16 @@ export default function CourierReconciliation() {
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center">
-                    <Loader2 className="animate-spin text-gray-400 mx-auto" size={24} />
+                    <Loader2 className="animate-spin text-muted mx-auto" size={24} />
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500 text-sm">
+                  <td colSpan={7} className="px-6 py-12 text-center text-secondary text-sm">
                     No courier orders found.
                   </td>
                 </tr>
@@ -309,25 +309,25 @@ export default function CourierReconciliation() {
                   const diff = order.charge_difference;
                   
                   return (
-                    <tr key={order.id} className="hover:bg-gray-50 group">
+                    <tr key={order.id} className="hover:bg-surface-hover group">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-gray-900">#{order.orderId || order.id.slice(-6)}</div>
-                        <div className="text-xs text-gray-500 uppercase">{order.courier_name}</div>
+                        <div className="font-bold text-primary">#{order.orderId || order.id.slice(-6)}</div>
+                        <div className="text-xs text-secondary uppercase">{order.courier_name}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{order.courier_tracking_id}</span>
+                        <span className="text-sm font-mono bg-surface-hover px-2 py-1 rounded">{order.courier_tracking_id}</span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <span className="text-sm font-medium text-gray-500">৳{estimated}</span>
+                        <span className="text-sm font-medium text-secondary">৳{estimated}</span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <span className="text-sm font-bold text-gray-900">
+                        <span className="text-sm font-bold text-primary">
                           {actual !== undefined ? `৳${actual}` : '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
                         {diff !== undefined ? (
-                           <div className={`text-sm font-bold flex items-center justify-end gap-1 ${order.delivery_profit_adjustment! > 0 ? 'text-green-600' : order.delivery_profit_adjustment! < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                           <div className={`text-sm font-bold flex items-center justify-end gap-1 ${order.delivery_profit_adjustment! > 0 ? 'text-green-600' : order.delivery_profit_adjustment! < 0 ? 'text-red-600' : 'text-muted'}`}>
                               {order.delivery_profit_adjustment! > 0 ? <TrendingUp size={14}/> : order.delivery_profit_adjustment! < 0 ? <TrendingDown size={14}/> : ''}
                               {Math.abs(order.delivery_profit_adjustment!)}
                            </div>
@@ -340,7 +340,7 @@ export default function CourierReconciliation() {
                          <button 
                             onClick={() => handleReconcileOrder(order)}
                             disabled={isProcessing}
-                            className="px-3 py-1.5 bg-gray-100 text-[#141414] hover:bg-gray-200 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                            className="px-3 py-1.5 bg-surface-hover text-primary hover:bg-surface-hover rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
                          >
                             Sync API
                          </button>

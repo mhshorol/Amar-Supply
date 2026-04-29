@@ -24,7 +24,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: CompanySettings = {
-  companyName: 'Amar Supply',
+  companyName: 'Amar e-Com',
   companyLogo: '',
   companyAddress: '',
   companyMobile: '',

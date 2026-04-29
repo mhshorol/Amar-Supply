@@ -52,16 +52,16 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-red-50 p-6">
-          <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-red-100 text-center space-y-6">
+          <div className="max-w-md w-full bg-surface p-8 rounded-2xl shadow-xl border border-red-100 text-center space-y-6">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
               <AlertTriangle size={32} />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-gray-900">Something went wrong</h2>
-              <p className="text-sm text-gray-500">An unexpected error occurred. Please try refreshing the page.</p>
+              <h2 className="text-xl font-bold text-primary">Something went wrong</h2>
+              <p className="text-sm text-secondary">An unexpected error occurred. Please try refreshing the page.</p>
             </div>
             {this.state.error && (
-              <pre className="text-[10px] bg-gray-50 p-4 rounded-lg text-left overflow-auto max-h-40 border border-gray-100 font-mono text-red-500">
+              <pre className="text-[10px] bg-surface-hover p-4 rounded-lg text-left overflow-auto max-h-40 border border-border font-mono text-red-500">
                 {this.state.error.message}
               </pre>
             )}
@@ -104,7 +104,7 @@ function Unauthorized() {
           <Lock size={32} />
         </div>
         <h2 className="text-2xl font-bold">Access Restricted</h2>
-        <p className="text-gray-500">You don't have permission to view any modules. Please contact your administrator.</p>
+        <p className="text-secondary">You don't have permission to view any modules. Please contact your administrator.</p>
       </div>
     </div>
   );
@@ -118,7 +118,7 @@ function AppContent() {
       <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm font-bold text-accent uppercase tracking-widest animate-pulse">Amar Supply</p>
+          <p className="text-sm font-bold text-accent uppercase tracking-widest animate-pulse">Amar e-Com</p>
         </div>
       </div>
     );
@@ -130,24 +130,24 @@ function AppContent() {
 
   if (user && !user.active) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-6">
-        <div className="max-w-md w-full bg-white p-10 rounded-3xl border border-gray-100 shadow-xl text-center space-y-8">
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md w-full bg-surface p-10 rounded-3xl border border-border shadow-xl text-center space-y-8">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-[#141414]">Amar <span className="text-[#0066FF]">Supply</span></h1>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Account Pending</p>
+            <h1 className="text-4xl font-bold tracking-tight text-primary flex items-center justify-center gap-2">Amar <span className="text-brand">e-Com</span></h1>
+            <p className="text-[10px] text-muted font-bold uppercase tracking-[0.2em]">Account Pending</p>
           </div>
           
           <div className="space-y-4">
             <div className="w-20 h-20 bg-orange-50 rounded-3xl flex items-center justify-center mx-auto text-orange-500 shadow-inner">
               <AlertTriangle size={40} />
             </div>
-            <h2 className="text-xl font-bold text-gray-800">Approval Required</h2>
-            <p className="text-sm text-gray-500">Your account has been created successfully, but it requires administrator approval before you can access the dashboard.</p>
+            <h2 className="text-xl font-bold text-primary">Approval Required</h2>
+            <p className="text-sm text-secondary">Your account has been created successfully, but it requires administrator approval before you can access the dashboard.</p>
           </div>
 
           <button 
             onClick={() => signOut(auth)}
-            className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-all shadow-sm group"
+            className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-surface-hover text-secondary rounded-2xl font-bold hover:bg-surface-hover transition-all shadow-subtle group"
           >
             <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
             Sign Out

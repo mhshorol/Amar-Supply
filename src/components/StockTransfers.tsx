@@ -157,12 +157,12 @@ export default function StockTransfers() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-[#141414] tracking-tight">Stock Transfers</h2>
-          <p className="text-sm text-gray-500 mt-1">Move products between your warehouse locations.</p>
+          <h2 className="text-3xl font-bold text-primary tracking-tight">Stock Transfers</h2>
+          <p className="text-sm text-secondary mt-1">Move products between your warehouse locations.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-black transition-colors"
         >
           <Plus size={16} />
           New Transfer Request
@@ -171,58 +171,58 @@ export default function StockTransfers() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
               <Clock size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Pending Approval</span>
+            <span className="text-sm font-bold text-primary">Pending Approval</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">
+          <h3 className="text-2xl font-bold text-primary">
             {transfers.filter(t => t.status === 'pending').length}
           </h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-50 text-[#0066FF] rounded-lg">
+            <div className="p-2 bg-brand/10 text-brand rounded-lg">
               <Truck size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">In Transit</span>
+            <span className="text-sm font-bold text-primary">In Transit</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">
+          <h3 className="text-2xl font-bold text-primary">
             {transfers.filter(t => t.status === 'shipped').length}
           </h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-green-50 text-green-600 rounded-lg">
               <CheckCircle2 size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Completed</span>
+            <span className="text-sm font-bold text-primary">Completed</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">
+          <h3 className="text-2xl font-bold text-primary">
             {transfers.filter(t => t.status === 'received').length}
           </h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-subtle">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-red-50 text-red-600 rounded-lg">
               <XCircle size={20} />
             </div>
-            <span className="text-sm font-bold text-gray-900">Cancelled</span>
+            <span className="text-sm font-bold text-primary">Cancelled</span>
           </div>
-          <h3 className="text-2xl font-bold text-[#141414]">
+          <h3 className="text-2xl font-bold text-primary">
             {transfers.filter(t => t.status === 'cancelled').length}
           </h3>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px] whitespace-nowrap">
             <thead>
-              <tr className="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <tr className="bg-surface-hover text-[10px] uppercase tracking-widest text-secondary">
                 <th className="px-6 py-4 font-semibold">Transfer ID</th>
                 <th className="px-6 py-4 font-semibold">From</th>
                 <th className="px-6 py-4 font-semibold">To</th>
@@ -231,50 +231,50 @@ export default function StockTransfers() {
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
-                    <Loader2 className="animate-spin text-gray-400 mx-auto" size={24} />
+                    <Loader2 className="animate-spin text-muted mx-auto" size={24} />
                   </td>
                 </tr>
               ) : transfers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500 text-sm">
+                  <td colSpan={6} className="px-6 py-12 text-center text-secondary text-sm">
                     No stock transfers found.
                   </td>
                 </tr>
               ) : (
                 transfers.map((transfer) => (
-                  <tr key={transfer.id} className="hover:bg-gray-50 transition-colors group">
+                  <tr key={transfer.id} className="hover:bg-surface-hover transition-colors group">
                     <td className="px-6 py-4">
-                      <span className="text-xs font-mono font-bold text-gray-900">#{transfer.id.slice(-6).toUpperCase()}</span>
+                      <span className="text-xs font-mono font-bold text-primary">#{transfer.id.slice(-6).toUpperCase()}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Warehouse size={14} className="text-gray-400" />
-                        <span className="text-xs font-medium text-gray-600">
+                        <Warehouse size={14} className="text-muted" />
+                        <span className="text-xs font-medium text-secondary">
                           {warehouses.find(w => w.id === transfer.fromWarehouseId)?.name || 'Unknown'}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Warehouse size={14} className="text-gray-400" />
-                        <span className="text-xs font-medium text-gray-600">
+                        <Warehouse size={14} className="text-muted" />
+                        <span className="text-xs font-medium text-secondary">
                           {warehouses.find(w => w.id === transfer.toWarehouseId)?.name || 'Unknown'}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-gray-900">{transfer.items.length} items</span>
+                      <span className="text-xs font-bold text-primary">{transfer.items.length} items</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
                         transfer.status === 'received' ? 'bg-green-50 text-green-600' :
                         transfer.status === 'cancelled' ? 'bg-red-50 text-red-600' :
                         transfer.status === 'pending' ? 'bg-orange-50 text-orange-600' :
-                        'bg-blue-50 text-[#0066FF]'
+                        'bg-brand/10 text-brand'
                       }`}>
                         {transfer.status.toUpperCase()}
                       </span>
@@ -284,7 +284,7 @@ export default function StockTransfers() {
                         {transfer.status === 'pending' && (
                           <button 
                             onClick={() => handleUpdateStatus(transfer.id, 'approved')}
-                            className="p-1 text-[#0066FF] hover:bg-blue-50 rounded"
+                            className="p-1 text-brand hover:bg-brand/10 rounded"
                             title="Approve"
                           >
                             <CheckCircle2 size={16} />

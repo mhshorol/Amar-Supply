@@ -6,67 +6,105 @@
   --font-display: "Outfit", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-primary: #141414;
-  --color-accent: #0066FF;
-  --color-surface: #F9FAFB;
-  --color-border: #E2E8F0;
-  --color-card: #FFFFFF;
+  --color-background: var(--color-bg);
+  --color-surface: var(--color-surf);
+  --color-surface-hover: var(--color-surf-hover);
+  --color-surface-reverse: var(--color-surf-reverse);
+  --color-border: var(--color-brd);
+  
+  --color-primary: var(--color-txt-pri);
+  --color-secondary: var(--color-txt-sec);
+  --color-muted: var(--color-txt-mut);
+
+  --color-brand: var(--color-accent);
+  --color-brand-hover: var(--color-accent-hover);
+  --color-brand-soft: var(--color-accent-soft);
+  
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
 
-  /* Refined Shadows */
-  --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-premium: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --color-card: var(--color-surf);
+
+  --shadow-subtle: var(--shadow-sub);
+  --shadow-premium: var(--shadow-prem);
   --shadow-float: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
 @layer base {
+  :root {
+    --color-bg: #F8FAFC;
+    --color-surf: #FFFFFF;
+    --color-surf-hover: #F1F5F9;
+    --color-brd: #E2E8F0;
+    --color-surf-reverse: #090a0c;
+    
+    --color-txt-pri: #0F172A;
+    --color-txt-sec: #475569;
+    --color-txt-mut: #94A3B8;
+
+    --color-accent: #2563EB;
+    --color-accent-hover: #1D4ED8;
+    --color-accent-soft: rgba(37, 99, 235, 0.1);
+
+    --shadow-sub: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-prem: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  .dark {
+    --color-bg: #090a0c;
+    --color-surf: #111317;
+    --color-surf-hover: #1c1f26;
+    --color-brd: #22262f;
+    --color-surf-reverse: #F8FAFC;
+    
+    --color-txt-pri: #f3f4f6;
+    --color-txt-sec: #9ca3af;
+    --color-txt-mut: #6b7280;
+
+    --color-accent: #3b82f6;
+    --color-accent-hover: #60a5fa;
+    --color-accent-soft: rgba(59, 130, 246, 0.15);
+
+    --shadow-sub: 0 1px 3px 0 rgb(0 0 0 / 0.6), inset 0 1px 1px 0 rgb(255 255 255 / 0.05);
+    --shadow-prem: 0 8px 16px -4px rgb(0 0 0 / 0.7), inset 0 1px 1px 0 rgb(255 255 255 / 0.05);
+  }
+
   html {
     @apply text-[14px] sm:text-[15px] md:text-[16px] scroll-smooth;
   }
   body {
-    @apply bg-surface text-primary font-sans antialiased selection:bg-accent/20 selection:text-primary transition-colors duration-300;
+    @apply bg-background text-primary font-sans antialiased selection:bg-brand/20 selection:text-brand transition-colors duration-200;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight text-primary;
-  }
-
-  .dark {
-    --color-primary: #F9FAFB;
-    --color-surface: #0a0b0d;
-    --color-card: #151921;
-    --color-border: #232a35;
-    
-    --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.4);
-    --shadow-premium: 0 4px 6px -1px rgb(0 0 0 / 0.5);
   }
 }
 
 /* Base UI Components - Use @utility for Tailwind 4 visibility */
 @utility card-base {
-  @apply bg-card rounded-[2rem] border border-border/60 shadow-subtle transition-all duration-300;
+  @apply bg-card rounded-[2rem] border border-border shadow-subtle transition-all duration-300;
 }
 
 @utility card-interactive {
   @apply bg-card rounded-[2rem] border border-border/60 shadow-subtle transition-all duration-300;
-  @apply hover:shadow-premium hover:border-accent/30 cursor-pointer;
+  @apply hover:shadow-premium hover:border-brand/30 cursor-pointer;
 }
 
 @utility glass-morphism {
-  @apply bg-card/80 backdrop-blur-md border border-border/20;
+  @apply bg-card/80 backdrop-blur-md border border-border/50;
 }
 
 @utility label-tiny {
-  @apply text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-400;
+  @apply text-[10px] font-extrabold uppercase tracking-[0.15em] text-muted;
 }
 
 @utility label-business {
-  @apply text-[11px] font-bold text-slate-500 uppercase tracking-wider;
+  @apply text-[11px] font-bold text-secondary uppercase tracking-wider;
 }
 
 @utility btn-primary {
-  @apply bg-accent text-white px-6 py-3 rounded-2xl font-bold transition-all hover:shadow-lg hover:shadow-accent/20 active:scale-95 flex items-center justify-center gap-2;
+  @apply bg-brand text-white px-6 py-3 rounded-2xl font-bold transition-all hover:shadow-lg hover:shadow-brand/20 active:scale-95 flex items-center justify-center gap-2;
 }
 
 /* Animations */
@@ -88,7 +126,7 @@
   @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  @apply bg-border rounded-full hover:bg-muted transition-colors;
 }
 
 .no-scrollbar::-webkit-scrollbar {
