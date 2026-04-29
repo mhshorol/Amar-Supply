@@ -695,7 +695,7 @@ export default function NewOrder() {
                             Existing Customer Found
                           </p>
                           <p className="text-[10px] sm:text-xs text-emerald-600 mt-0.5">
-                            {courierHistory.total_delivered} Orders • {courierHistory.success_rate || 100}% Success
+                            {courierHistory.total_delivered} Delivered • {courierHistory.total_cancelled} Cancelled • Success: {courierHistory.success_rate || '100%'}
                           </p>
                         </div>
                       </div>
@@ -1198,14 +1198,14 @@ export default function NewOrder() {
                       <ShieldCheck size={16} className="text-amber-600" />
                       COD Protection
                     </span>
-                    <span className={`font-bold ${courierHistory.success_rate >= 80 ? 'text-green-600' : 'text-amber-700'}`}>
-                      {courierHistory.success_rate >= 80 ? "Eligible" : "Warning"}
+                    <span className={`font-bold ${courierHistory.success_rate_numeric >= 80 ? 'text-green-600' : 'text-amber-700'}`}>
+                      {courierHistory.success_rate_numeric >= 80 ? "Eligible" : "Warning"}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 ml-6">
-                    <div className={`w-2 h-2 rounded-full ${courierHistory.success_rate >= 80 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-xs text-secondary">Risk Level: <span className={`font-bold ${courierHistory.success_rate >= 80 ? 'text-green-600' : 'text-red-600'}`}>
-                      {courierHistory.success_rate >= 80 ? "Low" : "High"}
+                    <div className={`w-2 h-2 rounded-full ${courierHistory.success_rate_numeric >= 80 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-xs text-secondary">Risk Level: <span className={`font-bold ${courierHistory.success_rate_numeric >= 80 ? 'text-green-600' : 'text-red-600'}`}>
+                      {courierHistory.success_rate_numeric >= 80 ? "Low" : "High"}
                     </span></span>
                   </div>
                 </div>

@@ -3596,6 +3596,45 @@ export default function Orders() {
                         </div>
                       </div>
 
+                      {isFetchingHistory ? (
+                        <div className="flex items-center gap-2 px-4 py-3 bg-surface-hover rounded-xl">
+                          <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+                          <span className="text-xs font-medium text-brand">Checking courier history...</span>
+                        </div>
+                      ) : courierHistory ? (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                              <CheckCircle size={16} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-emerald-800">Existing Customer Found</p>
+                              <p className="text-[10px] text-emerald-600 mt-0.5">
+                                {courierHistory.total_delivered} Delivered • {courierHistory.total_cancelled} Cancelled • Success: {courierHistory.success_rate || '100%'}
+                              </p>
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              if (courierHistory.customer_name || courierHistory.customer_address || courierHistory.address) {
+                                setOrderForm(prev => ({
+                                  ...prev,
+                                  customerName: courierHistory.customer_name || prev.customerName,
+                                  customerAddress: courierHistory.address || courierHistory.customer_address || prev.customerAddress
+                                }));
+                                toast.success("Autofilled from courier network");
+                              } else {
+                                toast.error("No names/addresses found in courier network");
+                              }
+                            }}
+                            className="px-2.5 py-1 bg-white text-brand text-[10px] font-bold rounded-lg border border-blue-200 shadow-subtle hover:bg-surface-hover transition-colors whitespace-nowrap"
+                          >
+                            Autofill
+                          </button>
+                        </div>
+                      ) : null}
+
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-semibold text-secondary ml-1">Delivery Address</label>
                         <textarea
@@ -3962,6 +4001,24 @@ export default function Orders() {
                              />
                           </div>
                         </div>
+
+                        {courierHistory && (
+                          <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-700/50 space-y-2 mt-4">
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span className="text-gray-300 font-semibold flex items-center gap-1.5">
+                                <ShieldCheck size={14} className="text-brand" />
+                                Courier Insights
+                              </span>
+                              <span className={`font-black ${courierHistory.success_rate_numeric >= 80 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                                {courierHistory.success_rate_numeric >= 80 ? "TRUSTED" : "RISKY"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 ml-5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${courierHistory.success_rate_numeric >= 80 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                              <span className="text-[10px] text-gray-400">Success Rate: <span className="font-bold text-gray-200">{courierHistory.success_rate}</span></span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

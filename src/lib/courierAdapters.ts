@@ -142,12 +142,14 @@ export class SteadfastAdapter implements CourierInterface {
           const delivered = data.total_delivery ?? data.total_delivered ?? data.delivered ?? data.delivered_parcel ?? 0;
           const cancelled = data.total_return ?? data.total_returned ?? data.returned ?? data.returned_parcel ?? data.cancelled_parcel ?? data.cancelled ?? 0;
           const rate = data.delivery_success_rate ?? data.success_rate ?? data.success_ratio ?? 0;
+          const numericRate = typeof rate === 'number' ? rate : (parseFloat(String(rate).replace('%', '')) || 0);
 
           return {
             ...data,
             total_delivered: Number(delivered),
             total_cancelled: Number(cancelled),
-            success_rate: typeof rate === 'number' ? `${rate.toFixed(1)}%` : (String(rate).includes('%') ? rate : `${rate}%`)
+            success_rate: typeof rate === 'number' ? `${rate.toFixed(1)}%` : (String(rate).includes('%') ? rate : `${rate}%`),
+            success_rate_numeric: numericRate
           };
         }
         
