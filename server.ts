@@ -360,7 +360,12 @@ async function startServer() {
         auth: {
           username: wooConsumerKey,
           password: wooConsumerSecret
-        }
+        },
+        headers: {
+          'User-Agent': 'KaruKarjo-ERP/1.0',
+          'Accept': 'application/json'
+        },
+        timeout: 15000 // 15 seconds timeout
       });
 
       res.json({
@@ -370,14 +375,54 @@ async function startServer() {
       });
     } catch (error: any) {
       const errorData = error.response?.data;
+      const status = error.response?.status;
+
+      // Fallback for non-pretty permalinks if GET orders fails with 404 or HTML
+      const isHtml = typeof errorData === 'string' && errorData.includes('<!DOCTYPE html>');
+      if (isHtml || status === 404) {
+        try {
+          const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = (await (await getDb()).collection('settings').doc('company').get()).data();
+          let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
+          if (!wooUrl.startsWith('http')) wooUrl = `https://${wooUrl}`;
+
+          const { page = 1, per_page = 10, status: filterStatus, search } = req.query;
+
+          const fallbackResponse = await axios.get(`${wooUrl}/index.php`, {
+            params: {
+              rest_route: '/wc/v3/orders',
+              page,
+              per_page,
+              status: filterStatus,
+              search
+            },
+            auth: {
+              username: wooConsumerKey,
+              password: wooConsumerSecret
+            },
+            headers: {
+              'User-Agent': 'KaruKarjo-ERP/1.0',
+              'Accept': 'application/json'
+            }
+          });
+
+          return res.json({
+            orders: fallbackResponse.data,
+            totalPages: fallbackResponse.headers['x-wp-totalpages'],
+            totalOrders: fallbackResponse.headers['x-wp-total']
+          });
+        } catch (fallbackErr: any) {
+          console.error('WooCommerce GET Fallback Error:', fallbackErr.message);
+        }
+      }
+
       console.error('WooCommerce API Error:', {
         message: error.message,
         data: errorData,
-        status: error.response?.status
+        status: status
       });
-      res.status(error.response?.status || 500).json({ 
+      res.status(status || 500).json({ 
         error: error.message,
-        details: errorData?.message || 'No additional details'
+        details: errorData?.message || (isHtml ? 'Received HTML response. Check WordPress permalinks.' : 'No additional details')
       });
     }
   });
@@ -412,7 +457,12 @@ async function startServer() {
         auth: {
           username: wooConsumerKey,
           password: wooConsumerSecret
-        }
+        },
+        headers: {
+          'User-Agent': 'KaruKarjo-ERP/1.0',
+          'Accept': 'application/json'
+        },
+        timeout: 15000
       });
 
       res.json({
@@ -421,7 +471,47 @@ async function startServer() {
         totalProducts: response.headers['x-wp-total']
       });
     } catch (error: any) {
-      res.status(error.response?.status || 500).json({ error: error.message });
+      const errorData = error.response?.data;
+      const status = error.response?.status;
+      const isHtml = typeof errorData === 'string' && errorData.includes('<!DOCTYPE html>');
+
+      if (isHtml || status === 404) {
+        try {
+          const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = (await (await getDb()).collection('settings').doc('company').get()).data();
+          let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
+          if (!wooUrl.startsWith('http')) wooUrl = `https://${wooUrl}`;
+
+          const { page = 1, per_page = 20, search } = req.query;
+
+          const fallbackResponse = await axios.get(`${wooUrl}/index.php`, {
+            params: {
+              rest_route: '/wc/v3/products',
+              page,
+              per_page,
+              search
+            },
+            auth: {
+              username: wooConsumerKey,
+              password: wooConsumerSecret
+            },
+            headers: {
+              'User-Agent': 'KaruKarjo-ERP/1.0',
+              'Accept': 'application/json'
+            }
+          });
+
+          return res.json({
+            products: fallbackResponse.data,
+            totalPages: fallbackResponse.headers['x-wp-totalpages'],
+            totalProducts: fallbackResponse.headers['x-wp-total']
+          });
+        } catch (fallbackErr: any) {}
+      }
+
+      res.status(status || 500).json({ 
+        error: error.message,
+        details: errorData?.message || (isHtml ? 'Received HTML response. Check WordPress permalinks.' : 'No additional details')
+      });
     }
   });
 
@@ -456,7 +546,12 @@ async function startServer() {
           auth: {
             username: wooConsumerKey,
             password: wooConsumerSecret
-          }
+          },
+          headers: {
+            'User-Agent': 'KaruKarjo-ERP/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 15000
         });
         return res.json(response.data);
       } catch (error: any) {
@@ -476,6 +571,10 @@ async function startServer() {
               auth: {
                 username: wooConsumerKey,
                 password: wooConsumerSecret
+              },
+              headers: {
+                'User-Agent': 'KaruKarjo-ERP/1.0',
+                'Accept': 'application/json'
               }
             });
             return res.json(fallbackResponse.data);
