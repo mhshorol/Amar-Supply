@@ -1,29 +1,53 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
+  TrendingUp, 
   Users, 
   ShoppingCart, 
   Package, 
+  ArrowUpRight, 
+  ArrowDownRight,
   Clock,
   CheckCircle2,
   AlertCircle,
+  Loader2,
+  Wallet,
+  FileText,
+  CreditCard,
+  Receipt,
+  UserCheck,
   Plus,
+  MoreVertical,
   Calendar,
   DollarSign,
-  ArrowRight
+  MessageSquare,
+  Truck,
+  RotateCcw,
+  Zap,
+  ChevronDown,
+  Sparkles,
+  ArrowRight,
+  PackageX
 } from 'lucide-react';
 import { 
+  BarChart, 
+  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer, 
+  LineChart, 
+  Line,
   AreaChart,
-  Area
+  Area,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 import { Link } from 'react-router-dom';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { db, auth } from '../firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 import { useSettings } from '../contexts/SettingsContext';
@@ -53,6 +77,66 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue, delay = 0, icon
       <span className="text-muted">vs month</span>
     </div>
   </motion.div>
+);
+
+const ProfileSummaryCard = ({ name, growth, todayOrders, todaySales, currencySymbol }: { name: string, growth: number, todayOrders: number, todaySales: number, currencySymbol: string }) => {
+  const { user } = useAuth();
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="h-full rounded-[2.5rem] bg-accent text-white p-10 flex flex-col justify-between overflow-hidden relative shadow-2xl shadow-accent/20"
+    >
+      <div className="absolute top-0 right-0 w-64 h-64 bg-surface/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-40 animate-pulse" />
+      
+      <div className="relative z-10">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1.5 h-1.5 bg-surface/40 rounded-full animate-ping" />
+          <h4 className="text-[11px] text-white/60 font-extrabold uppercase tracking-[.25em]">Live Stats</h4>
+        </div>
+        <h2 className="text-3xl font-bold tracking-tight text-white leading-tight mb-2">
+          Welcome back,<br />
+          <span className="text-white/90">{name.split(' ')[0]}</span>
+        </h2>
+        <p className="text-white/80 text-[13px] font-medium leading-relaxed max-w-[200px]">
+          Your daily sales performance is {growth >= 0 ? 'up' : 'down'} <span className="text-white font-bold">{Math.abs(growth)}%</span> from yesterday.
+        </p>
+      </div>
+
+      <div className="relative z-10 grid grid-cols-2 gap-8 border-t border-white/10 pt-8 mt-8">
+        <div>
+          <p className="text-[10px] text-white/50 font-extrabold uppercase tracking-widest mb-1">Today's Orders</p>
+          <p className="text-xl font-bold text-white">{todayOrders}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-white/50 font-extrabold uppercase tracking-widest mb-1">Today's Revenue</p>
+          <p className="text-xl font-bold text-white">{currencySymbol}{todaySales.toLocaleString()}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const SectionHeader = ({ title, showSelect = false, subtitle }: { title: string, showSelect?: boolean, subtitle?: string }) => (
+  <div className="flex items-center justify-between mb-8">
+    <div>
+      <h3 className="text-xl font-bold text-primary tracking-tight">{title}</h3>
+      {subtitle && <p className="text-xs font-semibold text-muted mt-1 uppercase tracking-wider">{subtitle}</p>}
+    </div>
+    {showSelect && (
+      <div className="flex items-center gap-3">
+        <select className="text-[11px] font-bold text-secondary bg-surface-hover border-none rounded-xl px-4 py-2.5 outline-none cursor-pointer hover:bg-surface-hover transition-all">
+          <option>This Week</option>
+          <option>This Month</option>
+          <option>This Year</option>
+        </select>
+        <button className="p-2.5 bg-primary text-white rounded-xl shadow-lg hover:scale-105 transition-all">
+          <Plus size={16} />
+        </button>
+      </div>
+    )}
+  </div>
 );
 
 const CustomTooltip = ({ active, payload, label, currencySymbol }: any) => {
