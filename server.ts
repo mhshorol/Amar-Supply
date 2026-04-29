@@ -13,22 +13,33 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load Firebase Config
-let firebaseConfig: any = {};
+let firebaseConfig: any = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  firestoreDatabaseId: process.env.FIREBASE_DATABASE_ID,
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+};
+
 try {
   const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
   if (fs.existsSync(configPath)) {
-    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const fileConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    firebaseConfig = { ...firebaseConfig, ...fileConfig };
   } else {
     // Fallback search in __dirname
     const altPath = path.join(__dirname, 'firebase-applet-config.json');
     if (fs.existsSync(altPath)) {
-        firebaseConfig = JSON.parse(fs.readFileSync(altPath, 'utf8'));
-    } else {
-        console.warn('firebase-applet-config.json not found in root or __dirname');
+        const fileConfig = JSON.parse(fs.readFileSync(altPath, 'utf8'));
+        firebaseConfig = { ...firebaseConfig, ...fileConfig };
+    } else if (!firebaseConfig.projectId) {
+        console.warn('firebase-applet-config.json not found and environment variables missing');
     }
   }
 } catch (e: any) {
-  console.error('Error loading firebase-applet-config.json:', e.message);
+  console.error('Error loading config:', e.message);
 }
 
 import { 
@@ -347,9 +358,15 @@ async function startServer() {
     try {
       const database = await getDb();
       if (!database) {
-        return res.status(503).json({ error: 'Firebase Admin not initialized' });
+        return res.status(503).json({ error: 'Database connection failed. Check your Firebase configuration.' });
       }
-      const companySettings = await database.collection('settings').doc('company').get();
+      const companyRef = database.collection('settings').doc('company');
+      const companySettings = await companyRef.get();
+      
+      if (!companySettings.exists) {
+        return res.status(404).json({ error: 'Company settings not found in database.' });
+      }
+      
       const settings = companySettings.data();
 
       if (!settings?.wooUrl || !settings?.wooConsumerKey || !settings?.wooConsumerSecret) {
@@ -452,8 +469,15 @@ async function startServer() {
   app.get('/api/woocommerce/products', async (req, res) => {
     try {
       const database = await getDb();
-      if (!database) return res.status(503).json({ error: 'Firebase Admin not initialized' });
-      const companySettings = await database.collection('settings').doc('company').get();
+      if (!database) return res.status(503).json({ error: 'Database connection failed. Check your Firebase configuration.' });
+      
+      const companyRef = database.collection('settings').doc('company');
+      const companySettings = await companyRef.get();
+      
+      if (!companySettings.exists) {
+        return res.status(404).json({ error: 'Company settings not found in database.' });
+      }
+
       const settings = companySettings.data();
 
       if (!settings?.wooUrl || !settings?.wooConsumerKey || !settings?.wooConsumerSecret) {
