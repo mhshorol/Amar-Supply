@@ -829,8 +829,7 @@ export default function Orders() {
           console.error("WooCommerce Fetch Error:", data.error, data.details);
           // Only show toast if we actually have settings but they failed
           if (companySettings.wooUrl && companySettings.wooConsumerKey) {
-            const errorMsg = typeof data.details === 'string' ? data.details : (typeof data.error === 'string' ? data.error : JSON.stringify(data.details || data.error || data));
-            toast.error(`WooCommerce Error: ${errorMsg}`);
+            toast.error(`WooCommerce Error: ${data.details || data.error}`);
           }
         }
       } catch (error: any) {

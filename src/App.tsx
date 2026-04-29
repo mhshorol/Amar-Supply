@@ -1,31 +1,31 @@
-import React, { useEffect, useState, Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { onAuthStateChanged, signInWithPopup, googleProvider, auth, isFirebaseConfigured, db, doc, setDoc, getDoc, serverTimestamp, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from './firebase';
+import { auth, signOut } from './firebase';
 import Layout from './components/Layout';
-import Dashboard from './components/Dashboard';
-import Orders from './components/Orders';
-import NewOrder from './components/NewOrder';
-import Inventory from './components/Inventory';
-import NewProduct from './components/NewProduct';
-import CRM from './components/CRM';
-import Inbox from './components/Inbox';
-import Logistics from './components/Logistics';
-import POS from './components/POS';
-import Suppliers from './components/Suppliers';
-import Finance from './components/Finance';
-import HR from './components/HR';
-import Team from './components/Team';
-import Tasks from './components/Tasks';
-import Reports from './components/Reports';
-import Returns from './components/Returns';
-import Settings from './components/Settings';
-import { LogIn, AlertTriangle, ShieldCheck, Mail, Lock, Loader2, UserPlus, User as UserIcon, LogOut } from 'lucide-react';
+import { AlertTriangle, Lock, LogOut } from 'lucide-react';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { toast, Toaster } from 'sonner';
+import { Toaster } from 'sonner';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-
 import Login from './components/Login';
+
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Orders = lazy(() => import('./components/Orders'));
+const NewOrder = lazy(() => import('./components/NewOrder'));
+const Inventory = lazy(() => import('./components/Inventory'));
+const NewProduct = lazy(() => import('./components/NewProduct'));
+const CRM = lazy(() => import('./components/CRM'));
+const Inbox = lazy(() => import('./components/Inbox'));
+const Logistics = lazy(() => import('./components/Logistics'));
+const POS = lazy(() => import('./components/POS'));
+const Suppliers = lazy(() => import('./components/Suppliers'));
+const Finance = lazy(() => import('./components/Finance'));
+const HR = lazy(() => import('./components/HR'));
+const Team = lazy(() => import('./components/Team'));
+const Tasks = lazy(() => import('./components/Tasks'));
+const Reports = lazy(() => import('./components/Reports'));
+const Returns = lazy(() => import('./components/Returns'));
+const Settings = lazy(() => import('./components/Settings'));
 
 // Error Boundary Component
 interface ErrorBoundaryProps {
@@ -157,31 +157,42 @@ function AppContent() {
     );
   }
 
+  const FallbackLoader = () => (
+    <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-base font-bold text-accent uppercase tracking-widest animate-pulse">Loading...</p>
+      </div>
+    </div>
+  );
+
   return (
     <Router>
       <Layout user={user}>
-        <Routes>
-          <Route path="/" element={hasPermission('dashboard') ? <Dashboard /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/pos" element={hasPermission('pos') ? <POS /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/orders" element={hasPermission('orders') ? <Orders /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/orders/new" element={hasPermission('orders') ? <NewOrder /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/inventory" element={hasPermission('inventory') ? <Inventory /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/inventory/new" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/inventory/edit/:id" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/crm" element={hasPermission('crm') ? <CRM /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/inbox" element={hasPermission('crm') ? <Inbox /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/returns" element={hasPermission('orders') ? <Returns /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/suppliers" element={hasPermission('suppliers') ? <Suppliers /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/logistics" element={hasPermission('logistics') ? <Logistics /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/finance" element={hasPermission('finance') ? <Finance /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/hr" element={hasPermission('hr') ? <HR /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/team" element={hasPermission('team') ? <Team /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/tasks" element={hasPermission('tasks') ? <Tasks /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/reports" element={hasPermission('dashboard') ? <Reports /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/settings" element={hasPermission('settings') ? <Settings /> : <Navigate to="/unauthorized" replace />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          <Route path="*" element={<Navigate to="/unauthorized" replace />} />
-        </Routes>
+        <Suspense fallback={<FallbackLoader />}>
+          <Routes>
+            <Route path="/" element={hasPermission('dashboard') ? <Dashboard /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/pos" element={hasPermission('pos') ? <POS /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/orders" element={hasPermission('orders') ? <Orders /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/orders/new" element={hasPermission('orders') ? <NewOrder /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/inventory" element={hasPermission('inventory') ? <Inventory /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/inventory/new" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/inventory/edit/:id" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/crm" element={hasPermission('crm') ? <CRM /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/inbox" element={hasPermission('crm') ? <Inbox /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/returns" element={hasPermission('orders') ? <Returns /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/suppliers" element={hasPermission('suppliers') ? <Suppliers /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/logistics" element={hasPermission('logistics') ? <Logistics /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/finance" element={hasPermission('finance') ? <Finance /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/hr" element={hasPermission('hr') ? <HR /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/team" element={hasPermission('team') ? <Team /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/tasks" element={hasPermission('tasks') ? <Tasks /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/reports" element={hasPermission('dashboard') ? <Reports /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/settings" element={hasPermission('settings') ? <Settings /> : <Navigate to="/unauthorized" replace />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="*" element={<Navigate to="/unauthorized" replace />} />
+          </Routes>
+        </Suspense>
       </Layout>
     </Router>
   );

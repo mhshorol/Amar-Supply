@@ -13,34 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load Firebase Config
-let firebaseConfig: any = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  firestoreDatabaseId: process.env.FIREBASE_DATABASE_ID,
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID,
-};
-
-try {
-  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-  if (fs.existsSync(configPath)) {
-    const fileConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    firebaseConfig = { ...firebaseConfig, ...fileConfig };
-  } else {
-    // Fallback search in __dirname
-    const altPath = path.join(__dirname, 'firebase-applet-config.json');
-    if (fs.existsSync(altPath)) {
-        const fileConfig = JSON.parse(fs.readFileSync(altPath, 'utf8'));
-        firebaseConfig = { ...firebaseConfig, ...fileConfig };
-    } else if (!firebaseConfig.projectId) {
-        console.warn('firebase-applet-config.json not found and environment variables missing');
-    }
-  }
-} catch (e: any) {
-  console.error('Error loading config:', e.message);
-}
+const firebaseConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'firebase-applet-config.json'), 'utf8'));
 
 import { 
   initializeApp as initializeClientApp, 
@@ -67,18 +40,14 @@ import {
 } from 'firebase/firestore';
 
 // Initialize Firebase Admin
-let adminApp: admin.app.App;
 try {
-  if (admin.apps.length === 0) {
-    adminApp = admin.initializeApp({
-      projectId: firebaseConfig.projectId
-    });
-    console.log('Firebase Admin initialized with projectId:', firebaseConfig.projectId);
-  } else {
-    adminApp = admin.app();
-  }
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    projectId: firebaseConfig.projectId
+  });
+  console.log('Firebase Admin initialized with applicationDefault()');
 } catch (e: any) {
-  console.error('Initial admin initializeApp failed:', e.message);
+  console.log('Admin initializeApp failed or already initialized:', e.message);
 }
 
 let db: any = null;
@@ -91,9 +60,7 @@ function log(msg: string) {
   console.log(formattedMsg);
   logs.push(formattedMsg);
   try {
-    if (process.env.NODE_ENV !== 'production') {
-      fs.appendFileSync('init_logs.txt', formattedMsg + '\n');
-    }
+    fs.appendFileSync('init_logs.txt', formattedMsg + '\n');
   } catch (e) {}
 }
 
@@ -105,21 +72,19 @@ async function getDb() {
   
   log(`[getDb] Starting initialization. Project: ${projectId}, Database: ${dbId}`);
   
-  if (!projectId) {
-    log('[getDb] Error: No Project ID provided. Check environment variables.');
-    throw new Error('Firebase Project ID is missing');
-  }
-
   try {
-    const app = admin.apps.length > 0 ? admin.app() : admin.initializeApp({ projectId });
-    db = getFirestore(app, dbId);
+    // Prefer Admin SDK as it bypasses security rules and is more robust for server-side logic
+    // We only log if it's explicitly set, to avoid scary logs on default Compute Engine credentials
+    db = getFirestore(admin.app(), dbId);
     
-    // Test connection
-    await db.collection('health_check').limit(1).get();
-    activeDbId = dbId || '(default)';
+    // Health check verification
+    const snapshot = await db.collection('health_check').limit(1).get();
+    activeDbId = dbId;
     return db;
   } catch (adminErr: any) {
-    log(`[getDb] Admin SDK error: ${adminErr.message}. Attempting client fallback...`);
+    if (!adminErr.message.includes('PERMISSION_DENIED')) {
+      log(`[getDb] Admin SDK fallback due to: ${adminErr.message}`);
+    }
     
     try {
       const clientApp = getClientApps().length > 0 
@@ -258,28 +223,59 @@ async function getDb() {
 }
 
 async function startServer() {
+  try {
+    log('Environment Check: ' + JSON.stringify({
+      K_SERVICE: process.env.K_SERVICE,
+      GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
+      NODE_ENV: process.env.NODE_ENV
+    }));
+    
+    const originalProject = process.env.GOOGLE_CLOUD_PROJECT;
+    
+    if (admin.apps.length === 0) {
+      log('Initializing Firebase Admin with default credentials');
+      admin.initializeApp();
+    }
+    
+    // Initial DB connection
+    await getDb();
+    
+    if (db) {
+      try {
+        await db.collection('health_check').doc('startup').set({
+          timestamp: Timestamp.now(),
+          message: 'Server started'
+        }, { merge: true });
+        log(`Successfully verified Firestore connection to ${activeDbId} and wrote startup log`);
+        
+        // Write success file
+        fs.writeFileSync('firestore_success.json', JSON.stringify({
+          status: 'success',
+          database: activeDbId,
+          timestamp: new Date().toISOString()
+        }, null, 2));
+      } catch (e: any) {
+        log(`Initial Firestore verification write failed for ${activeDbId}: ${e.message}`);
+        
+        // Write failure file
+        fs.writeFileSync('firestore_success.json', JSON.stringify({
+          status: 'failure',
+          database: activeDbId,
+          error: e.message,
+          code: e.code,
+          timestamp: new Date().toISOString()
+        }, null, 2));
+      }
+    }
+  } catch (error) {
+    console.error('Firebase Admin initialization failed:', error);
+  }
+
   const app = express();
   const PORT = 3000;
 
   app.use(cors());
   app.use(express.json());
-
-  // Initialize DB in background, don't block app creation
-  getDb().then(async (database) => {
-    if (database) {
-      try {
-        await database.collection('health_check').doc('startup').set({
-          timestamp: admin.firestore.Timestamp.now(),
-          message: 'Server started'
-        }, { merge: true });
-        log(`Successfully verified Firestore connection to ${activeDbId}`);
-      } catch (e: any) {
-        log(`Initial Firestore verification write failed: ${e.message}`);
-      }
-    }
-  }).catch(err => {
-    console.error('Background DB Init Failed:', err.message);
-  });
 
   // Test route
   app.get('/api/test', (req, res) => {
@@ -335,15 +331,9 @@ async function startServer() {
     try {
       const database = await getDb();
       if (!database) {
-        return res.status(503).json({ error: 'Database connection failed. Check your Firebase configuration.' });
+        return res.status(503).json({ error: 'Firebase Admin not initialized' });
       }
-      const companyRef = database.collection('settings').doc('company');
-      const companySettings = await companyRef.get();
-      
-      if (!companySettings.exists) {
-        return res.status(404).json({ error: 'Company settings not found in database.' });
-      }
-      
+      const companySettings = await database.collection('settings').doc('company').get();
       const settings = companySettings.data();
 
       if (!settings?.wooUrl || !settings?.wooConsumerKey || !settings?.wooConsumerSecret) {
@@ -370,12 +360,7 @@ async function startServer() {
         auth: {
           username: wooConsumerKey,
           password: wooConsumerSecret
-        },
-        headers: {
-          'User-Agent': 'KaruKarjo-ERP/1.0',
-          'Accept': 'application/json'
-        },
-        timeout: 8000 // 8 seconds timeout (Vercel hobby limit is 10s)
+        }
       });
 
       res.json({
@@ -385,60 +370,14 @@ async function startServer() {
       });
     } catch (error: any) {
       const errorData = error.response?.data;
-      const status = error.response?.status;
-
-      // Fallback for non-pretty permalinks if GET orders fails with 404 or HTML
-      const isHtml = typeof errorData === 'string' && errorData.includes('<!DOCTYPE html>');
-      if (isHtml || status === 404) {
-        try {
-          const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = (await (await getDb()).collection('settings').doc('company').get()).data();
-          let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
-          if (!wooUrl.startsWith('http')) wooUrl = `https://${wooUrl}`;
-
-          const { page = 1, per_page = 10, status: filterStatus, search } = req.query;
-
-          const fallbackResponse = await axios.get(`${wooUrl}/index.php`, {
-            params: {
-              rest_route: '/wc/v3/orders',
-              page,
-              per_page,
-              status: filterStatus,
-              search
-            },
-            auth: {
-              username: wooConsumerKey,
-              password: wooConsumerSecret
-            },
-            headers: {
-              'User-Agent': 'KaruKarjo-ERP/1.0',
-              'Accept': 'application/json'
-            }
-          });
-
-          return res.json({
-            orders: fallbackResponse.data,
-            totalPages: fallbackResponse.headers['x-wp-totalpages'],
-            totalOrders: fallbackResponse.headers['x-wp-total']
-          });
-        } catch (fallbackErr: any) {
-          console.error('WooCommerce GET Fallback Error:', fallbackErr.message);
-        }
-      }
-
       console.error('WooCommerce API Error:', {
         message: error.message,
-        code: error.code,
         data: errorData,
-        status: status
+        status: error.response?.status
       });
-
-      const details = error.code === 'ECONNABORTED' 
-        ? 'Request timed out. WooCommerce might be slow. Try reducing products per page.'
-        : errorData?.message || (isHtml ? 'Received HTML response. Check WordPress permalinks.' : 'No additional details');
-
-      res.status(status || 500).json({ 
+      res.status(error.response?.status || 500).json({ 
         error: error.message,
-        details: typeof details === 'string' ? details : JSON.stringify(details)
+        details: errorData?.message || 'No additional details'
       });
     }
   });
@@ -446,15 +385,8 @@ async function startServer() {
   app.get('/api/woocommerce/products', async (req, res) => {
     try {
       const database = await getDb();
-      if (!database) return res.status(503).json({ error: 'Database connection failed. Check your Firebase configuration.' });
-      
-      const companyRef = database.collection('settings').doc('company');
-      const companySettings = await companyRef.get();
-      
-      if (!companySettings.exists) {
-        return res.status(404).json({ error: 'Company settings not found in database.' });
-      }
-
+      if (!database) return res.status(503).json({ error: 'Firebase Admin not initialized' });
+      const companySettings = await database.collection('settings').doc('company').get();
       const settings = companySettings.data();
 
       if (!settings?.wooUrl || !settings?.wooConsumerKey || !settings?.wooConsumerSecret) {
@@ -480,12 +412,7 @@ async function startServer() {
         auth: {
           username: wooConsumerKey,
           password: wooConsumerSecret
-        },
-        headers: {
-          'User-Agent': 'KaruKarjo-ERP/1.0',
-          'Accept': 'application/json'
-        },
-        timeout: 8000
+        }
       });
 
       res.json({
@@ -494,51 +421,7 @@ async function startServer() {
         totalProducts: response.headers['x-wp-total']
       });
     } catch (error: any) {
-      const errorData = error.response?.data;
-      const status = error.response?.status;
-      const isHtml = typeof errorData === 'string' && errorData.includes('<!DOCTYPE html>');
-
-      if (isHtml || status === 404) {
-        try {
-          const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = (await (await getDb()).collection('settings').doc('company').get()).data();
-          let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
-          if (!wooUrl.startsWith('http')) wooUrl = `https://${wooUrl}`;
-
-          const { page = 1, per_page = 20, search } = req.query;
-
-          const fallbackResponse = await axios.get(`${wooUrl}/index.php`, {
-            params: {
-              rest_route: '/wc/v3/products',
-              page,
-              per_page,
-              search
-            },
-            auth: {
-              username: wooConsumerKey,
-              password: wooConsumerSecret
-            },
-            headers: {
-              'User-Agent': 'KaruKarjo-ERP/1.0',
-              'Accept': 'application/json'
-            }
-          });
-
-          return res.json({
-            products: fallbackResponse.data,
-            totalPages: fallbackResponse.headers['x-wp-totalpages'],
-            totalProducts: fallbackResponse.headers['x-wp-total']
-          });
-        } catch (fallbackErr: any) {}
-      }
-
-      const details = error.code === 'ECONNABORTED' 
-        ? 'Request timed out. WooCommerce might be slow.'
-        : errorData?.message || (isHtml ? 'Received HTML response. Check WordPress permalinks.' : 'No additional details');
-
-      res.status(status || 500).json({ 
-        error: error.message,
-        details: typeof details === 'string' ? details : JSON.stringify(details)
-      });
+      res.status(error.response?.status || 500).json({ error: error.message });
     }
   });
 
@@ -573,12 +456,7 @@ async function startServer() {
           auth: {
             username: wooConsumerKey,
             password: wooConsumerSecret
-          },
-          headers: {
-            'User-Agent': 'KaruKarjo-ERP/1.0',
-            'Accept': 'application/json'
-          },
-          timeout: 8000
+          }
         });
         return res.json(response.data);
       } catch (error: any) {
@@ -598,10 +476,6 @@ async function startServer() {
               auth: {
                 username: wooConsumerKey,
                 password: wooConsumerSecret
-              },
-              headers: {
-                'User-Agent': 'KaruKarjo-ERP/1.0',
-                'Accept': 'application/json'
               }
             });
             return res.json(fallbackResponse.data);

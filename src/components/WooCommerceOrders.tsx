@@ -79,8 +79,7 @@ export default function WooCommerceOrders() {
       setTotalOrders(response.totalOrders);
     } catch (error: any) {
       console.error('Error fetching WooCommerce orders:', error);
-      const errorMessage = error.response?.data?.details || error.response?.data?.message || error.message || 'Failed to fetch WooCommerce orders';
-      toast.error(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
+      toast.error(error.response?.data?.message || 'Failed to fetch WooCommerce orders. Please check your API settings.');
     } finally {
       setLoading(false);
       setRefreshing(false);
