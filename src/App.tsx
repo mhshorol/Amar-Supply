@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import Login from './components/Login';
+import Home from './components/Home';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const Orders = lazy(() => import('./components/Orders'));
@@ -84,7 +85,7 @@ function Unauthorized() {
   const { hasPermission } = useAuth();
   
   // Try to find a route this user can access
-  if (hasPermission('dashboard')) return <Navigate to="/" replace />;
+  if (hasPermission('dashboard')) return <Navigate to="/dashboard" replace />;
   if (hasPermission('tasks')) return <Navigate to="/tasks" replace />;
   if (hasPermission('orders')) return <Navigate to="/orders" replace />;
   if (hasPermission('inventory')) return <Navigate to="/inventory" replace />;
@@ -167,34 +168,32 @@ function AppContent() {
   );
 
   return (
-    <Router>
-      <Layout user={user}>
-        <Suspense fallback={<FallbackLoader />}>
-          <Routes>
-            <Route path="/" element={hasPermission('dashboard') ? <Dashboard /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/pos" element={hasPermission('pos') ? <POS /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/orders" element={hasPermission('orders') ? <Orders /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/orders/new" element={hasPermission('orders') ? <NewOrder /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/inventory" element={hasPermission('inventory') ? <Inventory /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/inventory/new" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/inventory/edit/:id" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/crm" element={hasPermission('crm') ? <CRM /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/inbox" element={hasPermission('crm') ? <Inbox /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/returns" element={hasPermission('orders') ? <Returns /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/suppliers" element={hasPermission('suppliers') ? <Suppliers /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/logistics" element={hasPermission('logistics') ? <Logistics /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/finance" element={hasPermission('finance') ? <Finance /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/hr" element={hasPermission('hr') ? <HR /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/team" element={hasPermission('team') ? <Team /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/tasks" element={hasPermission('tasks') ? <Tasks /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/reports" element={hasPermission('dashboard') ? <Reports /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/settings" element={hasPermission('settings') ? <Settings /> : <Navigate to="/unauthorized" replace />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="*" element={<Navigate to="/unauthorized" replace />} />
-          </Routes>
-        </Suspense>
-      </Layout>
-    </Router>
+    <Layout user={user}>
+      <Suspense fallback={<FallbackLoader />}>
+        <Routes>
+          <Route path="/dashboard" element={hasPermission('dashboard') ? <Dashboard /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/pos" element={hasPermission('pos') ? <POS /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/orders" element={hasPermission('orders') ? <Orders /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/orders/new" element={hasPermission('orders') ? <NewOrder /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/inventory" element={hasPermission('inventory') ? <Inventory /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/inventory/new" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/inventory/edit/:id" element={hasPermission('inventory') ? <NewProduct /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/crm" element={hasPermission('crm') ? <CRM /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/inbox" element={hasPermission('crm') ? <Inbox /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/returns" element={hasPermission('orders') ? <Returns /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/suppliers" element={hasPermission('suppliers') ? <Suppliers /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/logistics" element={hasPermission('logistics') ? <Logistics /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/finance" element={hasPermission('finance') ? <Finance /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/hr" element={hasPermission('hr') ? <HR /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/team" element={hasPermission('team') ? <Team /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/tasks" element={hasPermission('tasks') ? <Tasks /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/reports" element={hasPermission('dashboard') ? <Reports /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/settings" element={hasPermission('settings') ? <Settings /> : <Navigate to="/unauthorized" replace />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="*" element={<Navigate to="/unauthorized" replace />} />
+        </Routes>
+      </Suspense>
+    </Layout>
   );
 }
 
@@ -209,8 +208,13 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <SettingsProvider>
-            <AppContent />
-            <ThemedToaster />
+            <Router>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/*" element={<AppContent />} />
+              </Routes>
+              <ThemedToaster />
+            </Router>
           </SettingsProvider>
         </AuthProvider>
       </ThemeProvider>
