@@ -99,7 +99,7 @@ export default function Login() {
             <ShoppingCart className="w-12 h-12 xl:w-14 xl:h-14 text-brand-hover" strokeWidth={2.5} />
           </div>
           
-          <h1 className="text-4xl xl:text-5xl font-bold tracking-tight text-white mb-2 xl:mb-3">Amar e-Com</h1>
+          <h1 className="text-5xl xl:text-6xl font-bold tracking-tight text-white mb-2 xl:mb-3">Amar e-Com</h1>
           <p className="text-xl xl:text-2xl text-blue-200 font-medium mb-8 xl:mb-10">Business OS</p>
 
           <div className="w-8 h-[2px] bg-blue-300/40 mb-8 xl:mb-10 rounded-full"></div>

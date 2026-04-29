@@ -61,6 +61,8 @@ export default function Team() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [tempPermissions, setTempPermissions] = useState<UserPermissions | null>(null);
   const [isUpdatingPermissions, setIsUpdatingPermissions] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{isOpen: boolean, userId: string, userName: string}>({isOpen: false, userId: '', userName: ''});
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -199,16 +201,17 @@ export default function Team() {
     }
   };
 
-  const handleDeleteUser = async (userId: string, userName: string) => {
+  const triggerDeleteUser = (userId: string, userName: string) => {
     if (currentUserRole !== 'admin') {
       toast.error('Only administrators can delete users.');
       return;
     }
+    setDeleteConfirmation({isOpen: true, userId, userName});
+  };
 
-    if (!window.confirm(`Are you sure you want to delete user ${userName}? This action cannot be undone.`)) {
-      return;
-    }
-
+  const confirmDeleteUser = async () => {
+    const { userId, userName } = deleteConfirmation;
+    setIsDeleting(true);
     try {
       // 1. Delete from Firebase Auth via API
       let authDeleteSuccess = false;
@@ -235,13 +238,16 @@ export default function Team() {
       await addActivityLog('Deleted User', 'Team', `Deleted user ${userName}`);
       
       if (authDeleteSuccess) {
-        toast.success('User deleted successfully.');
+        toast.success(`User ${userName} deleted successfully.`);
       } else {
-        toast.success('User removed from team, but may still exist in Auth.');
+        toast.success(`User ${userName} removed from team, but may still exist in Auth.`);
       }
     } catch (error: any) {
       console.error('Error deleting user:', error);
       toast.error(`Failed to delete user: ${error.message}`);
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmation({isOpen: false, userId: '', userName: ''});
     }
   };
 
@@ -553,7 +559,7 @@ export default function Team() {
                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                 </button>
                                 <button 
-                                  onClick={() => handleDeleteUser(user.uid, user.name)}
+                                  onClick={() => triggerDeleteUser(user.uid, user.name)}
                                   className="w-[36px] h-[36px] flex items-center justify-center rounded-xl border border-border text-[#DC2626] hover:bg-[#FEF2F2] hover:border-[#FECACA] transition-colors shadow-subtle"
                                   title="Delete User"
                                 >
@@ -894,6 +900,44 @@ export default function Team() {
                     </>
                   )}
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmation.isOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-surface rounded-[24px] w-full max-w-sm shadow-2xl overflow-hidden my-auto border border-border"
+            >
+              <div className="p-6">
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-500/20 text-red-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                  <ShieldAlert size={24} />
+                </div>
+                <h3 className="text-xl font-display font-medium text-center text-primary mb-2">Delete User</h3>
+                <p className="text-secondary text-center text-sm mb-6">
+                  Are you sure you want to delete <span className="font-semibold text-primary">{deleteConfirmation.userName}</span>? This action cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setDeleteConfirmation({isOpen: false, userId: '', userName: ''})}
+                    className="flex-1 py-2.5 px-4 bg-surface border border-border text-secondary rounded-xl font-bold text-sm hover:bg-surface-hover transition-all text-center"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteUser}
+                    disabled={isDeleting}
+                    className="flex-1 py-2.5 px-4 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    {isDeleting ? <Loader2 size={16} className="animate-spin" /> : 'Delete User'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

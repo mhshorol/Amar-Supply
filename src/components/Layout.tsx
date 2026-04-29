@@ -35,7 +35,15 @@ import {
   Download,
   Sun,
   Moon,
-  MessageSquare
+  MessageSquare,
+  CornerDownLeft,
+  Sparkles,
+  LayoutGrid,
+  List,
+  User,
+  Clock,
+  SlidersHorizontal,
+  Eye
 } from 'lucide-react';
 import { db, auth, signOut, collection, query, where, orderBy, onSnapshot, limit } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -104,9 +112,19 @@ export default function Layout({ children, user }: LayoutProps) {
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState<'All' | 'Orders' | 'Tasks' | 'System'>('All');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const unreadCount = notifications.filter(n => Array.isArray(n.readBy) && !n.readBy.includes(user?.uid)).length;
+
+  const handleMarkAllAsRead = async () => {
+    if (!user?.uid) return;
+    const unreadNotifications = notifications.filter(n => Array.isArray(n.readBy) && !n.readBy.includes(user.uid));
+    
+    for (const notification of unreadNotifications) {
+      await markNotificationAsRead(notification.id, user.uid);
+    }
+  };
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
@@ -147,6 +165,23 @@ export default function Layout({ children, user }: LayoutProps) {
 
     return () => unsubscribe();
   }, [user]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsQuickActionOpen(prev => !prev);
+      }
+      
+      // Close on escape
+      if (e.key === 'Escape' && isQuickActionOpen) {
+        setIsQuickActionOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isQuickActionOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -204,7 +239,7 @@ export default function Layout({ children, user }: LayoutProps) {
             </div>
             {!isSidebarMinimized && (
               <div className="flex-1">
-                <h1 className="text-[1rem] font-bold tracking-tight text-primary leading-[1.1] flex items-center gap-1 font-[Inter,sans-serif]">
+                <h1 className="text-[1.125rem] font-bold tracking-tight text-primary leading-[1.1] flex items-center gap-1 font-[Inter,sans-serif]">
                   <span className="font-extrabold text-primary">Amar</span>
                   <span className="text-brand font-bold">e-Com</span>
                 </h1>
@@ -380,14 +415,14 @@ export default function Layout({ children, user }: LayoutProps) {
                <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white shrink-0">
                  <ShoppingCart size={16} />
                </div>
-               <span className="text-sm font-bold text-primary truncate sm:hidden">Amar e-Com</span>
+               <span className="text-lg font-bold text-primary truncate sm:hidden">Amar e-Com</span>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
             {hasPermission('pos') && (
-              <Link to="/pos" className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-accent/10 text-accent hover:bg-accent hover:text-white rounded-2xl transition-all font-bold text-sm">
-                <Calculator size={18} />
+              <Link to="/pos" className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-2xl transition-all font-bold text-sm group">
+                <Calculator size={18} className="group-hover:scale-110 transition-transform" />
                 Quick POS
               </Link>
             )}
@@ -404,80 +439,190 @@ export default function Layout({ children, user }: LayoutProps) {
               </button>
 
               {isQuickActionOpen && (
-                <div className="absolute right-0 mt-4 w-60 bg-surface rounded-[2rem] shadow-2xl border border-border p-3 z-50 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="px-4 py-2 mb-2">
-                    <p className="text-[10px] font-black text-muted uppercase tracking-widest">Create New</p>
+                <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4 cursor-default">
+                  <div className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-sm transition-all" onClick={() => setIsQuickActionOpen(false)} />
+                  <div className="relative w-full max-w-2xl bg-surface rounded-[24px] shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="flex items-start justify-between p-6 pb-4">
+                      <div>
+                        <h2 className="text-xl font-bold text-primary text-left">Quick Action</h2>
+                        <p className="text-sm text-secondary font-medium">Create new or start something</p>
+                      </div>
+                      <button onClick={() => setIsQuickActionOpen(false)} className="px-3 py-1.5 text-xs font-semibold text-secondary bg-surface border border-border rounded-lg shadow-sm hover:bg-surface-hover transition-colors cursor-pointer">
+                        ESC
+                      </button>
+                    </div>
+
+                    <div className="px-6 mb-4">
+                      <div className="flex items-center gap-3 px-4 py-3 border border-border rounded-[16px] bg-surface group focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/10 transition-all">
+                        <Search size={20} className="text-muted" />
+                        <input 
+                          type="text" 
+                          autoFocus
+                          placeholder="Search actions (e.g. order, product, customer...)"
+                          className="flex-1 bg-transparent border-none outline-none text-[15px] font-medium text-primary placeholder:text-muted"
+                        />
+                        <div className="flex items-center gap-1 text-[11px] font-black tracking-widest text-muted border border-border rounded-md px-2 py-1 bg-surface-hover">
+                          <span>⌘</span>
+                          <span>K</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="px-6 mb-2 mt-6">
+                      <p className="text-[11px] font-bold tracking-[0.15em] text-secondary uppercase text-left">CREATE NEW</p>
+                    </div>
+
+                    <div className="px-4 space-y-1">
+                      {hasPermission('orders') && (
+                        <Link 
+                          to="/orders/new" 
+                          className="flex items-center gap-4 p-3 rounded-[16px] hover:bg-brand/5 group transition-all"
+                          onClick={() => setIsQuickActionOpen(false)}
+                        >
+                          <div className="w-12 h-12 rounded-[14px] bg-[#EEF2FF] dark:bg-blue-500/10 flex items-center justify-center shrink-0">
+                            <ShoppingCart size={22} className="text-[#3B82F6]" strokeWidth={2} />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-bold text-[15px] text-primary">New Order</p>
+                            <p className="text-[13px] text-secondary font-medium">Create a new customer order</p>
+                          </div>
+                          <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="px-2.5 py-1 text-[11px] font-bold text-secondary bg-surface border border-border rounded-lg shadow-sm flex items-center gap-1">
+                              <CornerDownLeft size={12} /> Enter
+                            </span>
+                            <ChevronRight size={18} className="text-muted" />
+                          </div>
+                        </Link>
+                      )}
+
+                      {hasPermission('inventory') && (
+                        <Link 
+                          to="/inventory/new" 
+                          className="flex items-center gap-4 p-3 rounded-[16px] hover:bg-[#FFF7ED] dark:hover:bg-orange-500/10 group transition-all"
+                          onClick={() => setIsQuickActionOpen(false)}
+                        >
+                          <div className="w-12 h-12 rounded-[14px] bg-[#FFF7ED] dark:bg-orange-500/10 flex items-center justify-center shrink-0">
+                            <Package size={22} className="text-[#F97316]" strokeWidth={2} />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-bold text-[15px] text-primary">Add Product</p>
+                            <p className="text-[13px] text-secondary font-medium">Add a new product to inventory</p>
+                          </div>
+                          <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="px-2.5 py-1 text-[11px] font-bold text-secondary bg-surface border border-border rounded-lg shadow-sm">
+                              P
+                            </span>
+                            <ChevronRight size={18} className="text-muted" />
+                          </div>
+                        </Link>
+                      )}
+
+                      {hasPermission('crm') && (
+                        <Link 
+                          to="/crm" 
+                          className="flex items-center gap-4 p-3 rounded-[16px] hover:bg-[#F0FDF4] dark:hover:bg-green-500/10 group transition-all"
+                          onClick={() => setIsQuickActionOpen(false)}
+                        >
+                          <div className="w-12 h-12 rounded-[14px] bg-[#F0FDF4] dark:bg-green-500/10 flex items-center justify-center shrink-0">
+                            <UserPlus size={22} className="text-[#22C55E]" strokeWidth={2} />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-bold text-[15px] text-primary">Add Customer</p>
+                            <p className="text-[13px] text-secondary font-medium">Create a new customer profile</p>
+                          </div>
+                          <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="px-2.5 py-1 text-[11px] font-bold text-secondary bg-surface border border-border rounded-lg shadow-sm">
+                              C
+                            </span>
+                            <ChevronRight size={18} className="text-muted" />
+                          </div>
+                        </Link>
+                      )}
+
+                      {hasPermission('tasks') && (
+                        <Link 
+                          to="/tasks" 
+                          className="flex items-center gap-4 p-3 rounded-[16px] hover:bg-[#FAF5FF] dark:hover:bg-purple-500/10 group transition-all"
+                          onClick={() => setIsQuickActionOpen(false)}
+                        >
+                          <div className="w-12 h-12 rounded-[14px] bg-[#FAF5FF] dark:bg-purple-500/10 flex items-center justify-center shrink-0">
+                            <ClipboardList size={22} className="text-[#A855F7]" strokeWidth={2} />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-bold text-[15px] text-primary">Create Task</p>
+                            <p className="text-[13px] text-secondary font-medium">Create a new task or to-do</p>
+                          </div>
+                          <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="px-2.5 py-1 text-[11px] font-bold text-secondary bg-surface border border-border rounded-lg shadow-sm">
+                              T
+                            </span>
+                            <ChevronRight size={18} className="text-muted" />
+                          </div>
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="px-6 mb-2 mt-4 pt-4 border-t border-border">
+                      <p className="text-[11px] font-bold tracking-[0.15em] text-secondary uppercase text-left">OTHER ACTIONS</p>
+                    </div>
+
+                    <div className="px-4 space-y-1 mb-6">
+                      {hasPermission('logistics') && (
+                        <Link 
+                          to="/logistics" 
+                          className="flex items-center gap-4 p-3 rounded-[16px] hover:bg-[#FEFCE8] dark:hover:bg-yellow-500/10 group transition-all"
+                          onClick={() => setIsQuickActionOpen(false)}
+                        >
+                          <div className="w-12 h-12 rounded-[14px] bg-[#FEFCE8] dark:bg-yellow-500/10 flex items-center justify-center shrink-0">
+                            <Truck size={22} className="text-[#EAB308]" strokeWidth={2} />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-bold text-[15px] text-primary">Create Shipment</p>
+                            <p className="text-[13px] text-secondary font-medium">Create a new shipment</p>
+                          </div>
+                          <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="px-2.5 py-1 text-[11px] font-bold text-secondary bg-surface border border-border rounded-lg shadow-sm">
+                              S
+                            </span>
+                            <ChevronRight size={18} className="text-muted" />
+                          </div>
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="p-4 bg-gradient-to-t from-surface-hover/50 to-transparent relative z-10 w-full mt-2 border-t border-border/50">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-surface-hover dark:bg-[#1E293B] rounded-[16px] border border-border gap-3">
+                        <div className="flex items-center gap-3 w-full">
+                          <Sparkles size={16} className="text-brand shrink-0" />
+                          <span className="text-[13px] font-medium text-secondary truncate"><strong>Tip:</strong> You can also use shortcuts to quickly create new items</span>
+                        </div>
+                        <button className="flex items-center justify-center gap-2 px-3 py-1.5 text-[12px] font-bold text-primary bg-surface border border-border rounded-lg shadow-sm hover:bg-surface-hover transition-colors shrink-0">
+                          View All Actions <LayoutGrid size={14} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  {hasPermission('orders') && (
-                    <Link 
-                      to="/orders/new" 
-                      onClick={() => setIsQuickActionOpen(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 rounded-xl text-[13px] font-bold text-secondary transition-colors group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center text-brand group-hover:bg-brand group-hover:text-white transition-all">
-                        <ShoppingCart size={16} strokeWidth={2.5} />
-                      </div>
-                      Order
-                    </Link>
-                  )}
-                  {hasPermission('tasks') && (
-                    <Link 
-                      to="/tasks"
-                      onClick={() => setIsQuickActionOpen(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 rounded-xl text-[13px] font-bold text-secondary transition-colors group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-all">
-                        <ClipboardList size={16} strokeWidth={2.5} />
-                      </div>
-                      Task
-                    </Link>
-                  )}
-                  {hasPermission('inventory') && (
-                    <Link 
-                      to="/inventory/new"
-                      onClick={() => setIsQuickActionOpen(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 rounded-xl text-[13px] font-bold text-secondary transition-colors group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                        <Package size={16} strokeWidth={2.5} />
-                      </div>
-                      Product
-                    </Link>
-                  )}
-                  <div className="my-2 border-t border-border" />
-                  {hasPermission('crm') && (
-                    <Link 
-                      to="/crm"
-                      onClick={() => setIsQuickActionOpen(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand/5 rounded-xl text-[13px] font-bold text-secondary transition-colors group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-all">
-                        <UserPlus size={16} strokeWidth={2.5} />
-                      </div>
-                      Customer
-                    </Link>
-                  )}
                 </div>
               )}
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2">
-              <button className="relative p-2.5 text-muted hover:bg-surface hover:text-brand rounded-xl transition-all pointer">
+              <button className="relative p-2 sm:p-2.5 text-muted hover:bg-surface-hover hover:text-brand rounded-xl transition-all cursor-pointer hidden">
                 <Search className="md:hidden" size={22} />
               </button>
 
               <button 
                 onClick={toggleTheme}
-                className="relative p-2.5 text-muted hover:bg-surface hover:text-accent rounded-xl transition-all"
+                className="relative p-2 sm:p-2.5 text-muted hover:bg-surface-hover hover:text-accent rounded-xl transition-all group"
                 title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
               >
-                {theme === 'light' ? <Moon size={22} /> : <Sun size={22} />}
+                {theme === 'light' ? <Moon size={22} className="group-hover:rotate-12 transition-transform" /> : <Sun size={22} className="group-hover:rotate-45 transition-transform" />}
               </button>
               
               <div className="relative" ref={notificationsRef}>
                 <button 
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className={`relative p-2.5 rounded-xl transition-all border border-transparent ${isNotificationsOpen ? 'bg-accent/5 text-accent border border-accent/10' : 'text-muted hover:bg-surface'}`}
+                  className={`relative p-2 sm:p-2.5 rounded-xl transition-all border border-transparent ${isNotificationsOpen ? 'bg-accent/5 text-accent border border-accent/10' : 'text-muted hover:bg-surface-hover hover:text-brand'}`}
                 >
                   <Bell size={22} className={unreadCount > 0 ? 'fill-danger/10' : ''} />
                   {unreadCount > 0 && (
@@ -486,51 +631,125 @@ export default function Layout({ children, user }: LayoutProps) {
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-4 w-80 sm:w-[420px] bg-card rounded-[2rem] shadow-2xl border border-border/60 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="px-6 py-5 border-b border-border/20 flex items-center justify-between bg-gradient-to-r from-surface to-card">
+                  <div className="absolute right-0 mt-4 w-80 sm:w-[500px] bg-surface rounded-[24px] shadow-2xl border border-border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="p-6 pb-4 flex items-start justify-between">
                       <div>
-                        <h3 className="font-extrabold text-primary text-lg uppercase tracking-tight">Activity</h3>
-                        <p className="text-[10px] font-black text-muted uppercase tracking-widest mt-0.5">Real-time updates</p>
+                        <h3 className="font-bold text-primary text-xl tracking-tight">Notifications</h3>
+                        <p className="text-sm font-medium text-secondary mt-0.5">Stay updated with your latest activity</p>
                       </div>
-                      <button className="text-xs font-bold text-accent hover:underline px-3 py-1 bg-accent/5 rounded-full transition-all">Mark all read</button>
+                      <div className="flex items-center gap-4">
+                        <button onClick={handleMarkAllAsRead} className="text-sm font-bold text-[#3B82F6] hover:underline transition-all">Mark all as read</button>
+                        <button className="p-2 border border-border rounded-xl text-secondary hover:bg-surface-hover hover:text-primary transition-colors bg-surface shadow-sm">
+                          <SlidersHorizontal size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="max-h-[480px] overflow-y-auto no-scrollbar">
+
+                    <div className="px-6 pb-4 flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-border/50">
+                      <button onClick={() => setNotificationFilter('All')} className={`flex items-center gap-2 px-4 py-2 rounded-full border ${notificationFilter === 'All' ? 'border-[#3B82F6] bg-[#EFF6FF] dark:bg-blue-500/10 text-[#3B82F6]' : 'border-border bg-surface text-secondary hover:text-primary hover:bg-surface-hover'} font-bold text-[13px] shrink-0 transition-colors`}>
+                        <List size={16} strokeWidth={2.5} /> All
+                      </button>
+                      <button onClick={() => setNotificationFilter('Orders')} className={`flex items-center gap-2 px-4 py-2 rounded-full border ${notificationFilter === 'Orders' ? 'border-[#22C55E] bg-[#F0FDF4] dark:bg-green-500/10 text-[#22C55E]' : 'border-border bg-surface text-secondary hover:text-primary hover:bg-surface-hover'} font-bold text-[13px] shrink-0 transition-colors`}>
+                        <ShoppingCart size={16} strokeWidth={2.5} className={notificationFilter === 'Orders' ? '' : 'text-[#22C55E]'} /> Orders
+                      </button>
+                      <button onClick={() => setNotificationFilter('Tasks')} className={`flex items-center gap-2 px-4 py-2 rounded-full border ${notificationFilter === 'Tasks' ? 'border-[#F97316] bg-[#FFF7ED] dark:bg-orange-500/10 text-[#F97316]' : 'border-border bg-surface text-secondary hover:text-primary hover:bg-surface-hover'} font-bold text-[13px] shrink-0 transition-colors`}>
+                        <ClipboardList size={16} strokeWidth={2.5} className={notificationFilter === 'Tasks' ? '' : 'text-[#F97316]'} /> Tasks
+                      </button>
+                      <button onClick={() => setNotificationFilter('System')} className={`flex items-center gap-2 px-4 py-2 rounded-full border ${notificationFilter === 'System' ? 'border-[#A855F7] bg-[#FAF5FF] dark:bg-purple-500/10 text-[#A855F7]' : 'border-border bg-surface text-secondary hover:text-primary hover:bg-surface-hover'} font-bold text-[13px] shrink-0 transition-colors`}>
+                        <Settings size={16} strokeWidth={2.5} className={notificationFilter === 'System' ? '' : 'text-[#A855F7]'} /> System
+                      </button>
+                    </div>
+
+                    <div className="max-h-[440px] overflow-y-auto no-scrollbar pb-6">
                       {notifications.length > 0 ? (
-                        <div className="divide-y divide-border">
-                          {notifications.map((notification) => {
-                            const isRead = notification.readBy.includes(user?.uid);
+                        <div className="divide-y divide-border/40">
+                          {(() => {
+                             const filteredNotifications = notifications.filter(n => {
+                               const typeLower = (n.type || '').toLowerCase();
+                               const titleLower = (n.title || '').toLowerCase();
+                               const isOrder = typeLower === 'order' || titleLower.includes('order');
+                               const isTask = typeLower === 'task' || titleLower.includes('task');
+                               if (notificationFilter === 'Orders') return isOrder;
+                               if (notificationFilter === 'Tasks') return isTask;
+                               if (notificationFilter === 'System') return !isOrder && !isTask;
+                               return true;
+                             });
+                             const displayNotifications = filteredNotifications.slice(0, 5);
+
+                             if (displayNotifications.length === 0) {
+                               return (
+                                 <div className="py-12 text-center text-secondary">
+                                   <p className="font-medium">No {notificationFilter.toLowerCase()} notifications found.</p>
+                                 </div>
+                               );
+                             }
+
+                             return displayNotifications.map((notification) => {
+                               const isRead = notification.readBy.includes(user?.uid);
+                            
+                            const titleLower = (notification.title || '').toLowerCase();
+                            const typeLower = (notification.type || '').toLowerCase();
+                            
+                            let NotifIcon = Settings;
+                            let iconColor = 'text-slate-500';
+                            let iconBg = 'bg-slate-50 dark:bg-slate-500/10';
+                            
+                            if (typeLower === 'order' || titleLower.includes('order')) {
+                              NotifIcon = ShoppingCart;
+                              iconColor = 'text-[#3B82F6]';
+                              iconBg = 'bg-[#EEF2FF] dark:bg-blue-500/10';
+                            } else if (typeLower === 'task' || titleLower.includes('task')) {
+                              NotifIcon = ClipboardList;
+                              iconColor = 'text-[#F97316]';
+                              iconBg = 'bg-[#FFF7ED] dark:bg-orange-500/10';
+                            } else if (titleLower.includes('customer') || titleLower.includes('user')) {
+                              NotifIcon = User;
+                              iconColor = 'text-[#22C55E]';
+                              iconBg = 'bg-[#F0FDF4] dark:bg-green-500/10';
+                            } else if (titleLower.includes('stock') || titleLower.includes('product') || typeLower === 'inventory') {
+                              NotifIcon = Package;
+                              iconColor = 'text-[#A855F7]';
+                              iconBg = 'bg-[#FAF5FF] dark:bg-purple-500/10';
+                            }
+
                             return (
-                              <div 
-                                key={notification.id} 
-                                className={`px-6 py-5 transition-all hover:bg-surface-hover/80 cursor-pointer relative ${!isRead ? 'bg-brand/10/20' : ''}`}
-                                onClick={() => {
-                                  if (!isRead && user?.uid) {
-                                    markNotificationAsRead(notification.id, user.uid);
-                                  }
-                                  setIsNotificationsOpen(false);
-                                }}
-                              >
-                                <div className="flex gap-4">
-                                  <div className="flex-shrink-0">
-                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${!isRead ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-surface-hover text-muted'}`}>
-                                      <Bell size={18} />
-                                    </div>
+                               <div 
+                                 key={notification.id} 
+                                 className={`px-6 py-4 transition-all hover:bg-surface-hover/50 cursor-pointer flex gap-4 ${!isRead ? 'bg-[#F8FAFC] dark:bg-slate-800/30' : 'bg-surface'}`}
+                                 onClick={() => {
+                                   if (!isRead && user?.uid) {
+                                     markNotificationAsRead(notification.id, user.uid);
+                                   }
+                                   setIsNotificationsOpen(false);
+                                 }}
+                               >
+                                  <div className="pt-3.5 shrink-0 flex items-center justify-center w-4">
+                                     {!isRead ? (
+                                       <div className="w-2.5 h-2.5 rounded-full border-2 border-[#1E293B] dark:border-white bg-transparent"></div>
+                                     ) : (
+                                       <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-300 dark:border-slate-500 bg-transparent"></div>
+                                     )}
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start">
-                                      <p className={`text-[13px] leading-tight ${!isRead ? 'font-bold text-primary' : 'text-secondary'}`}>
-                                        {notification.title}
-                                      </p>
-                                      <span className="text-[10px] font-black text-muted whitespace-nowrap ml-2">
-                                        {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt.seconds * 1000)) : 'now'}
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-secondary mt-1 line-clamp-2 leading-relaxed">{notification.message}</p>
+                                  <div className={`w-[48px] h-[48px] rounded-[16px] flex items-center justify-center shrink-0 ${iconBg}`}>
+                                    <NotifIcon size={22} className={iconColor} strokeWidth={2} />
+                                  </div>
+                                  <div className="flex-1 min-w-0 pr-2 pt-0.5">
+                                     <h4 className="text-[15px] font-bold text-primary mb-1">{notification.title}</h4>
+                                     <p className="text-[13px] text-secondary font-medium leading-relaxed mb-2.5 line-clamp-2">
+                                       {notification.message}
+                                     </p>
+                                     <div className="flex items-center gap-1.5 text-muted">
+                                       <Clock size={12} strokeWidth={2.5} />
+                                       <span className="text-[12px] font-semibold">
+                                         {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt.seconds * 1000)) + ' ago' : 'now'}
+                                       </span>
+                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                             );
+                            }); // This closes displayNotifications.map()
+                           })() // This closes the IIFE
+                          }
                         </div>
                       ) : (
                         <div className="py-20 text-center text-secondary">
@@ -541,6 +760,17 @@ export default function Layout({ children, user }: LayoutProps) {
                           <p className="text-xs mt-1 text-muted">No notifications to show right now</p>
                         </div>
                       )}
+
+                      <div className="px-6 pt-4 mt-2">
+                        <button className="w-full flex items-center justify-between p-4 rounded-xl border border-border bg-transparent hover:bg-surface-hover transition-colors group">
+                           <div className="flex items-center gap-3 text-secondary group-hover:text-primary transition-colors">
+                              <Eye size={18} strokeWidth={2.5} />
+                              <span className="text-[14px] font-bold">View all notifications</span>
+                           </div>
+                           <ChevronRight size={18} className="text-muted group-hover:text-primary transition-colors" />
+                        </button>
+                      </div>
+
                     </div>
                   </div>
                 )}

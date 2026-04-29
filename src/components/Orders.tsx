@@ -1736,6 +1736,100 @@ export default function Orders() {
     });
   };
 
+  const handleBulkDelete = () => {
+    if (!auth.currentUser || selectedOrders.length === 0) return;
+    setConfirmConfig({
+      isOpen: true,
+      title: "Bulk Delete Orders",
+      message: `Are you sure you want to delete ${selectedOrders.length} orders? Inventory will be restored if any of these orders are active.`,
+      variant: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        let successCount = 0;
+        let failCount = 0;
+
+        try {
+          // Process sequentially to ensure transaction integrity
+          for (const orderId of selectedOrders) {
+            try {
+              if (orderId.startsWith("woo_")) {
+                const wooId = orderId.replace("woo_", "");
+                await fetch(`/api/woocommerce/orders/${wooId}`, {
+                  method: "DELETE",
+                });
+                setWooOrders((prev) => prev.filter((o) => o.wooId !== parseInt(wooId)));
+              } else {
+                const orderRef = doc(db, "orders", orderId);
+                await runTransaction(db, async (transaction) => {
+                  const snap = await transaction.get(orderRef);
+                  if (!snap.exists()) return;
+
+                  const orderData = snap.data();
+                  const normalizedStatus = orderData.status?.toLowerCase() || "";
+                  const isActive =
+                    normalizedStatus !== "cancelled" &&
+                    normalizedStatus !== "returned";
+
+                  // Restore Stock if deleting an active order
+                  if (isActive && orderData.items) {
+                    for (const item of orderData.items) {
+                      const invQuery = query(
+                        collection(db, "inventory"),
+                        where("productId", "==", item.productId),
+                        where("variantId", "==", item.variantId || ""),
+                        where("warehouseId", "==", orderData.warehouseId),
+                      );
+                      const invSnap = await getDocs(invQuery);
+                      if (!invSnap.empty) {
+                        const invDoc = invSnap.docs[0];
+                        const currentQty = invDoc.data().quantity || 0;
+                        const newQty = currentQty + (item.quantity || 0);
+                        transaction.update(invDoc.ref, {
+                          quantity: newQty,
+                          updatedAt: serverTimestamp(),
+                        });
+
+                        // Log
+                        const logRef = doc(collection(db, "inventoryLogs"));
+                        transaction.set(logRef, {
+                          productId: item.productId,
+                          variantId: item.variantId || "",
+                          warehouseId: orderData.warehouseId,
+                          type: "in",
+                          quantityChange: item.quantity || 0,
+                          newQuantity: newQty,
+                          reason: `Order #${orderId.slice(0, 8)} BULK DELETED (Auto-Restore)`,
+                          uid: auth.currentUser?.uid,
+                          createdAt: serverTimestamp(),
+                        });
+                      }
+                    }
+                  }
+
+                  transaction.delete(orderRef);
+                });
+              }
+              successCount++;
+            } catch (err: any) {
+              console.error(`Failed to delete order ${orderId}:`, err);
+              failCount++;
+            }
+          }
+
+          toast.success(
+            `Bulk delete complete. Success: ${successCount}, Failed: ${failCount}`,
+          );
+          setSelectedOrders([]);
+        } catch (error) {
+          toast.error("An error occurred during bulk delete");
+        } finally {
+          setLoading(false);
+          setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
+  };
+
   const handleBulkStatusUpdate = async (newStatus: string) => {
     if (!auth.currentUser || selectedOrders.length === 0) return;
     setLoading(true);
@@ -2619,58 +2713,7 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* Bulk Actions Bar */}
-      {selectedOrders.length > 0 && (
-        <div className="bg-slate-900 dark:bg-white text-white dark:text-black p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl animate-in slide-in-from-top-4 sticky top-20 z-40 border border-slate-800 dark:border-white/40">
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4">
-            <span className="text-xs sm:text-sm font-bold shrink-0">
-              {selectedOrders.length} Selected
-            </span>
-            <div className="hidden sm:block h-4 w-px bg-white/20 dark:bg-black/10" />
-            <select
-              onChange={(e) => handleBulkStatusUpdate(e.target.value)}
-              className="bg-white/10 dark:bg-black/5 dark:text-black border border-white/20 dark:border-black/10 rounded-lg px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold outline-none"
-            >
-              <option value="" className="text-black">
-                Update Status
-              </option>
-              {statuses.map((s) => (
-                <option key={s} value={s} className="text-black">
-                  {s.replace(/_/g, " ").charAt(0).toUpperCase() +
-                    s.replace(/_/g, " ").slice(1)}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleBulkSendToCourier}
-              className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-white/10 dark:bg-black/5 hover:bg-white/20 dark:hover:bg-black/10 rounded-xl text-[10px] sm:text-xs font-bold transition-all"
-            >
-              <Truck size={12} className="sm:w-[14px] sm:h-[14px]" />{" "}
-              <span className="hidden xs:inline">Courier</span>
-            </button>
-            <button
-              onClick={handleBulkDownloadPDF}
-              className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-brand hover:bg-brand-hover rounded-lg text-[10px] sm:text-xs font-bold transition-all text-white"
-            >
-              <Download size={12} className="sm:w-[14px] sm:h-[14px]" />{" "}
-              <span className="hidden xs:inline">Invoices</span>
-            </button>
-            <button
-              onClick={handleBulkPrint}
-              className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-white/10 dark:bg-black/5 hover:bg-white/20 dark:hover:bg-black/10 rounded-lg text-[10px] sm:text-xs font-bold transition-all"
-            >
-              <Printer size={12} className="sm:w-[14px] sm:h-[14px]" />{" "}
-              <span className="hidden xs:inline">Print</span>
-            </button>
-          </div>
-          <button
-            onClick={() => setSelectedOrders([])}
-            className="p-2 hover:bg-[#ffffff1a] rounded-full transition-all shrink-0"
-          >
-            <X size={18} />
-          </button>
-        </div>
-      )}
+
 
       <div className="space-y-6">
         <div className="w-full relative group/tabs pb-6">
@@ -2771,60 +2814,78 @@ export default function Orders() {
           </div>
         </div>
 
+        <div className="relative z-[70]">
+          <AnimatePresence>
+            {selectedOrders.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl bg-surface/90 backdrop-blur-xl border border-border p-2 sm:p-2.5 rounded-[100px] flex items-center justify-between gap-4 shadow-[0_8px_30px_rgb(0,0,0,0.08)]"
+              >
+                <div className="flex items-center gap-2 px-2">
+                  <div className="bg-[#1C2032] text-white px-4 py-2 rounded-full text-[12px] font-bold tracking-wide">
+                    {selectedOrders.length} Selected
+                  </div>
+                  <div className="h-6 w-px bg-gray-200 mx-2" />
+                  <div className="flex items-center gap-1">
+                    <select
+                      onChange={(e) => handleBulkStatusUpdate(e.target.value)}
+                      className="bg-surface-hover dark:bg-black/5 text-black dark:text-white border border-black dark:border-white/20 rounded-lg px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-bold outline-none"
+                    >
+                      <option value="" className="text-black dark:text-white">Update Status</option>
+                      {statuses.map((s) => (
+                        <option key={s} value={s} className="text-black dark:text-white">
+                          {s.replace(/_/g, " ").charAt(0).toUpperCase() +
+                            s.replace(/_/g, " ").slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="w-px h-6 bg-gray-200 mx-2" />
+                    <button
+                      onClick={handleBulkPrint}
+                      className="p-2.5 hover:bg-surface-hover rounded-full text-muted hover:text-primary transition-colors"
+                      title="Bulk Print"
+                    >
+                      <Printer size={16} />
+                    </button>
+                    <button
+                      onClick={handleBulkDownloadPDF}
+                      className="p-2.5 hover:bg-surface-hover rounded-full text-muted hover:text-primary transition-colors"
+                      title="Download Invoices"
+                    >
+                      <Download size={16} />
+                    </button>
+                    <button
+                      onClick={handleBulkSendToCourier}
+                      className="p-2.5 hover:bg-surface-hover rounded-full text-muted hover:text-primary transition-colors"
+                      title="Bulk Send to Courier"
+                    >
+                      <Truck size={16} />
+                    </button>
+                    <div className="w-px h-6 bg-gray-200 mx-1" />
+                    <button
+                      onClick={handleBulkDelete}
+                      className="p-2.5 hover:bg-red-50 hover:text-red-500 rounded-full text-muted transition-colors"
+                      title="Bulk Delete"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedOrders([])}
+                  className="p-2 hover:bg-surface-hover rounded-full text-muted hover:text-primary transition-colors mr-1"
+                >
+                  <X size={18} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
         {viewMode === "table" ? (
           <div className="relative">
-            <AnimatePresence>
-              {selectedOrders.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="sticky top-4 z-[60] mx-auto w-full max-w-4xl bg-surface/90 backdrop-blur-xl border border-border p-2 sm:p-2.5 rounded-[100px] flex items-center justify-between gap-4 shadow-[0_8px_30px_rgb(0,0,0,0.08)]"
-                >
-                  <div className="flex items-center gap-2 px-2">
-                    <div className="bg-[#1C2032] text-white px-4 py-2 rounded-full text-[12px] font-bold tracking-wide">
-                      {selectedOrders.length} Selected
-                    </div>
-                    <div className="h-6 w-px bg-gray-200 mx-2" />
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleBulkStatusUpdate("confirmed")}
-                        className="px-4 py-2 hover:bg-surface-hover rounded-full text-[12px] font-bold text-secondary hover:text-primary transition-colors"
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        onClick={() => handleBulkStatusUpdate("shipped")}
-                        className="px-4 py-2 hover:bg-surface-hover rounded-full text-[12px] font-bold text-secondary hover:text-primary transition-colors"
-                      >
-                        Ship
-                      </button>
-                      <div className="w-px h-6 bg-gray-200 mx-2" />
-                      <button
-                        onClick={handleBulkPrint}
-                        className="p-2.5 hover:bg-surface-hover rounded-full text-muted hover:text-primary transition-colors"
-                        title="Bulk Print"
-                      >
-                        <Printer size={16} />
-                      </button>
-                      <button
-                        onClick={handleBulkSendToCourier}
-                        className="p-2.5 hover:bg-surface-hover rounded-full text-muted hover:text-primary transition-colors"
-                        title="Bulk Send to Courier"
-                      >
-                        <Truck size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedOrders([])}
-                    className="p-2 hover:bg-surface-hover rounded-full text-muted hover:text-primary transition-colors mr-1"
-                  >
-                    <X size={18} />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             <div className="bg-surface border border-border rounded-[20px] overflow-hidden shadow-subtle">
               <div className="overflow-x-auto custom-scrollbar pb-2">

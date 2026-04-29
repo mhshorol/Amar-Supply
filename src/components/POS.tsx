@@ -24,7 +24,14 @@ import {
   Check,
   Filter,
   Grid,
-  List
+  List,
+  ReceiptText,
+  Tag,
+  Percent,
+  MessageSquare,
+  Lock,
+  ShieldCheck,
+  Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, writeBatch, getDoc, getDocs, where, Timestamp, runTransaction, limit } from '../firebase';
@@ -75,7 +82,7 @@ export default function POS() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [displayCount, setDisplayCount] = useState(12);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>({ id: 'walk-in', name: 'Walk-in Customer', phone: 'N/A' });
   const [discount, setDiscount] = useState(0);
   const [tax, setTax] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'bKash' | 'Nagad' | 'Rocket' | 'Mobile Banking'>('Cash');
@@ -329,18 +336,21 @@ export default function POS() {
 
     setIsProcessing(true);
     try {
-      // Duplicate Detection Check
-      const duplicate = await checkDuplicateOrder({
-        customerPhone: selectedCustomer.phone,
-        customerName: selectedCustomer.name,
-        items: validCart.map(item => ({
-          productId: item.productId,
-          variantId: item.variantId || '',
-          quantity: item.quantity,
-          price: item.price
-        })),
-        totalAmount: total
-      });
+      // Duplicate Detection Check (Skip for Walk-in)
+      let duplicate = null;
+      if (selectedCustomer?.id !== 'walk-in') {
+        duplicate = await checkDuplicateOrder({
+          customerPhone: selectedCustomer.phone,
+          customerName: selectedCustomer.name,
+          items: validCart.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId || '',
+            quantity: item.quantity,
+            price: item.price
+          })),
+          totalAmount: total
+        });
+      }
 
       if (duplicate) {
         setConfirmConfig({
@@ -556,7 +566,7 @@ export default function POS() {
       await logActivity('POS Sale', 'POS', `Completed sale for ${total}`);
       
       setCart([]);
-      setSelectedCustomer(null);
+      setSelectedCustomer({ id: 'walk-in', name: 'Walk-in Customer', phone: 'N/A' });
       setDiscount(0);
       setTax(0);
       toast.success('Sale completed successfully!');
@@ -821,9 +831,9 @@ export default function POS() {
         {/* Customer Search / Selected */}
         <div className="p-4 border-b border-border bg-surface shrink-0">
           {selectedCustomer && selectedCustomer.id !== 'walk-in' ? (
-            <div className="p-3 bg-brand/10/50 rounded-xl border border-brand/20 flex items-center justify-between">
+            <div className="p-3 rounded-xl border bg-brand/10/50 border-brand/20 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 bg-surface rounded-lg flex items-center justify-center font-bold text-brand shrink-0 shadow-subtle border border-blue-50">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold shrink-0 shadow-subtle border bg-surface text-brand border-blue-50">
                   {selectedCustomer.name[0]}
                 </div>
                 <div className="min-w-0">
@@ -832,62 +842,11 @@ export default function POS() {
                 </div>
               </div>
               <button 
-                onClick={() => setSelectedCustomer(null)}
+                onClick={() => setSelectedCustomer({ id: 'walk-in', name: 'Walk-in Customer', phone: 'N/A' })}
                 className="p-1.5 text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0"
               >
                 <X size={16} />
               </button>
-            </div>
-          ) : selectedCustomer && selectedCustomer.id === 'walk-in' ? (
-             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
-              <input 
-                type="text"
-                placeholder="Search customer by name or phone..."
-                className="w-full pl-9 pr-9 py-2.5 bg-surface-hover border border-border rounded-xl text-sm focus:bg-surface focus:border-brand outline-none transition-all"
-                value={customerSearch}
-                onChange={(e) => setCustomerSearch(e.target.value)}
-              />
-              <button 
-                onClick={() => setIsCustomerModalOpen(true)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted hover:text-brand bg-surface rounded-lg border border-border shadow-subtle"
-                title="Add Customer"
-              >
-                <UserPlus size={14} />
-              </button>
-              
-              {customerSearch && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-surface rounded-xl shadow-xl border border-border p-2 z-20 max-h-48 overflow-y-auto custom-scrollbar">
-                  {filteredCustomers.length > 0 ? (
-                    filteredCustomers.map(c => (
-                      <button
-                        key={c.id}
-                        onClick={() => {
-                          setSelectedCustomer(c);
-                          setCustomerSearch('');
-                        }}
-                        className="w-full text-left px-3 py-2.5 hover:bg-surface-hover rounded-lg transition-all flex items-center justify-between"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-primary truncate">{c.name}</p>
-                          <p className="text-xs text-secondary truncate">{c.phone}</p>
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setNewCustomer({ ...newCustomer, phone: customerSearch });
-                        setIsCustomerModalOpen(true);
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-brand/10 rounded-lg transition-all flex items-center gap-2 text-brand"
-                    >
-                      <UserPlus size={16} className="shrink-0" />
-                      <span className="text-sm font-bold truncate">Add "{customerSearch}"</span>
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           ) : (
             <div className="relative">
@@ -1046,81 +1005,115 @@ export default function POS() {
         </div>
 
 
-        <div className="p-4 lg:p-5 border-t border-border bg-surface-hover/50 shrink-0 mt-auto">
-          <div className="space-y-2 mb-3">
-            <div className="flex justify-between items-center text-[11px] font-bold text-secondary">
-               <span className="uppercase tracking-wider">Subtotal</span>
-               <span className="text-primary font-bold">{currencySymbol}{(subtotal || 0).toLocaleString()}</span>
+        <div className="p-4 border-t border-border shrink-0 mt-auto bg-surface">
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                 <div className="w-7 h-7 rounded-[8px] bg-brand/5 flex items-center justify-center text-brand">
+                   <ReceiptText size={14} strokeWidth={2.5} />
+                 </div>
+                 <span className="text-xs font-bold text-secondary uppercase tracking-wider">Subtotal</span>
+              </div>
+              <span className="text-sm font-bold text-primary">{currencySymbol}{(subtotal || 0).toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center text-[11px] font-bold text-secondary">
-               <span className="uppercase tracking-wider">Discount</span>
-               <div className="w-20 relative">
-                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted font-semibold">{currencySymbol}</span>
-                 <input 
-                   type="number" 
-                   className="w-full text-right bg-surface border border-border rounded-md py-1 pr-1.5 pl-5 font-bold text-primary focus:outline-none focus:border-brand transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]" 
-                   placeholder="0"
-                   value={discount === 0 ? '' : discount}
-                   onChange={(e) => setDiscount(Number(e.target.value))}
-                 />
-               </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                 <div className="w-7 h-7 rounded-[8px] bg-green-500/10 flex items-center justify-center text-green-500">
+                   <Tag size={14} strokeWidth={2.5} />
+                 </div>
+                 <span className="text-xs font-bold text-secondary uppercase tracking-wider">Discount</span>
+              </div>
+              <div className="w-20 relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted font-bold text-xs">{currencySymbol}</span>
+                <input 
+                  type="number" 
+                  className="w-full text-right bg-surface border border-border rounded-lg py-1 pr-2 pl-5 font-bold text-xs text-primary focus:outline-none focus:border-brand transition-all hover:bg-surface-hover [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]" 
+                  placeholder="0"
+                  value={discount === 0 ? '' : discount}
+                  onChange={(e) => setDiscount(Number(e.target.value))}
+                />
+              </div>
             </div>
-            <div className="flex justify-between items-center text-[11px] font-bold text-secondary">
-               <span className="uppercase tracking-wider">Tax (VAT)</span>
-               <div className="w-20 relative">
-                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted font-semibold">{currencySymbol}</span>
-                 <input 
-                   type="number" 
-                   className="w-full text-right bg-surface border border-border rounded-md py-1 pr-1.5 pl-5 font-bold text-primary focus:outline-none focus:border-brand transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]" 
-                   placeholder="0"
-                   value={tax === 0 ? '' : tax}
-                   onChange={(e) => setTax(Number(e.target.value))}
-                 />
-               </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                 <div className="w-7 h-7 rounded-[8px] bg-purple-500/10 flex items-center justify-center text-purple-500">
+                   <Percent size={14} strokeWidth={2.5} />
+                 </div>
+                 <span className="text-xs font-bold text-secondary uppercase tracking-wider">Tax (VAT)</span>
+              </div>
+              <div className="w-20 relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted font-bold text-xs">{currencySymbol}</span>
+                <input 
+                  type="number" 
+                  className="w-full text-right bg-surface border border-border rounded-lg py-1 pr-2 pl-5 font-bold text-xs text-primary focus:outline-none focus:border-brand transition-all hover:bg-surface-hover [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]" 
+                  placeholder="0"
+                  value={tax === 0 ? '' : tax}
+                  onChange={(e) => setTax(Number(e.target.value))}
+                />
+              </div>
             </div>
           </div>
           
-          <div className="flex justify-between items-end border-t border-border border-dashed pt-4 mb-4">
-            <span className="text-[14px] font-bold uppercase tracking-widest text-primary">Total Payable</span>
-            <span className="text-[24px] font-black text-brand leading-none">{currencySymbol}{(total || 0).toLocaleString()}</span>
+          <div className="flex justify-between items-center border-t border-border/60 border-dashed pt-3 mb-3">
+            <span className="text-sm font-bold text-primary uppercase tracking-wider">Total Payable</span>
+            <span className="text-xl tracking-tight font-black text-brand leading-none">{currencySymbol}{(total || 0).toLocaleString()}</span>
           </div>
-
-          <p className="text-[12px] font-bold text-secondary mb-3 uppercase tracking-wider">Select Payment Method</p>
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          
+          <p className="text-[11px] font-bold text-secondary uppercase tracking-wider mb-2">Select Payment Method</p>
+          <div className="grid grid-cols-3 gap-2 mb-3">
              {[
                { id: 'Cash', label: 'Cash', icon: Banknote },
                { id: 'Card', label: 'Card', icon: CreditCard },
-               { id: 'Mobile Banking', label: 'Mobile Banking', icon: Smartphone }
+               { id: 'Mobile Banking', label: 'MFS', icon: Wallet }
              ].map(method => (
                <button
                  key={method.id}
                  onClick={() => setPaymentMethod(method.id as any)}
-                 className={`flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl transition-all ${paymentMethod === method.id ? 'bg-brand/5 dark:bg-brand/20 border-2 border-brand text-brand' : 'bg-surface border border-border text-secondary hover:border-border hover:bg-surface-hover'}`}
+                 className={`relative flex flex-col items-center justify-center gap-1 py-1.5 px-2 rounded-xl transition-all border ${paymentMethod === method.id ? 'bg-brand/5 border-brand ring-1 ring-brand' : 'bg-surface border-border hover:border-border hover:bg-surface-hover'}`}
                >
-                 <method.icon size={20} strokeWidth={2} />
-                 <span className="text-[11px] font-bold text-center leading-tight">{method.label}</span>
+                 {paymentMethod === method.id && (
+                    <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-brand flex items-center justify-center">
+                       <Check size={8} strokeWidth={3} className="text-white" />
+                    </div>
+                 )}
+                 <method.icon size={16} strokeWidth={2} className={paymentMethod === method.id ? 'text-brand' : 'text-secondary'} />
+                 <span className={`text-[11px] font-bold text-center leading-tight ${paymentMethod === method.id ? 'text-brand' : 'text-primary'}`}>{method.label}</span>
                </button>
              ))}
           </div>
 
-          <div className="flex gap-2 mb-4">
+          <div className="mb-3">
               <button 
                  onClick={() => setSendSMS(!sendSMS)}
-                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-[13px] font-semibold transition-all ${sendSMS ? 'bg-brand/10 border-blue-200 text-brand' : 'bg-surface border-border text-secondary hover:bg-surface-hover'}`}
+                 className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-bold transition-all ${sendSMS ? 'bg-brand/5 border-brand/30 text-brand' : 'bg-surface border-border text-secondary hover:bg-surface-hover'}`}
               >
-                 <Smartphone size={16} /> SMS
+                 <MessageSquare size={14} strokeWidth={2.5} /> SMS Receipt
               </button>
           </div>
 
           <button 
             onClick={handleCheckout}
             disabled={isProcessing || cart.length === 0}
-            className="w-full text-white rounded-xl py-4 font-bold text-[16px] transition-all disabled:opacity-80 flex items-center justify-center gap-2"
-            style={{ backgroundColor: (isProcessing || cart.length === 0) ? '#83b0f9' : '#0066FF' }}
+            className="w-full text-white rounded-xl py-2.5 font-bold text-[13px] transition-all disabled:opacity-80 flex items-center justify-between px-4 shadow-sm bg-brand hover:bg-brand-hover"
           >
-            {isProcessing ? <Loader2 size={16} className="animate-spin" /> : null}
-            Checkout ({currencySymbol}{(total || 0).toLocaleString()})
+            <div className="w-4 flex items-center justify-center opacity-70">
+              <Lock size={14} />
+            </div>
+            <div className="flex items-center gap-2 flex-1 justify-center tracking-wide">
+              {isProcessing ? <Loader2 size={14} className="animate-spin" /> : null}
+              Checkout ({currencySymbol}{(total || 0).toLocaleString()})
+            </div>
+            <div className="w-4 flex items-center justify-center">
+              <ChevronRight size={16} />
+            </div>
           </button>
+          
+          <div className="mt-3 flex flex-col items-center gap-1 opacity-70">
+             <div className="flex items-center gap-1.5 text-secondary">
+               <ShieldCheck size={12} className="text-brand" />
+               <span className="text-[10px] font-medium">Your payment is secure and encrypted</span>
+             </div>
+          </div>
         </div>
       </div>
       {/* Camera Scanner Modal */}
@@ -1229,7 +1222,7 @@ export default function POS() {
               <div className="flex flex-col gap-3">
                 <button 
                   onClick={() => handlePrint()}
-                  className="w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-black/20 flex items-center justify-center gap-3 active:scale-[0.98]"
+                  className="w-full py-4 bg-slate-800 hover:bg-slate-900 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl shadow-slate-900/10 dark:shadow-white/10 flex items-center justify-center gap-3 active:scale-[0.98]"
                 >
                   <Printer size={20} strokeWidth={2.5} />
                   Generate Receipt

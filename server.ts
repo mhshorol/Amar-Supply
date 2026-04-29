@@ -282,6 +282,22 @@ async function startServer() {
     res.json({ message: 'API is working' });
   });
 
+  // Delete User from Firebase Auth
+  app.delete('/api/users/:uid', async (req, res) => {
+    try {
+      if (!admin.apps.length) {
+        return res.status(500).json({ error: 'Firebase Admin not initialized' });
+      }
+      const { uid } = req.params;
+      
+      await admin.auth().deleteUser(uid);
+      res.json({ success: true, message: 'User deleted from Auth' });
+    } catch (error: any) {
+      console.error('Error deleting user from Auth:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Health check
   app.get('/api/health', async (req, res) => {
     const dbStatus = db ? 'Initialized' : 'Not Initialized';
