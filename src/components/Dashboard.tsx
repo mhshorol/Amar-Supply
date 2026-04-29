@@ -419,8 +419,8 @@ export default function Dashboard() {
           icon={DollarSign} 
           trend="down" 
           trendValue="7.2%" 
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-500"
+          iconBg="bg-emerald-50 dark:bg-emerald-500/10"
+          iconColor="text-emerald-500 dark:text-emerald-400"
           delay={0.2}
         />
         <StatCard 
@@ -429,8 +429,8 @@ export default function Dashboard() {
           icon={Package} 
           trend="up" 
           trendValue="4.7%" 
-          iconBg="bg-orange-50"
-          iconColor="text-orange-500"
+          iconBg="bg-orange-50 dark:bg-orange-500/10"
+          iconColor="text-orange-500 dark:text-orange-400"
           delay={0.3}
         />
         <StatCard 
@@ -439,8 +439,8 @@ export default function Dashboard() {
           icon={Users} 
           trend="up" 
           trendValue="2.1%" 
-          iconBg="bg-purple-50"
-          iconColor="text-purple-500"
+          iconBg="bg-purple-50 dark:bg-purple-500/10"
+          iconColor="text-purple-500 dark:text-purple-400"
           delay={0.4}
         />
         <StatCard 
@@ -449,8 +449,8 @@ export default function Dashboard() {
           icon={CheckCircle2} 
           trend="up" 
           trendValue="2.6%" 
-          iconBg="bg-pink-50"
-          iconColor="text-pink-500"
+          iconBg="bg-pink-50 dark:bg-pink-500/10"
+          iconColor="text-pink-500 dark:text-pink-400"
           delay={0.5}
         />
         <StatCard 
@@ -459,8 +459,8 @@ export default function Dashboard() {
           icon={Clock} 
           trend="up" 
           trendValue="1.9%" 
-          iconBg="bg-red-50"
-          iconColor="text-red-500"
+          iconBg="bg-red-50 dark:bg-rose-500/10"
+          iconColor="text-red-500 dark:text-rose-400"
           delay={0.6}
         />
       </div>
@@ -472,7 +472,7 @@ export default function Dashboard() {
         <div className="bg-surface border border-border rounded-[20px] p-6 shadow-subtle">
           <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center text-red-500">
+              <div className="w-6 h-6 rounded-full bg-red-50 dark:bg-rose-500/10 flex items-center justify-center text-red-500 dark:text-rose-400">
                 <AlertCircle size={14} />
               </div>
               <h3 className="text-[16px] font-bold text-primary">Stock Alerts</h3>
@@ -482,12 +482,12 @@ export default function Dashboard() {
           <div className="space-y-4">
             {lowStockProducts.map((p, i) => (
               <div key={i} className="flex items-center gap-4 group cursor-pointer">
-                <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-rose-500/10 flex items-center justify-center text-red-500 dark:text-rose-400 shrink-0">
                   <Package size={18} />
                 </div>
                 <div className="min-w-0">
                   <h4 className="text-[13px] font-bold text-primary truncate mb-0.5">{p.name}</h4>
-                  <p className="text-[11px] font-medium text-red-500">{p.stock || 0} units left</p>
+                  <p className="text-[11px] font-medium text-red-500 dark:text-rose-400">{p.stock || 0} units left</p>
                 </div>
               </div>
             ))}
@@ -542,10 +542,10 @@ export default function Dashboard() {
                   <div className="flex items-center justify-end gap-4">
                     <span className="text-[13px] font-bold text-primary">{formatCurrency(order.totalAmount)}</span>
                     <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                         order.status?.toLowerCase() === 'delivered' ? 'bg-emerald-50 text-emerald-600' : 
+                         order.status?.toLowerCase() === 'delivered' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 
                          order.status?.toLowerCase() === 'shipped' ? 'bg-brand/10 text-brand' :
-                         order.status?.toLowerCase() === 'cancelled' ? 'bg-rose-50 text-rose-600' :
-                         'bg-orange-50 text-orange-500' /* Pending style */
+                         order.status?.toLowerCase() === 'cancelled' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' :
+                         'bg-orange-50 dark:bg-orange-500/10 text-orange-500 dark:text-orange-400' /* Pending style */
                        }`}>
                       {order.status || 'PENDING'}
                     </span>
