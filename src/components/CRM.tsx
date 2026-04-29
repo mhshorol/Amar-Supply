@@ -4,18 +4,12 @@ import {
   Plus, 
   Download, 
   Users, 
-  Phone, 
-  Mail, 
-  MapPin, 
   ShoppingBag, 
-  Calendar,
   MoreVertical,
   MessageSquare,
   History,
   Loader2,
-  X,
-  Trash2,
-  Edit
+  X
 } from 'lucide-react';
 import { 
   collection, 
