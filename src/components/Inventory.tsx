@@ -385,7 +385,10 @@ export default function Inventory() {
 function ProductsTab({ products, variants, categories, brands, onEdit, onDelete, onAddCategory, onAddBrand }: any) {
   const { currencySymbol } = useSettings();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const printRef = useRef<HTMLDivElement>(null);
+  const itemsPerPage = 10;
 
   const triggerPrint = (product: any) => {
     setSelectedProduct(product);
@@ -399,6 +402,32 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onDelete,
         openPrintWindow(printRef.current.innerHTML, 'Print Barcode', win);
       }
     }, 500);
+  };
+
+  const filteredProducts = products.filter((p: any) => 
+    p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    return pages;
   };
 
   return (
@@ -435,7 +464,16 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onDelete,
           </button>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input type="text" placeholder="Search products..." className="pl-9 pr-4 py-2 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all w-[240px]" />
+            <input 
+              type="text" 
+              placeholder="Search products..." 
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1); // Reset to page 1 on search
+              }}
+              className="pl-9 pr-4 py-2 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all w-[240px]" 
+            />
           </div>
         </div>
       </div>
@@ -452,7 +490,7 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onDelete,
             </tr>
           </thead>
         <tbody className="divide-y divide-border bg-surface">
-          {products.map((p: any) => (
+          {currentProducts.map((p: any) => (
             <tr key={p.id} className="hover:bg-surface-hover transition-colors group">
               <td className="px-6 py-4">
                 <div className="flex items-center gap-4">
@@ -511,28 +549,46 @@ function ProductsTab({ products, variants, categories, brands, onEdit, onDelete,
       </table>
       </div>
       <div className="px-6 py-4 border-t border-border bg-surface flex items-center justify-between">
-         <span className="text-[13px] text-secondary">Showing 1 to {Math.min(6, products.length)} of {products.length} products</span>
-         <div className="flex items-center gap-1">
-            <button className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-surface-hover text-muted transition-colors">
-               <ChevronLeft size={16} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center bg-brand text-white rounded-lg font-medium text-sm transition-colors shadow-subtle">
-               1
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-surface-hover text-secondary font-medium text-sm transition-colors">
-               2
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-surface-hover text-secondary font-medium text-sm transition-colors">
-               3
-            </button>
-            <span className="w-8 h-8 flex items-center justify-center text-muted">...</span>
-            <button className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-surface-hover text-secondary font-medium text-sm transition-colors">
-               20
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-surface-hover text-secondary transition-colors">
-               <ChevronRight size={16} />
-            </button>
-         </div>
+         <span className="text-[13px] text-secondary">
+           Showing {filteredProducts.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+         </span>
+         {totalPages > 1 && (
+           <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-surface-hover text-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                 <ChevronLeft size={16} />
+              </button>
+              
+              {getPageNumbers().map((pageNum, idx) => (
+                pageNum === '...' ? (
+                  <span key={`dots-${idx}`} className="w-8 h-8 flex items-center justify-center text-muted">...</span>
+                ) : (
+                  <button 
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum as number)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg font-medium text-sm transition-colors ${
+                      currentPage === pageNum 
+                        ? 'bg-brand text-white shadow-subtle' 
+                        : 'border border-border hover:bg-surface-hover text-secondary'
+                    }`}
+                  >
+                     {pageNum}
+                  </button>
+                )
+              ))}
+
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-surface-hover text-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                 <ChevronRight size={16} />
+              </button>
+           </div>
+         )}
       </div>
     </div>
   );
