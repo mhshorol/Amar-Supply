@@ -120,7 +120,12 @@ export default function NewOrder() {
         setVariants(variantsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
         
         const warehousesSnap = await getDocs(collection(db, 'warehouses'));
-        setWarehouses(warehousesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const warehousesList = warehousesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setWarehouses(warehousesList);
+        
+        if (warehousesList.length === 1) {
+          setOrderForm(prev => ({ ...prev, warehouseId: warehousesList[0].id }));
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -352,6 +357,8 @@ export default function NewOrder() {
       setIsFetchingHistory(false);
     }
   };
+
+  const [activeProductFilter, setActiveProductFilter] = useState<'all' | 'recent' | 'best_selling' | 'frequent'>('all');
 
   const calculateTotals = (items: any[], deliveryCharge: number, discount: number, paidAmount: number) => {
     const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.price), 0);
@@ -596,10 +603,20 @@ export default function NewOrder() {
   const profit = (subtotal - orderForm.discount) - totalCost;
   const marginPercentage = (subtotal - orderForm.discount) > 0 ? ((profit / (subtotal - orderForm.discount)) * 100).toFixed(1) : 0;
 
-  const filteredProducts = products.filter(p => 
+  let filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
     p.sku?.toLowerCase().includes(productSearch.toLowerCase())
   );
+
+  if (!productSearch) {
+    if (activeProductFilter === 'recent') {
+      filteredProducts = [...products].sort((a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 10);
+    } else if (activeProductFilter === 'best_selling') {
+      filteredProducts = [...products].sort((a: any, b: any) => (b.sales || 0) - (a.sales || 0)).slice(0, 10);
+    } else if (activeProductFilter === 'frequent') {
+      filteredProducts = [...products].sort((a: any, b: any) => (b.views || 0) - (a.views || 0)).slice(0, 10);
+    }
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8 max-w-6xl mx-auto pb-20 lg:pb-8">
@@ -840,6 +857,7 @@ export default function NewOrder() {
                     onFocus={() => setShowProductDropdown(true)}
                     onChange={(e) => {
                       setProductSearch(e.target.value);
+                      setActiveProductFilter('all');
                       setShowProductDropdown(true);
                     }}
                   />
@@ -854,7 +872,7 @@ export default function NewOrder() {
                   </div>
                 </div>
 
-                {showProductDropdown && productSearch && (
+                {showProductDropdown && (productSearch || activeProductFilter !== 'all') && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto overflow-hidden">
                     {filteredProducts.length > 0 ? (
                       filteredProducts.map(p => (
@@ -893,9 +911,9 @@ export default function NewOrder() {
               </div>
 
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand/10 text-brand-hover border border-blue-200 rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-brand/20 transition-colors"><Package size={14} /> Recent Products</button>
-                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface text-secondary border border-border rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-surface-hover transition-colors"><ShoppingCart size={14} /> Best Selling</button>
-                <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface text-secondary border border-border rounded-lg text-xs font-semibold whitespace-nowrap hover:bg-surface-hover transition-colors"><ListFilter size={14} /> Frequently Bought</button>
+                <button type="button" onClick={() => { setActiveProductFilter('recent'); setShowProductDropdown(true); }} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors border ${activeProductFilter === 'recent' && showProductDropdown ? 'bg-brand/10 text-brand-hover border-blue-200' : 'bg-surface text-secondary border-border hover:bg-surface-hover'}`}><Package size={14} /> Recent Products</button>
+                <button type="button" onClick={() => { setActiveProductFilter('best_selling'); setShowProductDropdown(true); }} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors border ${activeProductFilter === 'best_selling' && showProductDropdown ? 'bg-brand/10 text-brand-hover border-blue-200' : 'bg-surface text-secondary border-border hover:bg-surface-hover'}`}><ShoppingCart size={14} /> Best Selling</button>
+                <button type="button" onClick={() => { setActiveProductFilter('frequent'); setShowProductDropdown(true); }} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors border ${activeProductFilter === 'frequent' && showProductDropdown ? 'bg-brand/10 text-brand-hover border-blue-200' : 'bg-surface text-secondary border-border hover:bg-surface-hover'}`}><ListFilter size={14} /> Frequently Bought</button>
               </div>
 
               {newItem.productId && (
@@ -995,17 +1013,17 @@ export default function NewOrder() {
 
             {orderForm.items.length > 0 && (
               <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-border text-[11px] font-semibold text-secondary uppercase tracking-wider">
-                <div className="col-span-6">Product</div>
+                <div className="col-span-4">Product</div>
                 <div className="col-span-2 text-center">Price</div>
-                <div className="col-span-2 text-center">Quantity</div>
-                <div className="col-span-2 text-right">Total</div>
+                <div className="col-span-3 text-center">Quantity</div>
+                <div className="col-span-3 text-right">Total</div>
               </div>
             )}
             
             <div className="space-y-3">
               {orderForm.items.map((item, idx) => (
                 <div key={idx} className="flex flex-col sm:grid sm:grid-cols-12 gap-4 items-center bg-surface border border-border p-4 rounded-xl hover:border-blue-300 transition-all group/item shadow-subtle">
-                  <div className="col-span-6 w-full flex items-center gap-4">
+                  <div className="col-span-4 w-full flex items-center gap-4">
                     {item.image ? (
                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-border">
                         <img src={item.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -1030,7 +1048,7 @@ export default function NewOrder() {
                     {currencySymbol}{item.price.toLocaleString()}
                   </div>
 
-                  <div className="col-span-2 w-full sm:w-auto flex justify-center items-center">
+                  <div className="col-span-3 w-full sm:w-auto flex justify-center items-center">
                     <div className="flex items-center bg-surface rounded-lg overflow-hidden border border-border w-full max-w-[120px] sm:max-w-none">
                       <button 
                         type="button"
@@ -1068,7 +1086,7 @@ export default function NewOrder() {
                     </div>
                   </div>
 
-                  <div className="col-span-2 w-full sm:w-auto flex justify-between sm:justify-end items-center gap-4">
+                  <div className="col-span-3 w-full sm:w-auto flex justify-between sm:justify-end items-center gap-4">
                     <span className="sm:hidden text-xs text-secondary font-normal">Total:</span>
                     <span className="text-sm font-black text-primary">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</span>
                     <div className="flex gap-1 shrink-0">
@@ -1149,9 +1167,15 @@ export default function NewOrder() {
                 </div>
                 <div className="flex justify-between items-center text-sm text-primary">
                   <span className="text-secondary">Delivery Charge</span>
-                  <div className="relative flex items-center justify-end">
-                    <span className="text-primary font-bold mr-1">{currencySymbol}</span>
-                    <span className="font-bold">{orderForm.deliveryCharge}</span>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs">{currencySymbol}</span>
+                    <input 
+                      type="number"
+                      className="w-24 pl-6 pr-3 py-1.5 text-right font-bold text-primary bg-surface border border-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      value={orderForm.deliveryCharge === 0 ? '' : orderForm.deliveryCharge}
+                      placeholder="0"
+                      onChange={e => setOrderForm({...orderForm, deliveryCharge: parseFloat(e.target.value) || 0})}
+                    />
                   </div>
                 </div>
               </div>
