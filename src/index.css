@@ -137,3 +137,10 @@
   scrollbar-width: none;
 }
 
+@media print {
+  .break-after-page {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+}
+

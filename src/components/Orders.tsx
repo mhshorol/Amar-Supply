@@ -4265,7 +4265,7 @@ export default function Orders() {
                 const order = orders.find((o) => o.id === id);
                 if (!order) return null;
                 return (
-                  <div key={id} className="page-break-after">
+                  <div key={id} className="print:break-after-page break-after-page">
                     <A5Invoice
                       order={order}
                       company={companySettings || {}}
