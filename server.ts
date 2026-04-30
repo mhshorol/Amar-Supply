@@ -333,14 +333,22 @@ async function startServer() {
       if (!database) {
         return res.status(503).json({ error: 'Firebase Admin not initialized' });
       }
-      const companySettings = await database.collection('settings').doc('company').get();
-      const settings = companySettings.data();
 
-      if (!settings?.wooUrl || !settings?.wooConsumerKey || !settings?.wooConsumerSecret) {
-        return res.status(400).json({ error: 'WooCommerce settings not configured' });
+      let settings: any = {};
+      try {
+        const companySettings = await database.collection('settings').doc('company').get();
+        settings = companySettings.exists ? companySettings.data() : {};
+      } catch (err: any) {
+        console.warn('Could not fetch company settings from Firestore. Falling back to env variables.', err.message);
       }
 
-      const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = settings;
+      const rawWooUrl = settings?.wooUrl || process.env.WOO_URL || process.env.VITE_WOO_URL;
+      const wooConsumerKey = settings?.wooConsumerKey || process.env.WOO_CONSUMER_KEY || process.env.VITE_WOO_CONSUMER_KEY;
+      const wooConsumerSecret = settings?.wooConsumerSecret || process.env.WOO_CONSUMER_SECRET || process.env.VITE_WOO_CONSUMER_SECRET;
+
+      if (!rawWooUrl || !wooConsumerKey || !wooConsumerSecret) {
+        return res.status(400).json({ error: 'WooCommerce settings not configured in App or Environment Variables' });
+      }
       
       // Sanitize URL: remove trailing slash and ensure https
       let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
@@ -386,14 +394,22 @@ async function startServer() {
     try {
       const database = await getDb();
       if (!database) return res.status(503).json({ error: 'Firebase Admin not initialized' });
-      const companySettings = await database.collection('settings').doc('company').get();
-      const settings = companySettings.data();
 
-      if (!settings?.wooUrl || !settings?.wooConsumerKey || !settings?.wooConsumerSecret) {
-        return res.status(400).json({ error: 'WooCommerce settings not configured' });
+      let settings: any = {};
+      try {
+        const companySettings = await database.collection('settings').doc('company').get();
+        settings = companySettings.exists ? companySettings.data() : {};
+      } catch (err: any) {
+        console.warn('Could not fetch company settings from Firestore. Falling back to env variables.', err.message);
       }
 
-      const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = settings;
+      const rawWooUrl = settings?.wooUrl || process.env.WOO_URL || process.env.VITE_WOO_URL;
+      const wooConsumerKey = settings?.wooConsumerKey || process.env.WOO_CONSUMER_KEY || process.env.VITE_WOO_CONSUMER_KEY;
+      const wooConsumerSecret = settings?.wooConsumerSecret || process.env.WOO_CONSUMER_SECRET || process.env.VITE_WOO_CONSUMER_SECRET;
+
+      if (!rawWooUrl || !wooConsumerKey || !wooConsumerSecret) {
+        return res.status(400).json({ error: 'WooCommerce settings not configured in App or Environment Variables' });
+      }
       
       // Sanitize URL: remove trailing slash and ensure https
       let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
@@ -429,14 +445,22 @@ async function startServer() {
     try {
       const database = await getDb();
       if (!database) return res.status(503).json({ error: 'Firebase Admin not initialized' });
-      const companySettings = await database.collection('settings').doc('company').get();
-      const settings = companySettings.data();
 
-      if (!settings?.wooUrl || !settings?.wooConsumerKey || !settings?.wooConsumerSecret) {
-        return res.status(400).json({ error: 'WooCommerce settings not configured' });
+      let settings: any = {};
+      try {
+        const companySettings = await database.collection('settings').doc('company').get();
+        settings = companySettings.exists ? companySettings.data() : {};
+      } catch (err: any) {
+        console.warn('Could not fetch company settings from Firestore. Falling back to env variables.', err.message);
       }
 
-      const { wooUrl: rawWooUrl, wooConsumerKey, wooConsumerSecret } = settings;
+      const rawWooUrl = settings?.wooUrl || process.env.WOO_URL || process.env.VITE_WOO_URL;
+      const wooConsumerKey = settings?.wooConsumerKey || process.env.WOO_CONSUMER_KEY || process.env.VITE_WOO_CONSUMER_KEY;
+      const wooConsumerSecret = settings?.wooConsumerSecret || process.env.WOO_CONSUMER_SECRET || process.env.VITE_WOO_CONSUMER_SECRET;
+
+      if (!rawWooUrl || !wooConsumerKey || !wooConsumerSecret) {
+        return res.status(400).json({ error: 'WooCommerce settings not configured in App or Environment Variables' });
+      }
       
       // Sanitize URL: remove trailing slash and ensure https
       let wooUrl = rawWooUrl.trim().replace(/\/+$/, '');
@@ -510,16 +534,21 @@ async function startServer() {
       console.log('WooCommerce Webhook received for order:', order.id);
 
       // Log the webhook
-      await database.collection('woocommerce_logs').add({
-        type: 'webhook',
-        orderId: order.id?.toString() || 'unknown',
-        status: order.status || 'unknown',
-        timestamp: serverTimestamp()
-      });
+      try {
+        await database.collection('woocommerce_logs').add({
+          type: 'webhook',
+          orderId: order.id?.toString() || 'unknown',
+          status: order.status || 'unknown',
+          timestamp: serverTimestamp()
+        });
+      } catch (err: any) {
+        console.warn('Failed to log webhook to Firestore, continuing...', err.message);
+      }
 
       // Sync customer data to CRM
-      if (order.billing && order.billing.phone) {
-        const phone = order.billing.phone;
+      try {
+        if (order.billing && order.billing.phone) {
+          const phone = order.billing.phone;
         const name = `${order.billing.first_name || ''} ${order.billing.last_name || ''}`.trim();
         const email = order.billing.email || '';
         const address = `${order.billing.address_1 || ''}, ${order.billing.city || ''}`.trim();
@@ -558,6 +587,9 @@ async function startServer() {
           });
           console.log(`Updated existing CRM customer from WooCommerce order: ${phone}`);
         }
+      }
+      } catch (crmErr: any) {
+        console.warn('Failed to sync customer data to CRM from webhook, continuing...', crmErr.message);
       }
 
       res.status(200).send('Webhook processed');
