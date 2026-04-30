@@ -1311,9 +1311,9 @@ export default function Orders() {
         for (const item of orderForm.items) {
           const invQuery = query(
             collection(db, "inventory"),
-            where("productId", "==", item.productId),
+            where("productId", "==", item.productId || ""),
             where("variantId", "==", item.variantId || ""),
-            where("warehouseId", "==", orderForm.warehouseId),
+            where("warehouseId", "==", orderForm.warehouseId || ""),
           );
           const invSnap = await getDocs(invQuery);
           inventorySnaps.push({ item, snap: invSnap });
@@ -1579,9 +1579,9 @@ export default function Orders() {
           for (const item of orderData.items) {
             const invQuery = query(
               collection(db, "inventory"),
-              where("productId", "==", item.productId),
+              where("productId", "==", item.productId || ""),
               where("variantId", "==", item.variantId || ""),
-              where("warehouseId", "==", orderData.warehouseId),
+              where("warehouseId", "==", orderData.warehouseId || ""),
             );
             const invSnap = await getDocs(invQuery);
             if (!invSnap.empty) {
@@ -1616,9 +1616,9 @@ export default function Orders() {
           for (const item of orderData.items) {
             const invQuery = query(
               collection(db, "inventory"),
-              where("productId", "==", item.productId),
+              where("productId", "==", item.productId || ""),
               where("variantId", "==", item.variantId || ""),
-              where("warehouseId", "==", orderData.warehouseId),
+              where("warehouseId", "==", orderData.warehouseId || ""),
             );
             const invSnap = await getDocs(invQuery);
             if (!invSnap.empty) {
@@ -1685,9 +1685,9 @@ export default function Orders() {
               for (const item of orderData.items) {
                 const invQuery = query(
                   collection(db, "inventory"),
-                  where("productId", "==", item.productId),
+                  where("productId", "==", item.productId || ""),
                   where("variantId", "==", item.variantId || ""),
-                  where("warehouseId", "==", orderData.warehouseId),
+                  where("warehouseId", "==", orderData.warehouseId || ""),
                 );
                 const invSnap = await getDocs(invQuery);
                 if (!invSnap.empty) {
@@ -1775,9 +1775,9 @@ export default function Orders() {
                     for (const item of orderData.items) {
                       const invQuery = query(
                         collection(db, "inventory"),
-                        where("productId", "==", item.productId),
+                        where("productId", "==", item.productId || ""),
                         where("variantId", "==", item.variantId || ""),
-                        where("warehouseId", "==", orderData.warehouseId),
+                        where("warehouseId", "==", orderData.warehouseId || ""),
                       );
                       const invSnap = await getDocs(invQuery);
                       if (!invSnap.empty) {
