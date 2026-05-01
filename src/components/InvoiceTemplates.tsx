@@ -38,6 +38,12 @@ export const A5Invoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ order
                 <span>No:</span>
                 <span className="text-[#000000]">#{order.orderNumber || order.id.slice(0, 8)}</span>
               </div>
+              {order.customShipmentNumber && (
+                <div className="flex items-center gap-2 text-xs font-bold text-[#000000] uppercase tracking-widest mt-0.5">
+                  <span>Shipment No:</span>
+                  <span className="text-[#000000]">{order.customShipmentNumber}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -231,6 +237,12 @@ export const POSInvoice = React.forwardRef<HTMLDivElement, InvoiceProps>(({ orde
           <span>Cust: {order.customerName}</span>
           <span>{order.customerPhone}</span>
         </div>
+        {order.customShipmentNumber && (
+          <div className="flex justify-between font-bold">
+            <span>Shipment No:</span>
+            <span>{order.customShipmentNumber}</span>
+          </div>
+        )}
       </div>
 
       <table className="w-full text-[9px] mb-1">

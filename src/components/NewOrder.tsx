@@ -56,6 +56,7 @@ export default function NewOrder() {
     customerAddress: '',
     customerCity: 'Dhaka',
     customerZone: 'Inside Dhaka',
+    customShipmentNumber: '',
     division: '',
     district: '',
     area: '',
@@ -610,6 +611,7 @@ export default function NewOrder() {
         customerAddress: '',
         customerCity: 'Dhaka',
         customerZone: 'Inside Dhaka',
+        customShipmentNumber: '',
         division: '',
         district: '',
         area: '',
@@ -866,6 +868,20 @@ export default function NewOrder() {
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                     <ChevronDown size={16} strokeWidth={3} />
                   </div>
+                </div>
+              </div>
+
+              {/* Row 4: Custom Shipment Number */}
+              <div className="space-y-2">
+                <label className="mb-2 block text-[11px] font-semibold text-secondary uppercase tracking-wider">Custom Shipment Number (Optional)</label>
+                <div className="relative">
+                  <input 
+                    type="text"
+                    className="w-full pl-4 pr-4 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary"
+                    value={orderForm.customShipmentNumber}
+                    onChange={e => setOrderForm({...orderForm, customShipmentNumber: e.target.value})}
+                    placeholder="Enter Shipment Number"
+                  />
                 </div>
               </div>
             </div>
