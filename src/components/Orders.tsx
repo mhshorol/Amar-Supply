@@ -2918,6 +2918,9 @@ export default function Orders() {
                       <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest text-center whitespace-nowrap">
                         STATUS
                       </th>
+                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest text-center whitespace-nowrap">
+                        SH NO
+                      </th>
                       <th className="px-2 xl:px-4 py-4">
                         <div className="flex items-center justify-end gap-2 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">
                           ACTION <MoreVertical size={14} className="text-muted" />
@@ -2928,7 +2931,7 @@ export default function Orders() {
                   <tbody className="divide-y divide-border">
                     {loading ? (
                       <tr>
-                        <td colSpan={7} className="px-8 py-20 text-center">
+                        <td colSpan={8} className="px-8 py-20 text-center">
                           <div className="flex flex-col items-center gap-4">
                             <Loader2
                               className="animate-spin text-muted"
@@ -2942,7 +2945,7 @@ export default function Orders() {
                       </tr>
                     ) : filteredOrders.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-8 py-20 text-center">
+                        <td colSpan={8} className="px-8 py-20 text-center">
                           <div className="flex flex-col items-center gap-4">
                             <PackageOpen size={40} className="text-gray-100" />
                             <p className="text-muted font-medium">
@@ -3107,6 +3110,15 @@ export default function Orders() {
                                   </motion.div>
                                 )}
                               </AnimatePresence>
+                            </div>
+                          </td>
+                          <td className="px-2 xl:px-4 py-3 xl:py-5">
+                            <div className="flex items-center justify-center min-h-[32px]">
+                              {order.customShipmentNumber ? (
+                                <span className="text-[11px] font-bold text-primary leading-none uppercase tracking-wider bg-surface-hover/50 px-2.5 py-1.5 rounded-lg border border-border">
+                                  {order.customShipmentNumber}
+                                </span>
+                              ) : null}
                             </div>
                           </td>
                           <td className="px-2 xl:px-4 py-3 xl:py-5">
