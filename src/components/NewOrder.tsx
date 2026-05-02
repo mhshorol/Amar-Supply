@@ -384,6 +384,10 @@ export default function NewOrder() {
       toast.error("Please add at least one item with a valid quantity.");
       return;
     }
+    if (orderForm.customerPhone.trim().length !== 11) {
+      toast.error("Phone number must be exactly 11 digits.");
+      return;
+    }
     if (!orderForm.warehouseId) {
       toast.error("Please select a warehouse.");
       return;
