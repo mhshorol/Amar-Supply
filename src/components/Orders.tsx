@@ -934,16 +934,17 @@ export default function Orders() {
 
     // Smart Parsing
     const parsed = locationService.parseAddress(address);
-    if (parsed.district || parsed.upazila) {
+    if (parsed.district || parsed.upazila || parsed.area) {
       const district = parsed.district?.nameEn || orderForm.district;
       const division = parsed.division?.nameEn || orderForm.division;
+      const parsedAreaStr = parsed.area?.nameEn || parsed.upazila?.nameEn;
       const charge = locationService.getDeliveryCharge(district, division);
       const zone = locationService.getDeliveryZone(district);
 
       setOrderForm((prev) => ({
         ...prev,
         district,
-        area: parsed.upazila?.nameEn || prev.area,
+        area: parsedAreaStr || prev.area,
         division,
         deliveryCharge: charge,
         customerZone: zone,
@@ -951,11 +952,11 @@ export default function Orders() {
 
       // Auto-fetch Pathao IDs if Pathao is active
       if (courierConfigs.pathao?.isActive) {
-        autoMatchPathao(district, parsed.upazila?.nameEn || orderForm.area);
+        autoMatchPathao(district, parsedAreaStr || orderForm.area);
       }
       // Auto-fetch Carrybee IDs if Carrybee is active
       if (courierConfigs.carrybee?.isActive) {
-        autoMatchCarrybee(district, parsed.upazila?.nameEn || orderForm.area);
+        autoMatchCarrybee(district, parsedAreaStr || orderForm.area);
       }
     }
   };

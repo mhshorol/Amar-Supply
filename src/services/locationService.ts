@@ -14,6 +14,7 @@ export interface ParsedAddress {
   division?: LocationNode;
   district?: LocationNode;
   upazila?: LocationNode;
+  area?: LocationNode;
   remainingAddress: string;
 }
 
@@ -34,11 +35,17 @@ export const locationService = {
     const location = allLocations.find(l => l.id === locationId);
     if (!location) return null;
 
+    let area: LocationNode | undefined;
     let upazila: LocationNode | undefined;
     let district: LocationNode | undefined;
     let division: LocationNode | undefined;
 
-    if (location.type === 'upazila') {
+    if (location.type === 'area') {
+      area = location;
+      upazila = upazilas.find(u => u.id === location.upazilaId);
+      district = districts.find(d => d.id === location.districtId);
+      division = divisions.find(v => v.id === location.divisionId);
+    } else if (location.type === 'upazila') {
       upazila = location;
       district = districts.find(d => d.id === location.districtId);
       division = divisions.find(v => v.id === location.divisionId);
@@ -49,7 +56,7 @@ export const locationService = {
       division = location;
     }
 
-    return { upazila, district, division };
+    return { area, upazila, district, division };
   },
 
   /**
@@ -103,30 +110,62 @@ export const locationService = {
     let detectedDivision: LocationNode | undefined;
     let detectedDistrict: LocationNode | undefined;
     let detectedUpazila: LocationNode | undefined;
+    let detectedArea: LocationNode | undefined;
 
+    // 1. First Pass: Detect District (জেলার নাম)
     for (const match of matches) {
       const item = match.item;
-      if (item.type === 'division') {
-        if (!detectedDivision) {
-             if (detectedDistrict && detectedDistrict.divisionId !== item.id) continue;
-             if (detectedUpazila && detectedUpazila.divisionId !== item.id) continue;
+      if (item.type === 'district' && !detectedDistrict) {
+        detectedDistrict = item;
+        detectedDivision = divisions.find(d => d.id === item.divisionId);
+        break; // Found the best matching district
+      }
+    }
+
+    // 2. Second Pass: Detect Upazila/Thana (থানা)
+    for (const match of matches) {
+      const item = match.item;
+      if (item.type === 'upazila' && !detectedUpazila) {
+        // If we already detected a district, ensure this upazila belongs to it
+        if (detectedDistrict && item.districtId !== detectedDistrict.id) continue;
+        
+        detectedUpazila = item;
+        if (!detectedDistrict && item.districtId) {
+          detectedDistrict = districts.find(d => d.id === item.districtId);
+          detectedDivision = divisions.find(d => d.id === item.divisionId);
+        }
+        break; // Found the best matching upazila
+      }
+    }
+
+    // 3. Third Pass: Detect Area (Metro Area / মেট্রো এরিয়া)
+    for (const match of matches) {
+      const item = match.item;
+      if (item.type === 'area' && !detectedArea) {
+        // If we have a district or upazila, ensure it matches
+        if (detectedDistrict && item.districtId && item.districtId !== detectedDistrict.id) continue;
+        if (detectedUpazila && item.upazilaId && item.upazilaId !== detectedUpazila.id) continue;
+        
+        detectedArea = item;
+        // Optionally backfill upazila/district from area if they were not found
+        // But since upazilas are an array of LocationNode, and might not be exported as easily,
+        // we can just fill district and division
+        if (!detectedDistrict && item.districtId) {
+          detectedDistrict = districts.find(d => d.id === item.districtId);
+          detectedDivision = divisions.find(d => d.id === item.divisionId);
+        }
+        break; // Found the best matching area
+      }
+    }
+
+    // Still check for division if not found by the above
+    if (!detectedDivision) {
+      for (const match of matches) {
+          const item = match.item;
+          if (item.type === 'division' && !detectedDivision) {
              detectedDivision = item;
-        }
-      } else if (item.type === 'district') {
-        if (!detectedDistrict) {
-            if (detectedDivision && item.divisionId !== detectedDivision.id) continue;
-            if (detectedUpazila && detectedUpazila.districtId !== item.id) continue;
-            detectedDistrict = item;
-            if (!detectedDivision) detectedDivision = divisions.find(d => d.id === item.divisionId);
-        }
-      } else if (item.type === 'upazila' || item.type === 'area') {
-        if (!detectedUpazila) {
-            if (detectedDistrict && item.districtId !== detectedDistrict.id) continue;
-            if (detectedDivision && item.divisionId !== detectedDivision.id) continue;
-            detectedUpazila = item;
-            if (!detectedDistrict) detectedDistrict = districts.find(d => d.id === item.districtId);
-            if (!detectedDivision) detectedDivision = divisions.find(d => d.id === item.divisionId);
-        }
+             break;
+          }
       }
     }
 
@@ -134,6 +173,7 @@ export const locationService = {
       division: detectedDivision,
       district: detectedDistrict,
       upazila: detectedUpazila,
+      area: detectedArea,
       remainingAddress: address
     };
   },
