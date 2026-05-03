@@ -5286,6 +5286,358 @@ export const upazilas: LocationNode[] = [
     "type": "area",
     "districtId": "dist_27",
     "divisionId": "div_3"
+  },
+  {
+    "id": "metro_104",
+    "nameEn": "Ashulia",
+    "nameBn": "আশুলিয়া",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_105",
+    "nameEn": "Bimanbandar",
+    "nameBn": "বিমানবন্দর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_106",
+    "nameEn": "Gendaria",
+    "nameBn": "গেন্ডারিয়া",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_107",
+    "nameEn": "Chawkbazar",
+    "nameBn": "চকবাজার",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_108",
+    "nameEn": "Bhashantek",
+    "nameBn": "ভাষানটেক",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_109",
+    "nameEn": "Bhatara",
+    "nameBn": "ভাটারা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_110",
+    "nameEn": "Banani DOHS",
+    "nameBn": "বনানী ডিওএইচএস",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_111",
+    "nameEn": "Mirpur DOHS",
+    "nameBn": "মিরপুর ডিওএইচএস",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_112",
+    "nameEn": "Mohakhali DOHS",
+    "nameBn": "মহাখালী ডিওএইচএস",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_113",
+    "nameEn": "Baridhara DOHS",
+    "nameBn": "বারিধারা ডিওএইচএস",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_114",
+    "nameEn": "Zigatola",
+    "nameBn": "জিগাতলা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_115",
+    "nameEn": "Hatirjheel",
+    "nameBn": "হাতিরঝিল",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_116",
+    "nameEn": "Kallyanpur",
+    "nameBn": "কল্যাণপুর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_117",
+    "nameEn": "Beraid",
+    "nameBn": "বেরাইদ",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_118",
+    "nameEn": "Dakshinkhan",
+    "nameBn": "দক্ষিণখান",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_119",
+    "nameEn": "Uttarkhan",
+    "nameBn": "উত্তরখান",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_120",
+    "nameEn": "Rupnagar",
+    "nameBn": "রূপনগর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_121",
+    "nameEn": "Badda Link Road",
+    "nameBn": "বাড্ডা লিংক রোড",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_122",
+    "nameEn": "Merul Badda",
+    "nameBn": "মেরুল বাড্ডা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_123",
+    "nameEn": "Uttar Badda",
+    "nameBn": "উত্তর বাড্ডা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_124",
+    "nameEn": "Middle Badda",
+    "nameBn": "মধ্য বাড্ডা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_125",
+    "nameEn": "Shahjadpur",
+    "nameBn": "শাহজাদপুর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_126",
+    "nameEn": "Joar Sahara",
+    "nameBn": "জোয়ার সাহারা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_127",
+    "nameEn": "Kuratoli",
+    "nameBn": "কুড়াতলী",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_128",
+    "nameEn": "Shewrapara",
+    "nameBn": "শেওড়াপাড়া",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_129",
+    "nameEn": "Kazipara",
+    "nameBn": "কাজীপাড়া",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_130",
+    "nameEn": "Taltola",
+    "nameBn": "তালতলা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_131",
+    "nameEn": "Mugdapara",
+    "nameBn": "মুগদাপাড়া",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_132",
+    "nameEn": "Maniknagar",
+    "nameBn": "মানিকনগর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_133",
+    "nameEn": "Sayedabad",
+    "nameBn": "সায়েদাবাদ",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_134",
+    "nameEn": "Dolaikhal",
+    "nameBn": "ধোলাইখাল",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_135",
+    "nameEn": "Gulisthan",
+    "nameBn": "গুলিস্তান",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_136",
+    "nameEn": "Nawabpur",
+    "nameBn": "নবাবপুর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_137",
+    "nameEn": "Azimpur",
+    "nameBn": "আজিমপুর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_138",
+    "nameEn": "Bangshal",
+    "nameBn": "বংশাল",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_139",
+    "nameEn": "Islampur",
+    "nameBn": "ইসলামপুর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_140",
+    "nameEn": "Sadarghat",
+    "nameBn": "সদরঘাট",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_141",
+    "nameEn": "Jurain",
+    "nameBn": "জুরাইন",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_142",
+    "nameEn": "Postagola",
+    "nameBn": "পোস্তগোলা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_143",
+    "nameEn": "Ashkona",
+    "nameBn": "আশকোনা",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_144",
+    "nameEn": "Abdullahpur",
+    "nameBn": "আব্দুল্লাহপুর",
+    "type": "area",
+    "districtId": "dist_47",
+    "divisionId": "div_6"
+  },
+  {
+    "id": "metro_145",
+    "nameEn": "Dakshin Surma",
+    "nameBn": "দক্ষিণ সুরমা",
+    "type": "area",
+    "districtId": "dist_36",
+    "divisionId": "div_5"
+  },
+  {
+    "id": "metro_146",
+    "nameEn": "Hathazari",
+    "nameBn": "হাটহাজারী",
+    "type": "area",
+    "districtId": "dist_8",
+    "divisionId": "div_1"
+  },
+  {
+    "id": "metro_147",
+    "nameEn": "Sitakunda",
+    "nameBn": "সীতাকুন্ড",
+    "type": "area",
+    "districtId": "dist_8",
+    "divisionId": "div_1"
   }
 ];
 

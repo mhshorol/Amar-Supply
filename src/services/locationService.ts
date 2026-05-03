@@ -58,15 +58,18 @@ export const locationService = {
   parseAddress(address: string): ParsedAddress {
     if (!address) return { remainingAddress: '' };
 
-    const cleanAddress = address.replace(/[^\w\s\u0980-\u09FF-]/g, ' ');
-    const tokens = cleanAddress.split(/\s+/).filter(t => t.length > 2);
+    const cleanAddress = address.replace(/[^\w\s\u0980-\u09FF]/g, ' ');
+    const tokens = cleanAddress.split(/[\s,.-]+/).filter(t => t.length > 2);
     
-    // Generate unigrams and bigrams
+    // Generate unigrams, bigrams, and trigrams for better area detection
     const searchTerms: string[] = [];
     for(let i = 0; i < tokens.length; i++) {
         searchTerms.push(tokens[i]);
         if(i < tokens.length - 1) {
             searchTerms.push(tokens[i] + ' ' + tokens[i+1]);
+        }
+        if(i < tokens.length - 2) {
+            searchTerms.push(tokens[i] + ' ' + tokens[i+1] + ' ' + tokens[i+2]);
         }
     }
 
@@ -140,18 +143,32 @@ export const locationService = {
    */
   getDeliveryCharge(district: string, division: string): number {
     const normalizedDistrict = district.toLowerCase();
-    const normalizedDivision = division.toLowerCase();
-
+    
     if (normalizedDistrict === 'dhaka') {
       return 80; // Inside Dhaka
     }
     
     const subAreas = ['gazipur', 'narayanganj', 'savar', 'keraniganj'];
     if (subAreas.includes(normalizedDistrict)) {
-      return 120; // Sub Area
+      return 130; // Sub Area
     }
 
     return 150; // Outside Dhaka
+  },
+
+  getDeliveryZone(district: string): string {
+    const normalizedDistrict = district.toLowerCase();
+    
+    if (normalizedDistrict === 'dhaka') {
+      return 'Inside Dhaka';
+    }
+    
+    const subAreas = ['gazipur', 'narayanganj', 'savar', 'keraniganj'];
+    if (subAreas.includes(normalizedDistrict)) {
+      return 'Sub Area';
+    }
+
+    return 'Outside Dhaka';
   },
 
   /**

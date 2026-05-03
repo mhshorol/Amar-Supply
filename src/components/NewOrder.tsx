@@ -24,7 +24,9 @@ import {
   ShoppingBag,
   ListFilter,
   Banknote,
-  Facebook
+  Facebook,
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 import { db, auth, collection, query, serverTimestamp, Timestamp, doc, getDocs, where, runTransaction, limit } from '../firebase';
 import { toast } from 'sonner';
@@ -196,13 +198,15 @@ export default function NewOrder({ initialOrder, onClose, onSuccess }: NewOrderP
       const district = parsed.district?.nameEn || orderForm.district;
       const division = parsed.division?.nameEn || orderForm.division;
       const charge = locationService.getDeliveryCharge(district, division);
+      const zone = locationService.getDeliveryZone(district);
       
       setOrderForm(prev => ({
         ...prev,
         district,
         area: parsed.upazila?.nameEn || prev.area,
         division,
-        deliveryCharge: charge
+        deliveryCharge: charge,
+        customerZone: zone
       }));
 
       // Auto-fetch Pathao IDs if Pathao is active
@@ -874,11 +878,31 @@ export default function NewOrder({ initialOrder, onClose, onSuccess }: NewOrderP
                 <label className="mb-2 block text-[11px] font-semibold text-secondary uppercase tracking-wider">Full Address *</label>
                 <textarea 
                   required
-                  className="w-full pl-4 pr-4 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all resize-none text-primary"
-                  rows={1}
+                  className="w-full pl-4 pr-10 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all resize-none text-primary"
+                  rows={2}
                   placeholder="House 10, Dhanmondi, Dhaka"
                   value={orderForm.customerAddress}
                   onChange={e => handleAddressChange(e.target.value)}
+                  onBlur={() => {
+                    const parsed = locationService.parseAddress(orderForm.customerAddress);
+                    if (parsed.district || parsed.upazila) {
+                      const district = parsed.district?.nameEn || orderForm.district;
+                      const division = parsed.division?.nameEn || orderForm.division;
+                      const charge = locationService.getDeliveryCharge(district, division);
+                      const zone = locationService.getDeliveryZone(district);
+                      setOrderForm(prev => ({
+                        ...prev,
+                        district,
+                        area: parsed.upazila?.nameEn || prev.area,
+                        division,
+                        deliveryCharge: charge,
+                        customerZone: zone
+                      }));
+                      if (courierConfigs.pathao?.isActive) {
+                        autoMatchPathao(district, parsed.upazila?.nameEn || orderForm.area);
+                      }
+                    }
+                  }}
                 />
               </div>
 
@@ -890,8 +914,17 @@ export default function NewOrder({ initialOrder, onClose, onSuccess }: NewOrderP
                     className="w-full pl-4 pr-10 py-2.5 bg-surface border border-border rounded-lg text-sm focus:border-brand focus:ring-4 focus:ring-brand/20 outline-none transition-all text-primary appearance-none cursor-pointer"
                     value={orderForm.district}
                     onChange={e => {
-                      setOrderForm({...orderForm, district: e.target.value, area: ''});
-                      if (courierConfigs.pathao?.isActive) autoMatchPathao(e.target.value, '');
+                      const newDistrict = e.target.value;
+                      const charge = locationService.getDeliveryCharge(newDistrict, orderForm.division);
+                      const zone = locationService.getDeliveryZone(newDistrict);
+                      setOrderForm({
+                        ...orderForm, 
+                        district: newDistrict, 
+                        area: '',
+                        deliveryCharge: charge,
+                        customerZone: zone
+                      });
+                      if (courierConfigs.pathao?.isActive) autoMatchPathao(newDistrict, '');
                     }}
                   >
                     <option value="">Select District</option>

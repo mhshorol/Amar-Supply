@@ -938,6 +938,7 @@ export default function Orders() {
       const district = parsed.district?.nameEn || orderForm.district;
       const division = parsed.division?.nameEn || orderForm.division;
       const charge = locationService.getDeliveryCharge(district, division);
+      const zone = locationService.getDeliveryZone(district);
 
       setOrderForm((prev) => ({
         ...prev,
@@ -945,6 +946,7 @@ export default function Orders() {
         area: parsed.upazila?.nameEn || prev.area,
         division,
         deliveryCharge: charge,
+        customerZone: zone,
       }));
 
       // Auto-fetch Pathao IDs if Pathao is active
