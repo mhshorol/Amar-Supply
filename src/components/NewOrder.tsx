@@ -39,7 +39,13 @@ import { districts, upazilas, LocationNode } from '../data/bangladesh-locations'
 import { locationService } from '../services/locationService';
 import { CourierFactory } from '../lib/courierAdapters';
 
-export default function NewOrder() {
+interface NewOrderProps {
+  initialOrder?: any;
+  onClose?: () => void;
+  onSuccess?: () => void;
+}
+
+export default function NewOrder({ initialOrder, onClose, onSuccess }: NewOrderProps = {}) {
   const navigate = useNavigate();
   const { currencySymbol } = useSettings();
   const [loading, setLoading] = useState(false);
@@ -96,6 +102,16 @@ export default function NewOrder() {
   const [sendSMS, setSendSMS] = useState(false);
   const [courierHistory, setCourierHistory] = useState<any>(null);
   const [isFetchingHistory, setIsFetchingHistory] = useState(false);
+
+  useEffect(() => {
+    if (initialOrder) {
+      setOrderForm({
+        ...initialOrder,
+        items: initialOrder.items || []
+      });
+    }
+  }, [initialOrder]);
+
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -398,28 +414,30 @@ export default function NewOrder() {
     try {
       const { subtotal, totalAmount, dueAmount } = calculateTotals(validItems, orderForm.deliveryCharge, orderForm.discount, orderForm.paidAmount);
       
-      const duplicate = await checkDuplicateOrder({
-        customerPhone: orderForm.customerPhone,
-        customerName: orderForm.customerName,
-        items: validItems,
-        totalAmount: totalAmount
-      });
-
-      if (duplicate) {
-        setConfirmConfig({
-          isOpen: true,
-          title: 'Duplicate Order Detected!',
-          message: `An order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours.\n\nAre you sure you want to create this duplicate order?`,
-          variant: 'warning',
-          onConfirm: () => proceedWithSubmit(subtotal, totalAmount, dueAmount)
+      if (!initialOrder) {
+        const duplicate = await checkDuplicateOrder({
+          customerPhone: orderForm.customerPhone,
+          customerName: orderForm.customerName,
+          items: validItems,
+          totalAmount: totalAmount
         });
-        setLoading(false);
-        return;
+
+        if (duplicate) {
+          setConfirmConfig({
+            isOpen: true,
+            title: 'Duplicate Order Detected!',
+            message: `An order (#${duplicate.orderNumber || duplicate.id.slice(0, 8)}) with the same phone number, products, and total value was found within the last 24 hours.\n\nAre you sure you want to create this duplicate order?`,
+            variant: 'warning',
+            onConfirm: () => proceedWithSubmit(subtotal, totalAmount, dueAmount)
+          });
+          setLoading(false);
+          return;
+        }
       }
 
       await proceedWithSubmit(subtotal, totalAmount, dueAmount);
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'orders');
+      handleFirestoreError(error, initialOrder ? OperationType.UPDATE : OperationType.CREATE, 'orders');
       setLoading(false);
     }
   };
@@ -430,9 +448,9 @@ export default function NewOrder() {
     try {
       const logEntry = {
         user: auth.currentUser?.email,
-        action: 'Created Order',
+        action: initialOrder ? 'Updated Order' : 'Created Order',
         timestamp: Timestamp.now(),
-        details: 'Initial creation'
+        details: initialOrder ? `Updated order #${initialOrder.orderNumber}` : 'Initial creation'
       };
 
       const data = {
@@ -441,7 +459,7 @@ export default function NewOrder() {
         subtotal,
         totalAmount,
         dueAmount,
-        logs: [logEntry],
+        logs: initialOrder ? [...(initialOrder.logs || []), logEntry] : [logEntry],
         updatedAt: serverTimestamp()
       };
 
@@ -450,15 +468,17 @@ export default function NewOrder() {
       const customerSnap = await getDocs(customerQuery);
 
       const inventorySnaps: { item: any; snap: any }[] = [];
-      for (const item of validItems) {
-        const invQuery = query(
-          collection(db, 'inventory'),
-          where('productId', '==', item.productId || ''),
-          where('variantId', '==', item.variantId || ''),
-          where('warehouseId', '==', orderForm.warehouseId || '')
-        );
-        const invSnap = await getDocs(invQuery);
-        inventorySnaps.push({ item, snap: invSnap });
+      if (!initialOrder) {
+        for (const item of validItems) {
+          const invQuery = query(
+            collection(db, 'inventory'),
+            where('productId', '==', item.productId || ''),
+            where('variantId', '==', item.variantId || ''),
+            where('warehouseId', '==', orderForm.warehouseId || '')
+          );
+          const invSnap = await getDocs(invQuery);
+          inventorySnaps.push({ item, snap: invSnap });
+        }
       }
 
       let accountId = '';
@@ -510,11 +530,19 @@ export default function NewOrder() {
           const customerDoc = customerSnap.docs[0];
           customerId = customerDoc.id;
           transaction.update(customerDoc.ref, {
-            orderCount: (customerDoc.data().orderCount || 0) + 1,
-            totalSpent: (customerDoc.data().totalSpent || 0) + totalAmount,
-            points: (customerDoc.data().points || 0) + pointsEarned,
+            orderCount: (customerDoc.data().orderCount || 0) + (initialOrder ? 0 : 1),
+            totalSpent: (customerDoc.data().totalSpent || 0) + (initialOrder ? 0 : totalAmount),
+            points: (customerDoc.data().points || 0) + (initialOrder ? 0 : pointsEarned),
             lastOrderDate: serverTimestamp()
           });
+        }
+
+        if (initialOrder) {
+          transaction.update(doc(db, 'orders', initialOrder.id), {
+            ...data,
+            customerId
+          });
+          return initialOrder.orderNumber;
         }
 
         let nextOrderNumber = 1001;
@@ -594,6 +622,22 @@ export default function NewOrder() {
         
         return nextOrderNumber;
       });
+
+      if (initialOrder) {
+        await logActivity(
+          'Updated Order',
+          'Orders',
+          `Updated Order #${createdOrderNumber} for ${orderForm.customerName}`
+        );
+
+        toast.success(`Order #${createdOrderNumber} updated successfully!`, {
+          duration: 5000,
+          position: 'top-center',
+        });
+        
+        if (onSuccess) onSuccess();
+        return;
+      }
 
       await logActivity(
         'Created Order',
@@ -684,35 +728,41 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-6xl mx-auto pb-20 lg:pb-8">
+    <div className={`space-y-6 sm:space-y-8 max-w-6xl mx-auto ${onClose ? 'pt-2 pb-6' : 'pb-20 lg:pb-8'}`}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => navigate('/orders')}
+            onClick={() => onClose ? onClose() : navigate('/orders')}
             className="p-2 hover:bg-surface-hover text-secondary rounded-xl transition-all shrink-0"
           >
-            <ArrowLeft size={20} />
+            {onClose ? <X size={20} /> : <ArrowLeft size={20} />}
           </button>
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">Create Order</h2>
-            <p className="text-sm font-medium text-secondary mt-1">Create a new order by adding customer and products.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">
+              {initialOrder ? `Edit Order #${initialOrder.orderNumber || initialOrder.id?.slice(0,8)}` : 'Create Order'}
+            </h2>
+            <p className="text-sm font-medium text-secondary mt-1">
+              {initialOrder ? 'Update details for this order.' : 'Create a new order by adding customer and products.'}
+            </p>
           </div>
         </div>
         <div className="flex gap-3">
-          <button 
-            type="button"
-            className="px-4 py-2 bg-surface border border-border text-primary rounded-lg text-sm font-semibold hover:bg-surface-hover transition-all shadow-subtle flex items-center gap-2"
-          >
-            <Save size={16} /> <span>Save Draft</span>
-          </button>
+          {!initialOrder && (
+            <button 
+              type="button"
+              className="px-4 py-2 bg-surface border border-border text-primary rounded-lg text-sm font-semibold hover:bg-surface-hover transition-all shadow-subtle flex items-center gap-2"
+            >
+              <Save size={16} /> <span>Save Draft</span>
+            </button>
+          )}
           <button 
             onClick={handleSubmit}
             disabled={loading}
             className="flex items-center justify-center gap-2 px-5 py-2 bg-brand text-white rounded-lg text-sm font-semibold hover:bg-brand-hover transition-all shadow-subtle disabled:opacity-50"
           >
-            {loading ? 'Saving...' : (
+            {loading ? (initialOrder ? 'Updating...' : 'Saving...') : (
               <>
-                <ShoppingBag size={16} /> Place Order
+                <ShoppingBag size={16} /> {initialOrder ? 'Update Order' : 'Place Order'}
               </>
             )}
           </button>
