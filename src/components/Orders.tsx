@@ -55,6 +55,9 @@ import {
   CheckCircle,
   Sparkles,
   ArrowRight,
+  Infinity,
+  SlidersHorizontal,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -101,9 +104,7 @@ import { checkDuplicateOrder } from "../services/orderService";
 import { createNotification } from "../services/notificationService";
 import { handleFirestoreError, OperationType } from "../lib/firestore-errors";
 import { locationService } from "../services/locationService";
-import {
-  LocationNode,
-} from "../data/bangladesh-locations";
+import { LocationNode } from "../data/bangladesh-locations";
 import { CourierFactory } from "../lib/courierAdapters";
 
 import { useSettings } from "../contexts/SettingsContext";
@@ -167,7 +168,8 @@ export const globalStatusConfig: Record<
   },
   delivered: {
     label: "Delivered",
-    color: "bg-emerald-50 text-emerald-600 ring-emerald-100 shadow-emerald-500/5",
+    color:
+      "bg-emerald-50 text-emerald-600 ring-emerald-100 shadow-emerald-500/5",
     iconColor: "text-emerald-500",
     icon: PackageCheck,
   },
@@ -249,6 +251,19 @@ export default function Orders() {
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
   const [viewingOrder, setViewingOrder] = useState<any | null>(null);
   const [dateFilter, setDateFilter] = useState("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [tempFilterType, setTempFilterType] = useState<
+    "all" | "today" | "month" | "custom"
+  >("month");
+  const [tempSelectedMonth, setTempSelectedMonth] = useState<number>(
+    new Date().getMonth(),
+  );
+  const [tempSelectedYear, setTempSelectedYear] = useState<number>(
+    new Date().getFullYear(),
+  );
+  const [tempSelectedDay, setTempSelectedDay] = useState<number>(
+    new Date().getDate(),
+  );
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -607,7 +622,11 @@ export default function Orders() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(1500));
+    const q = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc"),
+      limit(1500),
+    );
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
@@ -708,17 +727,20 @@ export default function Orders() {
         try {
           text = await response.text();
         } catch (e) {
-           console.error("Failed to read response body", e);
+          console.error("Failed to read response body", e);
         }
 
         let data;
         try {
           data = JSON.parse(text);
         } catch (e) {
-          console.warn(`Server returned invalid JSON (${response.status})`, text.slice(0, 500));
+          console.warn(
+            `Server returned invalid JSON (${response.status})`,
+            text.slice(0, 500),
+          );
           // If it's a 200 but not JSON, it might be an HTML error page from a proxy
           if (response.status === 200) {
-              console.warn("Got 200 OK but HTML. Possible proxy interception.");
+            console.warn("Got 200 OK but HTML. Possible proxy interception.");
           }
           return;
         }
@@ -1760,7 +1782,9 @@ export default function Orders() {
                 await fetch(`/api/woocommerce/orders/${wooId}`, {
                   method: "DELETE",
                 });
-                setWooOrders((prev) => prev.filter((o) => o.wooId !== parseInt(wooId)));
+                setWooOrders((prev) =>
+                  prev.filter((o) => o.wooId !== parseInt(wooId)),
+                );
               } else {
                 const orderRef = doc(db, "orders", orderId);
                 await runTransaction(db, async (transaction) => {
@@ -1768,7 +1792,8 @@ export default function Orders() {
                   if (!snap.exists()) return;
 
                   const orderData = snap.data();
-                  const normalizedStatus = orderData.status?.toLowerCase() || "";
+                  const normalizedStatus =
+                    orderData.status?.toLowerCase() || "";
                   const isActive =
                     normalizedStatus !== "cancelled" &&
                     normalizedStatus !== "returned";
@@ -2339,6 +2364,19 @@ export default function Orders() {
           matchesDate =
             date.getMonth() === now.getMonth() &&
             date.getFullYear() === now.getFullYear();
+        } else if (dateFilter !== "all" && dateFilter) {
+          const parts = dateFilter.split("-").map(Number);
+          if (parts.length === 3) {
+            const [year, month, day] = parts;
+            matchesDate =
+              date.getDate() === day &&
+              date.getMonth() === month - 1 &&
+              date.getFullYear() === year;
+          } else {
+            const [year, month] = parts;
+            matchesDate =
+              date.getMonth() === month - 1 && date.getFullYear() === year;
+          }
         }
 
         return matchesSearch && matchesTab && matchesDate;
@@ -2378,6 +2416,19 @@ export default function Orders() {
             date.getMonth() === now.getMonth() &&
             date.getFullYear() === now.getFullYear()
           );
+        } else if (dateFilter !== "all" && dateFilter) {
+          const parts = dateFilter.split("-").map(Number);
+          if (parts.length === 3) {
+            const [year, month, day] = parts;
+            return (
+              date.getDate() === day &&
+              date.getMonth() === month - 1 &&
+              date.getFullYear() === year
+            );
+          } else {
+            const [year, month] = parts;
+            return date.getMonth() === month - 1 && date.getFullYear() === year;
+          }
         }
         return true;
       }),
@@ -2416,6 +2467,23 @@ export default function Orders() {
       } else if (dateFilter === "month") {
         prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         prevEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+      } else if (dateFilter !== "all" && dateFilter) {
+        const parts = dateFilter.split("-").map(Number);
+        if (parts.length === 3) {
+          const [year, month, day] = parts;
+          const filterDate = new Date(year, month - 1, day);
+          prevStart = new Date(
+            filterDate.getFullYear(),
+            filterDate.getMonth(),
+            filterDate.getDate() - 1,
+          );
+          prevEnd = new Date(prevStart);
+          prevEnd.setDate(prevEnd.getDate() + 1);
+        } else {
+          const [year, month] = parts;
+          prevStart = new Date(year, month - 2, 1);
+          prevEnd = new Date(year, month - 1, 1);
+        }
       } else {
         prevStart = new Date();
         prevStart.setDate(now.getDate() - 60);
@@ -2529,47 +2597,361 @@ export default function Orders() {
             Order Flows
           </h2>
           <p className="text-secondary text-sm font-medium">
-            Execute and track multi-channel fulfillment across your entire retail network.
+            Execute and track multi-channel fulfillment across your entire
+            retail network.
           </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <div className="flex items-center gap-2 bg-surface border border-border rounded-lg shadow-subtle px-3 py-1 text-sm font-medium text-secondary h-11">
-            <div className="relative flex items-center h-full">
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full appearance-none pl-3 pr-8 py-2 text-sm font-medium bg-transparent text-secondary outline-none cursor-pointer"
+          <div className="relative flex items-center justify-between min-w-[150px] lg:min-w-[180px] gap-2 bg-surface text-secondary hover:text-primary border border-border hover:border-brand/30 rounded-lg shadow-subtle px-3 lg:px-4 py-2 lg:py-2 cursor-pointer text-xs lg:text-sm font-semibold transition-all group overflow-visible">
+            <div
+              className="absolute inset-0 z-10 cursor-pointer"
+              onClick={() => {
+                if (!isFilterOpen) {
+                  if (dateFilter === "all") {
+                    setTempFilterType("all");
+                    setTempSelectedMonth(new Date().getMonth());
+                    setTempSelectedYear(new Date().getFullYear());
+                  } else if (dateFilter === "today") {
+                    setTempFilterType("today");
+                    setTempSelectedMonth(new Date().getMonth());
+                    setTempSelectedYear(new Date().getFullYear());
+                  } else if (dateFilter === "month") {
+                    setTempFilterType("month");
+                    setTempSelectedMonth(new Date().getMonth());
+                    setTempSelectedYear(new Date().getFullYear());
+                  } else {
+                    const parts = dateFilter.split("-").map(Number);
+                    if (parts.length === 3) {
+                      const [year, month, day] = parts;
+                      setTempFilterType("today");
+                      setTempSelectedMonth(month - 1);
+                      setTempSelectedYear(year);
+                      setTempSelectedDay(day);
+                    } else {
+                      const [year, month] = parts;
+                      setTempFilterType("custom");
+                      setTempSelectedMonth(month - 1);
+                      setTempSelectedYear(year);
+                    }
+                  }
+                }
+                setIsFilterOpen(!isFilterOpen);
+              }}
+            />
+
+            <span className="pointer-events-none truncate select-none">
+              {(() => {
+                if (dateFilter === "all") return "All Time";
+                if (dateFilter === "today") return "Today";
+                if (dateFilter === "month") return "This Month";
+                const parts = dateFilter.split("-").map(Number);
+                if (parts.length === 3) {
+                  const [year, month, day] = parts;
+                  const d = new Date(year, month - 1, day);
+                  return d.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  });
+                } else {
+                  const [year, month] = parts;
+                  return new Date(year, month - 1).toLocaleDateString("en-US", {
+                    month: "long",
+                    year: "numeric",
+                  });
+                }
+              })()}
+            </span>
+
+            {dateFilter !== "all" &&
+            dateFilter !== "today" &&
+            dateFilter !== "month" &&
+            dateFilter !== "" ? (
+              <button
+                type="button"
+                className="z-20 text-muted hover:text-danger bg-surface p-0.5 rounded-full relative"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDateFilter("all");
+                }}
               >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="month">This Month</option>
-              </select>
-              <Calendar size={16} className="absolute right-2 text-muted pointer-events-none" />
-            </div>
-            <div className="w-px h-5 bg-gray-200" />
-            <button
-              onClick={handleExportCSV}
-              className="w-8 h-8 flex items-center justify-center hover:bg-surface-hover rounded-md transition-colors text-muted hover:text-primary shrink-0"
-              title="Export CSV"
-            >
-              <Download size={16} />
-            </button>
+                <X size={16} />
+              </button>
+            ) : (
+              <Calendar
+                size={16}
+                className="text-muted group-hover:text-brand transition-colors pointer-events-none relative z-20"
+              />
+            )}
+
+            <div className="absolute inset-0 bg-brand/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-lg" />
+
+            <AnimatePresence>
+              {isFilterOpen && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-40 bg-black/5"
+                    onClick={() => setIsFilterOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 top-full mt-2 w-[320px] bg-surface rounded-[24px] shadow-2xl border border-border/80 p-5 z-50 origin-top-right flex flex-col cursor-default"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex justify-between items-start mb-5">
+                      <div className="flex gap-3 items-start">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand/10 to-transparent flex items-center justify-center border border-brand/20 shadow-sm shadow-brand/5">
+                          <Calendar className="text-brand w-5 h-5" />
+                        </div>
+                        <div className="pt-0.5">
+                          <h3 className="text-primary font-bold text-base leading-tight mb-0.5">
+                            Filter by Date
+                          </h3>
+                          <p className="text-secondary text-xs font-medium">
+                            Select a period to filter results
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setIsFilterOpen(false)}
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-surface-hover hover:bg-border/60 border border-border text-muted hover:text-primary transition-colors flex-shrink-0"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2 mb-5">
+                      <button
+                        onClick={() => setTempFilterType("all")}
+                        className={`flex-1 flex gap-1.5 items-center justify-center py-1.5 px-1.5 rounded-lg border text-xs font-bold transition-all ${
+                          tempFilterType === "all"
+                            ? "border-pink-200 bg-pink-50 text-pink-500 hover:bg-pink-100"
+                            : "border-border text-secondary hover:bg-surface-hover"
+                        }`}
+                      >
+                        <Infinity size={14} /> All Time
+                      </button>
+                      <button
+                        onClick={() => setTempFilterType("today")}
+                        className={`flex-1 flex gap-1.5 items-center justify-center py-1.5 px-1.5 rounded-lg border text-xs font-bold transition-all ${
+                          tempFilterType === "today"
+                            ? "border-brand/30 bg-brand/5 text-brand hover:bg-brand/10"
+                            : "border-border text-secondary hover:bg-surface-hover"
+                        }`}
+                      >
+                        <Clock size={14} /> Today
+                      </button>
+                      <button
+                        onClick={() => setTempFilterType("month")}
+                        className={`flex-1 flex gap-1.5 items-center justify-center py-1.5 px-1.5 rounded-lg border text-xs font-bold transition-all ${
+                          tempFilterType === "month" ||
+                          tempFilterType === "custom"
+                            ? "border-brand/30 bg-brand/5 text-brand hover:bg-brand/10"
+                            : "border-border text-secondary hover:bg-surface-hover"
+                        }`}
+                      >
+                        <Calendar size={14} /> Month
+                      </button>
+                    </div>
+
+                    {tempFilterType === "today" ? (
+                      <div className="grid grid-cols-7 gap-1.5 mb-4 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                        {Array.from({
+                          length: new Date(
+                            tempSelectedYear,
+                            tempSelectedMonth + 1,
+                            0,
+                          ).getDate(),
+                        }).map((_, i) => {
+                          const day = i + 1;
+                          const isSelected = tempSelectedDay === day;
+                          return (
+                            <button
+                              key={day}
+                              onClick={() => setTempSelectedDay(day)}
+                              className={`relative flex items-center justify-center aspect-square rounded-lg border text-xs font-bold transition-all ${
+                                isSelected
+                                  ? "border-brand/60 bg-brand text-white shadow-sm shadow-brand/10"
+                                  : "border-border text-primary hover:border-brand/30 hover:bg-surface-hover"
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div
+                        className={`grid grid-cols-3 gap-2 mb-4 transition-opacity ${tempFilterType === "all" ? "opacity-40 pointer-events-none" : ""}`}
+                      >
+                        {[
+                          "Jan",
+                          "Feb",
+                          "Mar",
+                          "Apr",
+                          "May",
+                          "Jun",
+                          "Jul",
+                          "Aug",
+                          "Sep",
+                          "Oct",
+                          "Nov",
+                          "Dec",
+                        ].map((mon, idx) => {
+                          const isSelected =
+                            (tempFilterType === "custom" ||
+                              tempFilterType === "month") &&
+                            tempSelectedMonth === idx;
+                          return (
+                            <button
+                              key={mon}
+                              onClick={() => {
+                                setTempFilterType("custom");
+                                setTempSelectedMonth(idx);
+                              }}
+                              className={`relative py-2.5 rounded-xl border text-[13px] font-bold transition-all ${
+                                isSelected
+                                  ? "border-brand/60 bg-brand/10 text-brand shadow-sm shadow-brand/10"
+                                  : "border-border text-primary hover:border-brand/30 hover:bg-surface-hover"
+                              }`}
+                            >
+                              {mon}
+                              {isSelected && (
+                                <div className="absolute top-1.5 right-1.5 bg-brand text-white rounded-full p-[2px] shadow-sm">
+                                  <Check size={8} strokeWidth={4} />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div
+                      className={`flex items-center justify-between border border-border/80 bg-surface-hover rounded-xl p-1 mb-5 transition-opacity ${tempFilterType === "all" ? "opacity-40 pointer-events-none" : ""}`}
+                    >
+                      <button
+                        onClick={() => {
+                          if (tempFilterType === "today") {
+                            if (tempSelectedMonth === 0) {
+                              setTempSelectedMonth(11);
+                              setTempSelectedYear((y) => y - 1);
+                            } else {
+                              setTempSelectedMonth((m) => m - 1);
+                            }
+                          } else {
+                            setTempSelectedYear((y) => y - 1);
+                          }
+                        }}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface shadow-subtle text-secondary hover:text-primary hover:shadow-md transition-all active:scale-95"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="font-bold text-primary text-[15px] tracking-tight">
+                        {tempFilterType === "today"
+                          ? new Date(
+                              tempSelectedYear,
+                              tempSelectedMonth,
+                            ).toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : tempSelectedYear}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (tempFilterType === "today") {
+                            if (tempSelectedMonth === 11) {
+                              setTempSelectedMonth(0);
+                              setTempSelectedYear((y) => y + 1);
+                            } else {
+                              setTempSelectedMonth((m) => m + 1);
+                            }
+                          } else {
+                            setTempSelectedYear((y) => y + 1);
+                          }
+                        }}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface shadow-subtle text-secondary hover:text-primary hover:shadow-md transition-all active:scale-95"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3 justify-between pt-4 border-t border-border/60">
+                      <button
+                        onClick={() => {
+                          setTempFilterType("all");
+                          setTempSelectedMonth(new Date().getMonth());
+                          setTempSelectedYear(new Date().getFullYear());
+                        }}
+                        className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-pink-200 text-pink-500 font-bold text-xs hover:bg-pink-50 transition-colors w-[100px]"
+                      >
+                        <RotateCcw size={14} /> Reset
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (tempFilterType === "all") {
+                            setDateFilter("all");
+                          } else if (tempFilterType === "today") {
+                            setDateFilter(
+                              `${tempSelectedYear}-${String(
+                                tempSelectedMonth + 1,
+                              ).padStart(
+                                2,
+                                "0",
+                              )}-${String(tempSelectedDay).padStart(2, "0")}`,
+                            );
+                          } else if (tempFilterType === "month") {
+                            setDateFilter("month");
+                          } else {
+                            setDateFilter(
+                              `${tempSelectedYear}-${String(
+                                tempSelectedMonth + 1,
+                              ).padStart(2, "0")}`,
+                            );
+                          }
+                          setIsFilterOpen(false);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand text-white font-bold text-xs shadow-lg shadow-brand/25 hover:shadow-xl hover:shadow-brand/40 hover:-translate-y-0.5 transition-all"
+                      >
+                        <Check size={14} strokeWidth={3} /> Apply
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
+
+          <button
+            onClick={handleExportCSV}
+            className="w-10 h-10 flex items-center justify-center bg-surface hover:bg-surface-hover border border-border shadow-subtle rounded-lg transition-colors text-muted hover:text-primary shrink-0"
+            title="Export CSV"
+          >
+            <Download size={16} />
+          </button>
 
           {/* List/Grid View Toggle */}
           <div className="flex items-center gap-1 bg-surface border border-border rounded-lg shadow-subtle p-1">
             <button
-               onClick={() => setViewMode("table")}
-               className={`p-2 rounded-md transition-colors ${viewMode === "table" ? "bg-surface-hover text-primary" : "text-muted hover:text-secondary"}`}
+              onClick={() => setViewMode("table")}
+              className={`p-2 rounded-md transition-colors ${viewMode === "table" ? "bg-surface-hover text-primary" : "text-muted hover:text-secondary"}`}
             >
-               <List size={16} />
+              <List size={16} />
             </button>
             <button
-               onClick={() => setViewMode("grid")}
-               className={`p-2 rounded-md transition-colors ${viewMode === "grid" ? "bg-surface-hover text-primary" : "text-muted hover:text-secondary"}`}
+              onClick={() => setViewMode("grid")}
+              className={`p-2 rounded-md transition-colors ${viewMode === "grid" ? "bg-surface-hover text-primary" : "text-muted hover:text-secondary"}`}
             >
-               <LayoutGrid size={16} />
+              <LayoutGrid size={16} />
             </button>
           </div>
 
@@ -2587,90 +2969,115 @@ export default function Orders() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-12 gap-5 mb-8">
         {/* Left Column: Search & Overview */}
         <div className="lg:col-span-1 xl:col-span-4 2xl:col-span-3 flex flex-col gap-5">
-           {/* Search Input */}
-           <div className="bg-surface border border-border rounded-[20px] p-2 flex items-center shadow-subtle h-14">
-             <div className="flex items-center justify-center w-12 text-muted">
-                <Search size={18} />
-             </div>
-             <input 
-               type="text" 
-               placeholder="Search orders..." 
-               className="flex-1 bg-transparent border-none outline-none text-sm placeholder-gray-400 text-primary"
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-             />
-             <div className="w-10 h-10 flex items-center justify-center text-secondary cursor-pointer hover:bg-surface-hover rounded-xl transition-colors shrink-0">
-                <Filter size={18} />
-             </div>
-           </div>
+          {/* Search Input */}
+          <div className="bg-surface border border-border rounded-[20px] p-2 flex items-center shadow-subtle h-14">
+            <div className="flex items-center justify-center w-12 text-muted">
+              <Search size={18} />
+            </div>
+            <input
+              type="text"
+              placeholder="Search orders..."
+              className="flex-1 bg-transparent border-none outline-none text-sm placeholder-gray-400 text-primary"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="w-10 h-10 flex items-center justify-center text-secondary cursor-pointer hover:bg-surface-hover rounded-xl transition-colors shrink-0">
+              <Filter size={18} />
+            </div>
+          </div>
 
-           {/* Pending and Delivered Stats */}
-           <div className="grid grid-cols-2 gap-4">
-             {/* Pending Orders Card */}
-             <div className="bg-surface border border-border rounded-[20px] p-5 shadow-subtle relative overflow-hidden flex flex-col justify-between h-[160px]">
-                <div>
-                   <p className="text-[10px] font-bold text-[#FF6347] uppercase tracking-wider mb-2">Pending Orders</p>
-                   <div className="flex items-end gap-1.5 mb-2">
-                     <span className="text-3xl font-bold text-primary leading-none">{pendingStats.count}</span>
-                     <span className="text-xs font-medium text-secondary mb-0.5">Items</span>
-                   </div>
+          {/* Pending and Delivered Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Pending Orders Card */}
+            <div className="bg-surface border border-border rounded-[20px] p-5 shadow-subtle relative overflow-hidden flex flex-col justify-between h-[160px]">
+              <div>
+                <p className="text-[10px] font-bold text-[#FF6347] uppercase tracking-wider mb-2">
+                  Pending Orders
+                </p>
+                <div className="flex items-end gap-1.5 mb-2">
+                  <span className="text-3xl font-bold text-primary leading-none">
+                    {pendingStats.count}
+                  </span>
+                  <span className="text-xs font-medium text-secondary mb-0.5">
+                    Items
+                  </span>
                 </div>
-                <div className="text-[13px] font-bold text-[#FF6347] z-10">
-                   ৳{pendingStats.revenue}
-                </div>
-                <div className="absolute right-4 inset-y-0 flex items-center opacity-20 pointer-events-none">
-                   <ShoppingCart size={28} className="text-[#FF6347]" />
-                </div>
-             </div>
+              </div>
+              <div className="text-[13px] font-bold text-[#FF6347] z-10">
+                ৳{pendingStats.revenue}
+              </div>
+              <div className="absolute right-4 inset-y-0 flex items-center opacity-20 pointer-events-none">
+                <ShoppingCart size={28} className="text-[#FF6347]" />
+              </div>
+            </div>
 
-             {/* Delivered Card */}
-             <div className="bg-surface border border-border rounded-[20px] p-5 shadow-subtle relative overflow-hidden flex flex-col justify-between h-[160px]">
-                <div>
-                  <p className="text-[10px] font-bold text-[#1DAB61] uppercase tracking-wider mb-2">Delivered</p>
-                  <div className="flex items-end gap-1.5 mb-2">
-                    <span className="text-3xl font-bold text-primary leading-none">{completedStats.count}</span>
-                    <span className="text-xs font-medium text-secondary mb-0.5">Total</span>
-                  </div>
+            {/* Delivered Card */}
+            <div className="bg-surface border border-border rounded-[20px] p-5 shadow-subtle relative overflow-hidden flex flex-col justify-between h-[160px]">
+              <div>
+                <p className="text-[10px] font-bold text-[#1DAB61] uppercase tracking-wider mb-2">
+                  Delivered
+                </p>
+                <div className="flex items-end gap-1.5 mb-2">
+                  <span className="text-3xl font-bold text-primary leading-none">
+                    {completedStats.count}
+                  </span>
+                  <span className="text-xs font-medium text-secondary mb-0.5">
+                    Total
+                  </span>
                 </div>
-                <div className="text-[13px] font-bold text-[#1DAB61] z-10">
-                   ৳{completedStats.revenue}
-                </div>
-                <div className="absolute right-4 inset-y-0 flex items-center opacity-20 pointer-events-none">
-                   <Package size={28} className="text-[#1DAB61]" />
-                </div>
-             </div>
-           </div>
+              </div>
+              <div className="text-[13px] font-bold text-[#1DAB61] z-10">
+                ৳{completedStats.revenue}
+              </div>
+              <div className="absolute right-4 inset-y-0 flex items-center opacity-20 pointer-events-none">
+                <Package size={28} className="text-[#1DAB61]" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Business Value Chart */}
         <div className="lg:col-span-1 xl:col-span-4 2xl:col-span-5 bg-[#1C2032] border border-[#2b2b2b] rounded-[24px] p-6 2xl:p-7 text-white relative overflow-hidden shadow-subtle flex flex-col">
           {/* Header Row */}
           <div className="flex justify-between items-center mb-6">
-             <div className="flex items-center gap-2">
-                 <TrendingUp size={16} className="text-brand" />
-                 <span className="text-[11px] font-medium tracking-wider text-brand uppercase">Business Value</span>
-             </div>
-             <div className="bg-[#1DAB61]/10 border border-[#1DAB61]/20 text-[#1DAB61] text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                 <TrendingUp size={12} />
-                 100%
-             </div>
+            <div className="flex items-center gap-2">
+              <TrendingUp size={16} className="text-brand" />
+              <span className="text-[11px] font-medium tracking-wider text-brand uppercase">
+                Business Value
+              </span>
+            </div>
+            <div className="bg-[#1DAB61]/10 border border-[#1DAB61]/20 text-[#1DAB61] text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
+              <TrendingUp size={12} />
+              100%
+            </div>
           </div>
           {/* Value */}
           <div className="mb-4">
-             <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-2">Total Sales Revenue</p>
-             <h3 className="text-[40px] leading-none font-bold text-white tracking-tight">৳124,279</h3>
+            <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-2">
+              Total Sales Revenue
+            </p>
+            <h3 className="text-[40px] leading-none font-bold text-white tracking-tight">
+              ৳124,279
+            </h3>
           </div>
-          
+
           <div className="mt-auto flex items-end justify-between z-10">
-             <p className="text-xs text-muted leading-relaxed max-w-[200px]">Combined market value across all active sales channels.</p>
-             <div className="flex -space-x-2">
-                 {[1, 2, 3].map(i => (
-                    <div key={i} className="w-8 h-8 rounded-full border-[3px] border-[#1C2032] bg-gray-600 overflow-hidden">
-                       <div className="w-full h-full bg-gradient-to-br from-gray-400 to-gray-500" />
-                    </div>
-                 ))}
-                 <div className="w-8 h-8 rounded-full border-[3px] border-[#1C2032] bg-surface text-[#1C2032] flex items-center justify-center text-sm font-bold z-10">+</div>
-             </div>
+            <p className="text-xs text-muted leading-relaxed max-w-[200px]">
+              Combined market value across all active sales channels.
+            </p>
+            <div className="flex -space-x-2">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="w-8 h-8 rounded-full border-[3px] border-[#1C2032] bg-gray-600 overflow-hidden"
+                >
+                  <div className="w-full h-full bg-gradient-to-br from-gray-400 to-gray-500" />
+                </div>
+              ))}
+              <div className="w-8 h-8 rounded-full border-[3px] border-[#1C2032] bg-surface text-[#1C2032] flex items-center justify-center text-sm font-bold z-10">
+                +
+              </div>
+            </div>
           </div>
           {/* Subtle gradient blob */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-r from-transparent via-[#0066FF]/5 to-transparent pointer-events-none transform -skew-x-12" />
@@ -2679,44 +3086,82 @@ export default function Orders() {
         {/* Completion Rate / Performance Card */}
         <div className="col-span-full lg:col-span-2 xl:col-span-4 2xl:col-span-4 bg-surface border border-border rounded-[24px] p-6 2xl:p-7 shadow-subtle flex flex-col justify-between">
           <div className="flex justify-between items-start mb-6">
-             <div>
-                <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Completion Rate</p>
-                <h3 className="text-[40px] leading-none font-bold text-primary tracking-tight">8%</h3>
-             </div>
-             {/* Circular Progress Placeholder */}
-             <div className="w-14 h-14 rounded-full flex items-center justify-center relative">
-                <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="transparent" stroke="var(--color-surface-hover)" strokeWidth="6" />
-                  <circle cx="50" cy="50" r="45" fill="transparent" stroke="var(--color-brand)" strokeWidth="6" strokeDasharray="282.7" strokeDashoffset={282.7 * (1 - 0.08)} strokeLinecap="round" />
-                </svg>
-                <Zap size={20} className="text-brand relative z-10 fill-current" />
-             </div>
+            <div>
+              <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">
+                Completion Rate
+              </p>
+              <h3 className="text-[40px] leading-none font-bold text-primary tracking-tight">
+                8%
+              </h3>
+            </div>
+            {/* Circular Progress Placeholder */}
+            <div className="w-14 h-14 rounded-full flex items-center justify-center relative">
+              <svg
+                className="absolute inset-0 w-full h-full transform -rotate-90"
+                viewBox="0 0 100 100"
+              >
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="transparent"
+                  stroke="var(--color-surface-hover)"
+                  strokeWidth="6"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="transparent"
+                  stroke="var(--color-brand)"
+                  strokeWidth="6"
+                  strokeDasharray="282.7"
+                  strokeDashoffset={282.7 * (1 - 0.08)}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <Zap
+                size={20}
+                className="text-brand relative z-10 fill-current"
+              />
+            </div>
           </div>
 
           <div className="mb-6 space-y-2">
-             <div className="flex justify-between items-center">
-                <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Performance Index</p>
-                <span className="text-[11px] font-bold text-brand">5 / 63</span>
-             </div>
-             <div className="h-2.5 w-full bg-[#f1f5f9] rounded-full overflow-hidden">
-                 <div className="h-full bg-[#2A4B8D] rounded-full relative" style={{ width: '8%' }} />
-             </div>
+            <div className="flex justify-between items-center">
+              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">
+                Performance Index
+              </p>
+              <span className="text-[11px] font-bold text-brand">5 / 63</span>
+            </div>
+            <div className="h-2.5 w-full bg-[#f1f5f9] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#2A4B8D] rounded-full relative"
+                style={{ width: "8%" }}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-             <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-[16px] p-4 flex flex-col justify-center">
-                 <p className="text-[9px] font-bold text-[#FF6347] uppercase tracking-wider mb-2">Return Ratio</p>
-                 <span className="text-lg font-bold text-primary leading-none">0%</span>
-             </div>
-             <div className="bg-brand/10 border border-brand/20 rounded-[16px] p-4 flex flex-col justify-center">
-                 <p className="text-[9px] font-bold text-brand uppercase tracking-wider mb-2">Avg Ticket</p>
-                 <span className="text-lg font-bold text-primary leading-none">৳1,973</span>
-             </div>
+            <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-[16px] p-4 flex flex-col justify-center">
+              <p className="text-[9px] font-bold text-[#FF6347] uppercase tracking-wider mb-2">
+                Return Ratio
+              </p>
+              <span className="text-lg font-bold text-primary leading-none">
+                0%
+              </span>
+            </div>
+            <div className="bg-brand/10 border border-brand/20 rounded-[16px] p-4 flex flex-col justify-center">
+              <p className="text-[9px] font-bold text-brand uppercase tracking-wider mb-2">
+                Avg Ticket
+              </p>
+              <span className="text-lg font-bold text-primary leading-none">
+                ৳1,973
+              </span>
+            </div>
           </div>
         </div>
       </div>
-
-
 
       <div className="space-y-6">
         <div className="w-full relative group/tabs pb-6">
@@ -2754,13 +3199,15 @@ export default function Orders() {
             )}
           </AnimatePresence>
 
-          <div 
+          <div
             ref={tabsRef}
             className="flex overflow-x-auto items-center p-1 bg-surface border border-border rounded-[20px] shadow-subtle gap-x-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth"
           >
             {tabs.map((tab, index) => {
               const isActive = activeTab === tab;
-              const count = combinedOrders.filter((o) => tab === "All" || o.status === tab).length;
+              const count = combinedOrders.filter(
+                (o) => tab === "All" || o.status === tab,
+              ).length;
               const Icon =
                 {
                   All: Filter,
@@ -2781,37 +3228,47 @@ export default function Orders() {
               if (isActive) {
                 iconColorClass = "text-brand";
               } else if (tab !== "All") {
-                 iconColorClass = globalStatusConfig[tab.toLowerCase()]?.iconColor || "text-muted";
+                iconColorClass =
+                  globalStatusConfig[tab.toLowerCase()]?.iconColor ||
+                  "text-muted";
               }
 
               return (
                 <button
                   key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold whitespace-nowrap transition-all group/tab relative ${
-                      isActive
-                        ? "bg-brand/10 dark:bg-brand/20 text-brand shadow-subtle shadow-blue-100/50"
-                        : "text-secondary hover:text-primary hover:bg-surface-hover"
-                    }`}
-                  >
-                    <Icon size={14} strokeWidth={isActive ? 2.5 : 2} className={`${iconColorClass} group-hover/tab:scale-110 transition-transform`} />
-                    <span className="capitalize tracking-tight">{tab === "All" ? "All Orders" : tab.replace(/_/g, ' ')}</span>
-                    {count > 0 && (
-                      <span
-                        className={`ml-1 text-[9px] min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full font-black leading-none transition-all ${
-                          isActive ? "bg-brand text-white" : "bg-gray-900 text-white group-hover/tab:bg-gray-700"
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    )}
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeTabUnderline"
-                        className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-brand rounded-full"
-                      />
-                    )}
-                  </button>
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold whitespace-nowrap transition-all group/tab relative ${
+                    isActive
+                      ? "bg-brand/10 dark:bg-brand/20 text-brand shadow-subtle shadow-blue-100/50"
+                      : "text-secondary hover:text-primary hover:bg-surface-hover"
+                  }`}
+                >
+                  <Icon
+                    size={14}
+                    strokeWidth={isActive ? 2.5 : 2}
+                    className={`${iconColorClass} group-hover/tab:scale-110 transition-transform`}
+                  />
+                  <span className="capitalize tracking-tight">
+                    {tab === "All" ? "All Orders" : tab.replace(/_/g, " ")}
+                  </span>
+                  {count > 0 && (
+                    <span
+                      className={`ml-1 text-[9px] min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full font-black leading-none transition-all ${
+                        isActive
+                          ? "bg-brand text-white"
+                          : "bg-gray-900 text-white group-hover/tab:bg-gray-700"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTabUnderline"
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-brand rounded-full"
+                    />
+                  )}
+                </button>
               );
             })}
           </div>
@@ -2836,9 +3293,15 @@ export default function Orders() {
                       onChange={(e) => handleBulkStatusUpdate(e.target.value)}
                       className="bg-surface-hover dark:bg-black/5 text-black dark:text-white border border-black dark:border-white/20 rounded-lg px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-bold outline-none"
                     >
-                      <option value="" className="text-black dark:text-white">Update Status</option>
+                      <option value="" className="text-black dark:text-white">
+                        Update Status
+                      </option>
                       {statuses.map((s) => (
-                        <option key={s} value={s} className="text-black dark:text-white">
+                        <option
+                          key={s}
+                          value={s}
+                          className="text-black dark:text-white"
+                        >
                           {s.replace(/_/g, " ").charAt(0).toUpperCase() +
                             s.replace(/_/g, " ").slice(1)}
                         </option>
@@ -2889,7 +3352,6 @@ export default function Orders() {
 
         {viewMode === "table" ? (
           <div className="relative">
-
             <div className="bg-surface border border-border rounded-[20px] overflow-hidden shadow-subtle">
               <div className="overflow-x-auto custom-scrollbar pb-2">
                 <table className="w-full text-left border-collapse min-w-[760px] md:min-w-[800px]">
@@ -2914,10 +3376,18 @@ export default function Orders() {
                           />
                         </div>
                       </th>
-                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">ORDER ID</th>
-                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">CUSTOMER</th>
-                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">ITEM QTY</th>
-                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">BILL</th>
+                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">
+                        ORDER ID
+                      </th>
+                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">
+                        CUSTOMER
+                      </th>
+                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">
+                        ITEM QTY
+                      </th>
+                      <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">
+                        BILL
+                      </th>
                       <th className="px-2 xl:px-4 py-4 text-[10px] font-bold text-secondary uppercase tracking-widest text-center whitespace-nowrap">
                         STATUS
                       </th>
@@ -2926,7 +3396,8 @@ export default function Orders() {
                       </th>
                       <th className="px-2 xl:px-4 py-4">
                         <div className="flex items-center justify-end gap-2 text-[10px] font-bold text-secondary uppercase tracking-widest whitespace-nowrap">
-                          ACTION <MoreVertical size={14} className="text-muted" />
+                          ACTION{" "}
+                          <MoreVertical size={14} className="text-muted" />
                         </div>
                       </th>
                     </tr>
@@ -3018,7 +3489,10 @@ export default function Orders() {
                           </td>
                           <td className="px-2 xl:px-4 py-3 xl:py-5">
                             <div className="flex flex-col gap-1.5">
-                              <span className="text-[14px] font-medium text-primary truncate max-w-[120px] xl:max-w-[200px] leading-none" title={order.customerName}>
+                              <span
+                                className="text-[14px] font-medium text-primary truncate max-w-[120px] xl:max-w-[200px] leading-none"
+                                title={order.customerName}
+                              >
                                 {order.customerName}
                               </span>
                               <div className="flex items-center gap-3">
@@ -3195,9 +3669,7 @@ export default function Orders() {
                       )}
                     </span>{" "}
                     of{" "}
-                    <span className="text-muted">
-                      {filteredOrders.length}
-                    </span>
+                    <span className="text-muted">{filteredOrders.length}</span>
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 p-1.5 glass rounded-2xl">
@@ -3556,7 +4028,9 @@ export default function Orders() {
                   <h3 className="text-base font-bold text-primary">
                     Select Courier
                   </h3>
-                  <p className="text-[10px] text-muted font-bold uppercase tracking-wider">Logistic Dispatch</p>
+                  <p className="text-[10px] text-muted font-bold uppercase tracking-wider">
+                    Logistic Dispatch
+                  </p>
                 </div>
                 <button
                   onClick={() =>
@@ -3569,7 +4043,8 @@ export default function Orders() {
               </div>
               <div className="p-6 space-y-4">
                 <p className="text-[12px] text-secondary font-medium leading-relaxed">
-                  Multiple couriers are active for this region. Please select the preferred carrier.
+                  Multiple couriers are active for this region. Please select
+                  the preferred carrier.
                 </p>
                 <div className="space-y-2">
                   {courierSelection.activeCouriers.map(([name]) => (
@@ -3585,12 +4060,12 @@ export default function Orders() {
                       className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border hover:border-brand hover:bg-brand/10/50 transition-all group shadow-subtle bg-surface"
                     >
                       <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 rounded-lg bg-surface-hover flex items-center justify-center text-muted group-hover:text-brand group-hover:bg-brand/10">
-                           <Truck size={16} />
-                         </div>
-                         <span className="font-bold text-[13px] text-secondary group-hover:text-brand">
-                           {name.charAt(0).toUpperCase() + name.slice(1)}
-                         </span>
+                        <div className="w-8 h-8 rounded-lg bg-surface-hover flex items-center justify-center text-muted group-hover:text-brand group-hover:bg-brand/10">
+                          <Truck size={16} />
+                        </div>
+                        <span className="font-bold text-[13px] text-secondary group-hover:text-brand">
+                          {name.charAt(0).toUpperCase() + name.slice(1)}
+                        </span>
                       </div>
                       <ChevronRight
                         size={14}
@@ -3606,102 +4081,206 @@ export default function Orders() {
 
         {/* Print Modal */}
         {selectedOrderForPrint && (
-          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-6 no-print">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-6 no-print">
             <motion.div
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="bg-surface w-full max-w-sm rounded-xl shadow-2xl overflow-hidden border border-border"
+              className="bg-white w-full max-w-md rounded-[24px] shadow-2xl overflow-hidden"
             >
-              <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface">
-                <div className="flex flex-col">
-                  <h3 className="text-base font-bold text-primary">
-                    Print Invoice
-                  </h3>
-                   <p className="text-[10px] text-muted font-bold uppercase tracking-wider">Document Generation</p>
+              <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <FileText size={24} />
+                  </div>
+                  <div className="flex flex-col">
+                    <h3 className="text-xl font-bold text-slate-800">
+                      Print Invoice
+                    </h3>
+                    <p className="text-[13px] text-slate-500 font-medium mt-0.5">
+                      Choose a format and print option
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={() => {
                     setSelectedOrderForPrint(null);
                     setPrintType(null);
                   }}
-                  className="p-1.5 hover:bg-surface-hover rounded-lg transition-colors text-muted hover:text-secondary border border-border"
+                  className="w-10 h-10 border border-slate-200 hover:bg-slate-50 rounded-xl flex items-center justify-center transition-colors text-slate-400 hover:text-slate-600"
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { id: "a5", name: "A5 Invoice", icon: FileText },
-                    { id: "pos", name: "POS Receipt", icon: Printer },
-                  ].map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => setPrintType(type.id as any)}
-                      className={`flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
-                        printType === type.id
-                          ? "border-brand bg-brand/10/50 text-brand shadow-subtle"
-                          : "border-border bg-surface-hover/50 hover:bg-surface-hover text-secondary"
-                      }`}
-                    >
-                      <type.icon size={20} />
-                      <span className="text-[11px] font-bold">{type.name}</span>
-                    </button>
-                  ))}
+
+              <div className="p-8 space-y-8">
+                {/* Document Type */}
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                    Document Type
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 flex-1">
+                    {[
+                      {
+                        id: "a5",
+                        name: "A5 Invoice",
+                        desc: "Professional invoice",
+                        icon: FileText,
+                      },
+                      {
+                        id: "pos",
+                        name: "POS Receipt",
+                        desc: "Thermal receipt",
+                        icon: Printer,
+                      },
+                    ].map((type) => (
+                      <button
+                        key={type.id}
+                        onClick={() => setPrintType(type.id as any)}
+                        className={`relative flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-[16px] transition-all border-2 ${
+                          printType === type.id
+                            ? "border-blue-500 bg-blue-50/50"
+                            : "border-slate-100 bg-white hover:border-slate-200"
+                        }`}
+                      >
+                        {printType === type.id && (
+                          <div className="absolute top-3 right-3 text-blue-600 bg-white rounded-full">
+                            <CheckCircle2
+                              size={20}
+                              className="fill-blue-500 text-white"
+                            />
+                          </div>
+                        )}
+                        <type.icon
+                          size={28}
+                          className={
+                            printType === type.id
+                              ? "text-blue-600"
+                              : "text-slate-600"
+                          }
+                          strokeWidth={1.5}
+                        />
+                        <div className="text-center">
+                          <div
+                            className={`font-bold text-[15px] mb-1 ${printType === type.id ? "text-blue-600" : "text-slate-800"}`}
+                          >
+                            {type.name}
+                          </div>
+                          <div className="text-[12px] text-slate-500 font-medium">
+                            {type.desc}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => {
-                      if (!printType) {
-                        toast.error("Please select an invoice type first");
-                        return;
-                      }
-                      handlePrint();
-                    }}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-bold transition-all ${
-                      !printType
-                        ? "bg-surface-hover text-muted cursor-not-allowed"
-                        : "bg-gray-900 text-white hover:bg-black dark:hover:bg-gray-200 shadow-lg shadow-gray-200 dark:shadow-none"
-                    }`}
-                  >
-                    <Printer size={16} /> Standard Print
-                  </button>
-                  
-                  <div className="flex gap-2">
+                {/* Print Option */}
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                    Print Option
+                  </h4>
+                  <div className="flex flex-col gap-3">
                     <button
                       onClick={() => {
                         if (!printType) {
                           toast.error("Please select an invoice type first");
                           return;
                         }
-                        handleDownloadPDF();
+                        handlePrint();
                       }}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-bold transition-all border ${
+                      className={`flex items-center p-4 rounded-[16px] text-left transition-all group ${
                         !printType
-                          ? "bg-surface-hover text-muted border-border"
-                          : "bg-surface text-brand border-brand hover:bg-brand/10"
+                          ? "bg-slate-100 opacity-50 cursor-not-allowed"
+                          : "bg-slate-900 hover:bg-slate-800"
                       }`}
                     >
-                      <Download size={16} /> PDF
+                      <div className="w-10 h-10 flex items-center justify-center text-white mr-4">
+                        <Printer size={24} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-[15px] font-bold text-white mb-0.5">
+                          Standard Print
+                        </div>
+                        <div className="text-[13px] text-slate-300 font-medium">
+                          Print using your default printer
+                        </div>
+                      </div>
+                      <ChevronRight
+                        size={20}
+                        className="text-slate-400 group-hover:text-white transition-colors"
+                      />
                     </button>
-                    <button
-                      onClick={() => {
-                        if (!printType) {
-                          toast.error("Please select an invoice type first");
-                          return;
-                        }
-                        window.print();
-                      }}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-bold transition-all border ${
-                        !printType
-                          ? "bg-surface-hover text-muted border-border"
-                          : "bg-surface text-secondary border-border hover:bg-surface-hover"
-                      }`}
-                    >
-                      Manual
-                    </button>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => {
+                          if (!printType) {
+                            toast.error("Please select an invoice type first");
+                            return;
+                          }
+                          handleDownloadPDF();
+                        }}
+                        className={`flex items-center justify-center gap-3 p-4 rounded-[16px] transition-all border ${
+                          !printType
+                            ? "bg-slate-50 border-slate-100 text-slate-400"
+                            : "bg-white border-blue-200 hover:border-blue-300 group"
+                        }`}
+                      >
+                        <Download
+                          size={24}
+                          className={printType ? "text-blue-500" : ""}
+                        />
+                        <div className="text-left">
+                          <div
+                            className={`text-[14px] font-bold mb-0.5 ${printType ? "text-blue-600" : ""}`}
+                          >
+                            Download PDF
+                          </div>
+                          <div className="text-[12px] font-medium text-slate-400">
+                            Save as PDF file
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (!printType) {
+                            toast.error("Please select an invoice type first");
+                            return;
+                          }
+                          window.print();
+                        }}
+                        className={`flex items-center justify-center gap-3 p-4 rounded-[16px] transition-all border ${
+                          !printType
+                            ? "bg-slate-50 border-slate-100 text-slate-400"
+                            : "bg-white border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        <FileText size={24} className="text-slate-500" />
+                        <div className="text-left">
+                          <div className="text-[14px] font-bold text-slate-700 mb-0.5">
+                            Manual / Preview
+                          </div>
+                          <div className="text-[12px] font-medium text-slate-400">
+                            View before printing
+                          </div>
+                        </div>
+                      </button>
+                    </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Secure Footer */}
+              <div className="px-8 pb-8">
+                <div className="flex items-center justify-between p-4 bg-[#f0f7ff] rounded-[16px] text-[#4f8eff]">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck size={20} className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-[13px] font-semibold text-[#5a7698]">
+                      Your document is secure and ready to print
+                    </span>
+                  </div>
+                  <Sparkles size={20} className="w-5 h-5 flex-shrink-0" />
                 </div>
               </div>
             </motion.div>
@@ -3763,7 +4342,10 @@ export default function Orders() {
                 const order = orders.find((o) => o.id === id);
                 if (!order) return null;
                 return (
-                  <div key={id} className="print:break-after-page break-after-page">
+                  <div
+                    key={id}
+                    className="print:break-after-page break-after-page"
+                  >
                     <A5Invoice
                       order={order}
                       company={companySettings || {}}
